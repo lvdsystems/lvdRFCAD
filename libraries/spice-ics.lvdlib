@@ -1,0 +1,886 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "spice-ics",
+    "description": "Behavioural SPICE macromodels: op-amps, comparators, regulators, shunt reference and logic gates",
+    "components": [
+        {
+            "id": "opamp_ideal",
+            "name": "Ideal op-amp",
+            "category": "ICs/Op-amps",
+            "description": "Ideal op-amp: VCVS with very high gain from V(inp,inn) to out (referenced to ground), no supply pins or rails",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }],
+            "parameters": [{ "name": "gain", "label": "Open-loop gain", "unit": "V/V", "default": "1meg", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [{ "kind": "spice", "template": "E{ref} {pin:out} 0 {pin:inp} {pin:inn} {gain}" }]
+        },
+        {
+            "id": "opamp",
+            "name": "Op-amp (generic macromodel)",
+            "category": "ICs/Op-amps",
+            "description": "Behavioural single-pole op-amp with supply pins: open-loop gain, GBW, slew rate, output swing and current limit",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "aol", "label": "Open-loop DC gain", "unit": "V/V", "default": "100k" },
+                { "name": "gbw", "label": "Gain-bandwidth product", "unit": "Hz", "default": "1meg", "shown": true },
+                { "name": "sr", "label": "Slew rate", "unit": "V/us", "default": "1", "shown": true },
+                { "name": "vohr", "label": "Output headroom below vcc", "unit": "V", "default": "1.5" },
+                { "name": "volr", "label": "Output headroom above vee", "unit": "V", "default": "1.5" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "ilim", "label": "Output current limit", "unit": "A", "default": "25m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "1m" },
+                { "name": "rin", "label": "Differential input resistance", "unit": "ohm", "default": "1T" },
+                { "name": "vos", "label": "Input offset voltage", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}",
+                    "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp"
+                }
+            ]
+        },
+        {
+            "id": "opamp_lm358",
+            "name": "Op-amp, LM358-like",
+            "category": "ICs/Op-amps",
+            "description": "Generic preset with LM358 datasheet-typical figures: 100 dB gain, 1 MHz GBW, 0.3 V/us, output to about 20 mV above vee and 1.5 V below vcc (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "aol", "label": "Open-loop DC gain", "unit": "V/V", "default": "100k" },
+                { "name": "gbw", "label": "Gain-bandwidth product", "unit": "Hz", "default": "1meg", "shown": true },
+                { "name": "sr", "label": "Slew rate", "unit": "V/us", "default": "0.3", "shown": true },
+                { "name": "vohr", "label": "Output headroom below vcc", "unit": "V", "default": "1.5" },
+                { "name": "volr", "label": "Output headroom above vee", "unit": "V", "default": "20m" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "100" },
+                { "name": "ilim", "label": "Output current limit", "unit": "A", "default": "40m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "350u" },
+                { "name": "rin", "label": "Differential input resistance", "unit": "ohm", "default": "10meg" },
+                { "name": "vos", "label": "Input offset voltage", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "text", "at": [-4, 0], "text": "358", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}",
+                    "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp"
+                }
+            ]
+        },
+        {
+            "id": "opamp_tl072",
+            "name": "Op-amp, TL072-like",
+            "category": "ICs/Op-amps",
+            "description": "Generic preset with TL072 datasheet-typical figures: 106 dB gain, 3 MHz GBW, 13 V/us, output 1.5 V from the rails (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "aol", "label": "Open-loop DC gain", "unit": "V/V", "default": "200k" },
+                { "name": "gbw", "label": "Gain-bandwidth product", "unit": "Hz", "default": "3meg", "shown": true },
+                { "name": "sr", "label": "Slew rate", "unit": "V/us", "default": "13", "shown": true },
+                { "name": "vohr", "label": "Output headroom below vcc", "unit": "V", "default": "1.5" },
+                { "name": "volr", "label": "Output headroom above vee", "unit": "V", "default": "1.5" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "100" },
+                { "name": "ilim", "label": "Output current limit", "unit": "A", "default": "25m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "1.4m" },
+                { "name": "rin", "label": "Differential input resistance", "unit": "ohm", "default": "1T" },
+                { "name": "vos", "label": "Input offset voltage", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "text", "at": [-4, 0], "text": "072", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}",
+                    "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp"
+                }
+            ]
+        },
+        {
+            "id": "opamp_opa2134",
+            "name": "Op-amp, OPA2134-like",
+            "category": "ICs/Op-amps",
+            "description": "Generic preset with OPA2134 datasheet-typical figures: 120 dB gain, 8 MHz GBW, 20 V/us, output 1 V from the rails (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "aol", "label": "Open-loop DC gain", "unit": "V/V", "default": "1meg" },
+                { "name": "gbw", "label": "Gain-bandwidth product", "unit": "Hz", "default": "8meg", "shown": true },
+                { "name": "sr", "label": "Slew rate", "unit": "V/us", "default": "20", "shown": true },
+                { "name": "vohr", "label": "Output headroom below vcc", "unit": "V", "default": "1" },
+                { "name": "volr", "label": "Output headroom above vee", "unit": "V", "default": "1" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "ilim", "label": "Output current limit", "unit": "A", "default": "40m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "4m" },
+                { "name": "rin", "label": "Differential input resistance", "unit": "ohm", "default": "10T" },
+                { "name": "vos", "label": "Input offset voltage", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "text", "at": [-4, 0], "text": "2134", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}",
+                    "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp"
+                }
+            ]
+        },
+        {
+            "id": "opamp_rrio",
+            "name": "Op-amp, rail-to-rail CMOS",
+            "category": "ICs/Op-amps",
+            "description": "Generic rail-to-rail output CMOS op-amp preset: 110 dB gain, 10 MHz GBW, 5 V/us, output within 10 mV of the rails",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "aol", "label": "Open-loop DC gain", "unit": "V/V", "default": "300k" },
+                { "name": "gbw", "label": "Gain-bandwidth product", "unit": "Hz", "default": "10meg", "shown": true },
+                { "name": "sr", "label": "Slew rate", "unit": "V/us", "default": "5", "shown": true },
+                { "name": "vohr", "label": "Output headroom below vcc", "unit": "V", "default": "10m" },
+                { "name": "volr", "label": "Output headroom above vee", "unit": "V", "default": "10m" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "ilim", "label": "Output current limit", "unit": "A", "default": "30m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "1m" },
+                { "name": "rin", "label": "Differential input resistance", "unit": "ohm", "default": "1T" },
+                { "name": "vos", "label": "Input offset voltage", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "text", "at": [-4, 0], "text": "RRIO", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}",
+                    "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp"
+                }
+            ]
+        },
+        {
+            "id": "comparator",
+            "name": "Comparator (push-pull)",
+            "category": "ICs/Comparators",
+            "description": "Behavioural comparator with hysteresis, propagation delay and rail-to-rail push-pull output: out = vcc when inp > inn",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "vhys", "label": "Input hysteresis (total)", "unit": "V", "default": "10m", "shown": true },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "100n", "shown": true },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "100" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "0.5m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "line", "points": [[-12, 6], [0, 6], [0, -6], [6, -6]] },
+                    { "type": "line", "points": [[-6, 6], [-6, -6], [6, -6]] }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_comparator params: vhys={vhys} tpd={tpd} rout={rout} iq={iq}",
+                    "subcircuit": ".subckt lvd_comparator inp inn out vcc vee params: vhys=10e-3 tpd=100e-9 rout=100 iq=0.5e-3\n* behavioural comparator: tanh decision with hysteresis vhys (positive feedback through the delayed state y),\n* RC delay tpd, push-pull output between vee and vcc through rout\nBx x 0 V=tanh((V(inp,inn)+({vhys/2})*V(y))/({max(vhys/20,1e-4)}))\nRd x y 1k\nCd y 0 {tpd/693}\nBo 0 out I=(V(vee)+(V(vcc)-V(vee))*(1+V(y))/2-V(out))/({rout})\nIq vcc vee {iq}\n.ends lvd_comparator"
+                }
+            ]
+        },
+        {
+            "id": "comparator_lm393",
+            "name": "Comparator, LM393-like (open collector)",
+            "category": "ICs/Comparators",
+            "description": "Open-collector comparator preset with LM393 datasheet-typical figures: no hysteresis, 300 ns delay, 16 mA sink; needs a pull-up (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "inp" }, { "name": "inn" }, { "name": "out" }, { "name": "vcc" }, { "name": "vee" }],
+            "parameters": [
+                { "name": "vhys", "label": "Input hysteresis (total)", "unit": "V", "default": "0", "shown": true },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "300n", "shown": true },
+                { "name": "ron", "label": "Output saturation resistance", "unit": "ohm", "default": "50" },
+                { "name": "isink", "label": "Output sink current limit", "unit": "A", "default": "16m" },
+                { "name": "iq", "label": "Supply current", "unit": "A", "default": "0.4m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-30, -30], [30, 0], [-30, 30]], "fill": "none" },
+                    { "type": "line", "points": [[-26, -10], [-20, -10]] },
+                    { "type": "line", "points": [[-23, -13], [-23, -7]] },
+                    { "type": "line", "points": [[-26, 10], [-20, 10]] },
+                    { "type": "line", "points": [[-12, 6], [0, 6], [0, -6], [6, -6]] },
+                    { "type": "line", "points": [[-6, 6], [-6, -6], [6, -6]] },
+                    { "type": "text", "at": [14, 0], "text": "OC", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "inp", "at": [-50, -10], "length": 20, "direction": "right" },
+                    { "pin": "inn", "at": [-50, 10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" },
+                    { "pin": "vcc", "at": [0, -40], "length": 25, "direction": "down" },
+                    { "pin": "vee", "at": [0, 40], "length": 25, "direction": "up" }
+                ],
+                "referenceAt": [25, -25],
+                "valueAt": [45, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_comparator_oc params: vhys={vhys} tpd={tpd} ron={ron} isink={isink} iq={iq}",
+                    "subcircuit": ".subckt lvd_comparator_oc inp inn out vcc vee params: vhys=0 tpd=300e-9 ron=50 isink=16e-3 iq=0.4e-3\n* behavioural open-collector comparator: output sinks to vee (up to isink, ron when saturated) while inp < inn\nBx x 0 V=tanh((V(inp,inn)+({vhys/2})*V(y))/({max(vhys/20,1e-4)}))\nRd x y 1k\nCd y 0 {tpd/693}\nBo out vee I=({isink})*tanh(V(out,vee)/({isink*ron}))*(1-V(y))/2+1e-9*V(out,vee)\nIq vcc vee {iq}\n.ends lvd_comparator_oc"
+                }
+            ]
+        },
+        {
+            "id": "regulator",
+            "name": "Linear regulator (generic fixed)",
+            "category": "ICs/Regulators",
+            "description": "Behavioural fixed positive linear regulator: output voltage, dropout, current limit and quiescent current",
+            "referencePrefix": "U",
+            "pins": [{ "name": "in" }, { "name": "gnd" }, { "name": "out" }],
+            "parameters": [
+                { "name": "vout", "label": "Output voltage", "unit": "V", "default": "5", "shown": true },
+                { "name": "vdrop", "label": "Dropout voltage", "unit": "V", "default": "2" },
+                { "name": "ilim", "label": "Current limit", "unit": "A", "default": "1.5" },
+                { "name": "iq", "label": "Quiescent (ground) current", "unit": "A", "default": "5m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -20], "to": [30, 20], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "REG", "size": 7, "anchor": "center" },
+                    { "type": "text", "at": [-26, 8], "text": "IN", "size": 5, "anchor": "left" },
+                    { "type": "text", "at": [26, 8], "text": "OUT", "size": 5, "anchor": "right" },
+                    { "type": "text", "at": [0, 14], "text": "GND", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-50, 0], "length": 20, "direction": "right" },
+                    { "pin": "gnd", "at": [0, 40], "length": 20, "direction": "up" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [40, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:in} {pin:gnd} {pin:out} lvd_linreg params: vout={vout} vdrop={vdrop} ilim={ilim} iq={iq}",
+                    "subcircuit": ".subckt lvd_linreg in gnd out params: vout=5 vdrop=2 ilim=1.5 iq=5e-3\n* behavioural positive linear regulator: output = min(vout, V(in,gnd) - vdrop), not below gnd,\n* soft current limit at ilim (100 V/A above it), sinks at most about 10 mA;\n* the output current is drawn from in and returned through gnd, plus the quiescent current iq\nBt t 0 V=V(gnd)+((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)+sqrt((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)^2+1e-4))/2\nBv x 0 V=V(t)-100*(I(Vs)-({ilim})+sqrt((I(Vs)-({ilim}))^2+1e-6))/2+100*(-I(Vs)-0.01+sqrt((I(Vs)+0.01)^2+1e-6))/2\nVs x y 0\nRo y out 10m\nBin in gnd I=I(Vs)+({iq})*tanh(V(in,gnd)/0.5)\n.ends lvd_linreg"
+                }
+            ]
+        },
+        {
+            "id": "reg_7805",
+            "name": "7805 regulator",
+            "category": "ICs/Regulators",
+            "description": "Behavioural 7805-like +5 V regulator with datasheet-typical 2 V dropout and 2.2 A peak current (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "in" }, { "name": "gnd" }, { "name": "out" }],
+            "parameters": [
+                { "name": "vout", "label": "Output voltage", "unit": "V", "default": "5", "shown": true },
+                { "name": "vdrop", "label": "Dropout voltage", "unit": "V", "default": "2" },
+                { "name": "ilim", "label": "Current limit", "unit": "A", "default": "2.2" },
+                { "name": "iq", "label": "Quiescent (ground) current", "unit": "A", "default": "4.2m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -20], "to": [30, 20], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "7805", "size": 7, "anchor": "center" },
+                    { "type": "text", "at": [-26, 8], "text": "IN", "size": 5, "anchor": "left" },
+                    { "type": "text", "at": [26, 8], "text": "OUT", "size": 5, "anchor": "right" },
+                    { "type": "text", "at": [0, 14], "text": "GND", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-50, 0], "length": 20, "direction": "right" },
+                    { "pin": "gnd", "at": [0, 40], "length": 20, "direction": "up" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [40, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:in} {pin:gnd} {pin:out} lvd_linreg params: vout={vout} vdrop={vdrop} ilim={ilim} iq={iq}",
+                    "subcircuit": ".subckt lvd_linreg in gnd out params: vout=5 vdrop=2 ilim=1.5 iq=5e-3\n* behavioural positive linear regulator: output = min(vout, V(in,gnd) - vdrop), not below gnd,\n* soft current limit at ilim (100 V/A above it), sinks at most about 10 mA;\n* the output current is drawn from in and returned through gnd, plus the quiescent current iq\nBt t 0 V=V(gnd)+((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)+sqrt((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)^2+1e-4))/2\nBv x 0 V=V(t)-100*(I(Vs)-({ilim})+sqrt((I(Vs)-({ilim}))^2+1e-6))/2+100*(-I(Vs)-0.01+sqrt((I(Vs)+0.01)^2+1e-6))/2\nVs x y 0\nRo y out 10m\nBin in gnd I=I(Vs)+({iq})*tanh(V(in,gnd)/0.5)\n.ends lvd_linreg"
+                }
+            ]
+        },
+        {
+            "id": "reg_7812",
+            "name": "7812 regulator",
+            "category": "ICs/Regulators",
+            "description": "Behavioural 7812-like +12 V regulator with datasheet-typical 2 V dropout and 2.2 A peak current (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "in" }, { "name": "gnd" }, { "name": "out" }],
+            "parameters": [
+                { "name": "vout", "label": "Output voltage", "unit": "V", "default": "12", "shown": true },
+                { "name": "vdrop", "label": "Dropout voltage", "unit": "V", "default": "2" },
+                { "name": "ilim", "label": "Current limit", "unit": "A", "default": "2.2" },
+                { "name": "iq", "label": "Quiescent (ground) current", "unit": "A", "default": "4.3m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -20], "to": [30, 20], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "7812", "size": 7, "anchor": "center" },
+                    { "type": "text", "at": [-26, 8], "text": "IN", "size": 5, "anchor": "left" },
+                    { "type": "text", "at": [26, 8], "text": "OUT", "size": 5, "anchor": "right" },
+                    { "type": "text", "at": [0, 14], "text": "GND", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-50, 0], "length": 20, "direction": "right" },
+                    { "pin": "gnd", "at": [0, 40], "length": 20, "direction": "up" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [40, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:in} {pin:gnd} {pin:out} lvd_linreg params: vout={vout} vdrop={vdrop} ilim={ilim} iq={iq}",
+                    "subcircuit": ".subckt lvd_linreg in gnd out params: vout=5 vdrop=2 ilim=1.5 iq=5e-3\n* behavioural positive linear regulator: output = min(vout, V(in,gnd) - vdrop), not below gnd,\n* soft current limit at ilim (100 V/A above it), sinks at most about 10 mA;\n* the output current is drawn from in and returned through gnd, plus the quiescent current iq\nBt t 0 V=V(gnd)+((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)+sqrt((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)^2+1e-4))/2\nBv x 0 V=V(t)-100*(I(Vs)-({ilim})+sqrt((I(Vs)-({ilim}))^2+1e-6))/2+100*(-I(Vs)-0.01+sqrt((I(Vs)+0.01)^2+1e-6))/2\nVs x y 0\nRo y out 10m\nBin in gnd I=I(Vs)+({iq})*tanh(V(in,gnd)/0.5)\n.ends lvd_linreg"
+                }
+            ]
+        },
+        {
+            "id": "reg_lm1117_33",
+            "name": "LM1117-3.3 regulator",
+            "category": "ICs/Regulators",
+            "description": "Behavioural LM1117-3.3-like LDO: 3.3 V, 1.1 V dropout, 1 A (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "in" }, { "name": "gnd" }, { "name": "out" }],
+            "parameters": [
+                { "name": "vout", "label": "Output voltage", "unit": "V", "default": "3.3", "shown": true },
+                { "name": "vdrop", "label": "Dropout voltage", "unit": "V", "default": "1.1" },
+                { "name": "ilim", "label": "Current limit", "unit": "A", "default": "1" },
+                { "name": "iq", "label": "Quiescent (ground) current", "unit": "A", "default": "5m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -20], "to": [30, 20], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "1117-3.3", "size": 7, "anchor": "center" },
+                    { "type": "text", "at": [-26, 8], "text": "IN", "size": 5, "anchor": "left" },
+                    { "type": "text", "at": [26, 8], "text": "OUT", "size": 5, "anchor": "right" },
+                    { "type": "text", "at": [0, 14], "text": "GND", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-50, 0], "length": 20, "direction": "right" },
+                    { "pin": "gnd", "at": [0, 40], "length": 20, "direction": "up" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [40, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:in} {pin:gnd} {pin:out} lvd_linreg params: vout={vout} vdrop={vdrop} ilim={ilim} iq={iq}",
+                    "subcircuit": ".subckt lvd_linreg in gnd out params: vout=5 vdrop=2 ilim=1.5 iq=5e-3\n* behavioural positive linear regulator: output = min(vout, V(in,gnd) - vdrop), not below gnd,\n* soft current limit at ilim (100 V/A above it), sinks at most about 10 mA;\n* the output current is drawn from in and returned through gnd, plus the quiescent current iq\nBt t 0 V=V(gnd)+((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)+sqrt((({vout})-((({vout})-V(in,gnd)+({vdrop}))+sqrt((({vout})-V(in,gnd)+({vdrop}))^2+1e-4))/2)^2+1e-4))/2\nBv x 0 V=V(t)-100*(I(Vs)-({ilim})+sqrt((I(Vs)-({ilim}))^2+1e-6))/2+100*(-I(Vs)-0.01+sqrt((I(Vs)+0.01)^2+1e-6))/2\nVs x y 0\nRo y out 10m\nBin in gnd I=I(Vs)+({iq})*tanh(V(in,gnd)/0.5)\n.ends lvd_linreg"
+                }
+            ]
+        },
+        {
+            "id": "reg_lm317",
+            "name": "LM317 adjustable regulator",
+            "category": "ICs/Regulators",
+            "description": "Behavioural LM317-like adjustable regulator: V(out) - V(adj) = 1.25 V, 50 uA adjust-pin current, 2 V dropout (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "in" }, { "name": "adj" }, { "name": "out" }],
+            "parameters": [
+                {
+                    "name": "vref",
+                    "label": "Reference voltage (out - adj)",
+                    "unit": "V",
+                    "default": "1.25",
+                    "shown": true
+                },
+                { "name": "vdrop", "label": "Dropout voltage", "unit": "V", "default": "2" },
+                { "name": "ilim", "label": "Current limit", "unit": "A", "default": "2.2" },
+                { "name": "iadj", "label": "Adjust pin current", "unit": "A", "default": "50u" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -20], "to": [30, 20], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "LM317", "size": 7, "anchor": "center" },
+                    { "type": "text", "at": [-26, 8], "text": "IN", "size": 5, "anchor": "left" },
+                    { "type": "text", "at": [26, 8], "text": "OUT", "size": 5, "anchor": "right" },
+                    { "type": "text", "at": [0, 14], "text": "ADJ", "size": 5, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-50, 0], "length": 20, "direction": "right" },
+                    { "pin": "adj", "at": [0, 40], "length": 20, "direction": "up" },
+                    { "pin": "out", "at": [50, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [40, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:in} {pin:adj} {pin:out} lvd_adjreg params: vref={vref} vdrop={vdrop} ilim={ilim} iadj={iadj}",
+                    "subcircuit": ".subckt lvd_adjreg in adj out params: vref=1.25 vdrop=2 ilim=1.5 iadj=50e-6\n* behavioural adjustable regulator (LM317 style): V(out) - V(adj) = vref, limited to V(in) - vdrop and >= 0,\n* soft current limit at ilim, sinks at most about 10 mA; iadj flows out of the adj pin;\n* the output current is drawn from in (returned internally through ground)\nBt t 0 V=((V(adj)+({vref})-((({vref})+V(adj)-V(in)+({vdrop}))+sqrt((({vref})+V(adj)-V(in)+({vdrop}))^2+1e-4))/2)+sqrt((V(adj)+({vref})-((({vref})+V(adj)-V(in)+({vdrop}))+sqrt((({vref})+V(adj)-V(in)+({vdrop}))^2+1e-4))/2)^2+1e-4))/2\nBv x 0 V=V(t)-100*(I(Vs)-({ilim})+sqrt((I(Vs)-({ilim}))^2+1e-6))/2+100*(-I(Vs)-0.01+sqrt((I(Vs)+0.01)^2+1e-6))/2\nVs x y 0\nRo y out 10m\nBin in 0 I=I(Vs)\nIa in adj {iadj}\n.ends lvd_adjreg"
+                }
+            ]
+        },
+        {
+            "id": "tl431",
+            "name": "TL431 shunt reference",
+            "category": "ICs/Regulators",
+            "description": "Behavioural TL431-like programmable shunt reference: 2.495 V reference, about 0.2 ohm dynamic impedance (not a vendor model)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "k" }, { "name": "a" }, { "name": "r" }],
+            "parameters": [
+                { "name": "vref", "label": "Reference voltage", "unit": "V", "default": "2.495", "shown": true },
+                { "name": "gm", "label": "Transconductance (1/dynamic impedance)", "unit": "S", "default": "5" },
+                { "name": "imin", "label": "Minimum cathode current", "unit": "A", "default": "0.4m" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-10, 8], [10, 8], [0, -8]], "fill": "none" },
+                    { "type": "line", "points": [[-14, -12], [-10, -8], [10, -8], [14, -4]] },
+                    { "type": "line", "points": [[0, -8], [0, -15]] },
+                    { "type": "line", "points": [[0, 8], [0, 15]] },
+                    { "type": "line", "points": [[-20, 0], [-5, 0]] }
+                ],
+                "pins": [
+                    { "pin": "k", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "a", "at": [0, 30], "length": 15, "direction": "up" },
+                    { "pin": "r", "at": [-30, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [30, -8],
+                "valueAt": [30, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:k} {pin:a} {pin:r} lvd_tl431 params: vref={vref} gm={gm} imin={imin}",
+                    "subcircuit": ".subckt lvd_tl431 k a r params: vref=2.495 gm=5 imin=0.4e-3\n* behavioural shunt reference: cathode current rises with gm above V(r,a) = vref, plus a bias current imin;\n* conduction requires V(k,a) above about 1 V\nBk k a I=(({gm})*((V(r,a)-({vref}))+sqrt((V(r,a)-({vref}))^2+1e-8))/2+({imin}))*(1+tanh((V(k,a)-1)/0.2))/2\n.ends lvd_tl431"
+                }
+            ]
+        },
+        {
+            "id": "logic_inv",
+            "name": "Inverter",
+            "category": "ICs/Logic",
+            "description": "Behavioural inverter: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-20, -15], [15, 0], [-20, 15]], "fill": "none" },
+                    { "type": "circle", "center": [19, 0], "radius": 4, "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 17, "direction": "left" }
+                ],
+                "referenceAt": [0, -24],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:y} lvd_inv params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_inv a y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nBl l 0 V=1-(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_inv"
+                }
+            ]
+        },
+        {
+            "id": "logic_buf",
+            "name": "Buffer",
+            "category": "ICs/Logic",
+            "description": "Behavioural buffer: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [{ "type": "polygon", "points": [[-20, -15], [15, 0], [-20, 15]], "fill": "none" }],
+                "pins": [
+                    { "pin": "a", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 25, "direction": "left" }
+                ],
+                "referenceAt": [0, -24],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:y} lvd_buf params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_buf a y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nBl l 0 V=(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_buf"
+                }
+            ]
+        },
+        {
+            "id": "logic_and2",
+            "name": "AND gate",
+            "category": "ICs/Logic",
+            "description": "Behavioural and gate: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "b" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, -20], [0, -20]] },
+                    { "type": "arc", "center": [0, 0], "radius": 20, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "line", "points": [[0, 20], [-20, 20]] },
+                    { "type": "line", "points": [[-20, -20], [-20, 20]] }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, -10], "length": 20, "direction": "right" },
+                    { "pin": "b", "at": [-40, 10], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} {pin:y} lvd_and2 params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_and2 a b y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nRb b 0 1e9\nBl l 0 V=(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))*(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_and2"
+                }
+            ]
+        },
+        {
+            "id": "logic_nand2",
+            "name": "NAND gate",
+            "category": "ICs/Logic",
+            "description": "Behavioural nand gate: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "b" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, -20], [0, -20]] },
+                    { "type": "arc", "center": [0, 0], "radius": 20, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "line", "points": [[0, 20], [-20, 20]] },
+                    { "type": "line", "points": [[-20, -20], [-20, 20]] },
+                    { "type": "circle", "center": [24, 0], "radius": 4, "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, -10], "length": 20, "direction": "right" },
+                    { "pin": "b", "at": [-40, 10], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 12, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} {pin:y} lvd_nand2 params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_nand2 a b y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nRb b 0 1e9\nBl l 0 V=1-(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))*(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_nand2"
+                }
+            ]
+        },
+        {
+            "id": "logic_or2",
+            "name": "OR gate",
+            "category": "ICs/Logic",
+            "description": "Behavioural or gate: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "b" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-41, 0], "radius": 29, "startAngle": -43.6, "spanAngle": 87.2 },
+                    { "type": "arc", "center": [-20, 30], "radius": 50, "startAngle": 36.87, "spanAngle": 53.13 },
+                    { "type": "arc", "center": [-20, -30], "radius": 50, "startAngle": -90, "spanAngle": 53.13 }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, -10], "length": 26, "direction": "right" },
+                    { "pin": "b", "at": [-40, 10], "length": 26, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} {pin:y} lvd_or2 params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_or2 a b y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nRb b 0 1e9\nBl l 0 V=(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))+(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))-(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))*(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_or2"
+                }
+            ]
+        },
+        {
+            "id": "logic_nor2",
+            "name": "NOR gate",
+            "category": "ICs/Logic",
+            "description": "Behavioural nor gate: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "b" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-41, 0], "radius": 29, "startAngle": -43.6, "spanAngle": 87.2 },
+                    { "type": "arc", "center": [-20, 30], "radius": 50, "startAngle": 36.87, "spanAngle": 53.13 },
+                    { "type": "arc", "center": [-20, -30], "radius": 50, "startAngle": -90, "spanAngle": 53.13 },
+                    { "type": "circle", "center": [24, 0], "radius": 4, "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, -10], "length": 26, "direction": "right" },
+                    { "pin": "b", "at": [-40, 10], "length": 26, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 12, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} {pin:y} lvd_nor2 params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_nor2 a b y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nRb b 0 1e9\nBl l 0 V=1-((0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))+(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))-(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))*(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40})))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_nor2"
+                }
+            ]
+        },
+        {
+            "id": "logic_xor2",
+            "name": "XOR gate",
+            "category": "ICs/Logic",
+            "description": "Behavioural xor gate: input threshold vdd/2, output 0 or vdd through rout after tpd; supply is implicit (ground-referenced), works in all analyses",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "b" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-41, 0], "radius": 29, "startAngle": -43.6, "spanAngle": 87.2 },
+                    { "type": "arc", "center": [-20, 30], "radius": 50, "startAngle": 36.87, "spanAngle": 53.13 },
+                    { "type": "arc", "center": [-20, -30], "radius": 50, "startAngle": -90, "spanAngle": 53.13 },
+                    { "type": "arc", "center": [-47, 0], "radius": 29, "startAngle": -43.6, "spanAngle": 87.2 }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, -10], "length": 20, "direction": "right" },
+                    { "pin": "b", "at": [-40, 10], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} {pin:y} lvd_xor2 params: vdd={vdd} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_xor2 a b y params: vdd=5 rout=50 tpd=10e-9\n* behavioural logic gate: smooth (tanh) input threshold at vdd/2, RC delay tpd, output 0..vdd through rout\nRa a 0 1e9\nRb b 0 1e9\nBl l 0 V=(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))+(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))-2*(0.5*(1+tanh((V(a)-({vdd/2}))/({vdd/40}))))*(0.5*(1+tanh((V(b)-({vdd/2}))/({vdd/40}))))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*0.5*(1+tanh((V(d)-0.5)/0.05))-V(y))/({rout})\n.ends lvd_xor2"
+                }
+            ]
+        },
+        {
+            "id": "logic_schmitt",
+            "name": "Schmitt-trigger inverter",
+            "category": "ICs/Logic",
+            "description": "Behavioural Schmitt-trigger inverter with rising/falling thresholds; supply is implicit (ground-referenced)",
+            "referencePrefix": "U",
+            "pins": [{ "name": "a" }, { "name": "y" }],
+            "parameters": [
+                {
+                    "name": "vdd",
+                    "label": "Logic supply (output high level)",
+                    "unit": "V",
+                    "default": "5",
+                    "shown": true
+                },
+                { "name": "vtp", "label": "Rising input threshold", "unit": "V", "default": "3" },
+                { "name": "vtn", "label": "Falling input threshold", "unit": "V", "default": "2" },
+                { "name": "rout", "label": "Output resistance", "unit": "ohm", "default": "50" },
+                { "name": "tpd", "label": "Propagation delay", "unit": "s", "default": "10n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-20, -15], [15, 0], [-20, 15]], "fill": "none" },
+                    { "type": "circle", "center": [19, 0], "radius": 4, "fill": "none" },
+                    { "type": "line", "points": [[-14, 4], [-4, 4], [-4, -4], [0, -4]] },
+                    { "type": "line", "points": [[-10, 4], [-10, -4], [0, -4]] }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "y", "at": [40, 0], "length": 17, "direction": "left" }
+                ],
+                "referenceAt": [0, -24],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:y} lvd_schmitt params: vdd={vdd} vtp={vtp} vtn={vtn} rout={rout} tpd={tpd}",
+                    "subcircuit": ".subckt lvd_schmitt a y params: vdd=5 vtp=3 vtn=2 rout=50 tpd=10e-9\n* behavioural Schmitt-trigger inverter: rising threshold vtp, falling threshold vtn\nRa a 0 1e9\nBl l 0 V=0.5*(1+tanh((V(a)-({(vtp+vtn)/2})+({(vtp-vtn)/2})*(2*V(d)-1))/({vdd/200})))\nRd l d 1k\nCd d 0 {tpd/693}\nBo 0 y I=(({vdd})*(1-V(d))-V(y))/({rout})\n.ends lvd_schmitt"
+                }
+            ]
+        }
+    ]
+}

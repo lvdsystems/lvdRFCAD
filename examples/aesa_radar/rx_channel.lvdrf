@@ -1,0 +1,823 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    -600,
+                    0
+                ],
+                "definition": "rf-system:antenna",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "gain": "0",
+                    "temp": "150"
+                },
+                "reference": "ANT1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -400,
+                    0
+                ],
+                "definition": "rf-system:attenuator",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                    "il": "0.6"
+                },
+                "reference": "LIM1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -200,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "gain": "24",
+                    "nf": "1.6",
+                    "oip3": "25",
+                    "op1db": "15"
+                },
+                "reference": "LNA1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    0,
+                    0
+                ],
+                "definition": "rf-system:phase_shifter",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "il": "6",
+                    "phase": "0"
+                },
+                "reference": "PS1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    200,
+                    0
+                ],
+                "definition": "rf-system:attenuator",
+                "id": "c5",
+                "mirror": false,
+                "parameters": {
+                    "il": "2"
+                },
+                "reference": "ATT1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    400,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c6",
+                "mirror": false,
+                "parameters": {
+                    "gain": "14",
+                    "nf": "4",
+                    "oip3": "28",
+                    "op1db": "18"
+                },
+                "reference": "AMP1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    600,
+                    0
+                ],
+                "definition": "rf-system:termination",
+                "id": "c7",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "R1",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "rf-system:amplifier": {
+                "category": "RF/Amplifiers",
+                "description": "Behavioural amplifier",
+                "id": "amplifier",
+                "models": [
+                    {
+                        "block": "amplifier",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Amplifier",
+                "parameters": [
+                    {
+                        "default": "15",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "2",
+                        "label": "Noise figure",
+                        "name": "nf",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "30",
+                        "label": "Output IP3",
+                        "name": "oip3",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "45",
+                        "label": "Output IP2",
+                        "name": "oip2",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "18",
+                        "label": "Output P1dB",
+                        "name": "op1db",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "40",
+                        "label": "Reverse isolation",
+                        "name": "isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "A",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    0
+                                ],
+                                [
+                                    -20,
+                                    20
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:antenna": {
+                "category": "RF/Antennas",
+                "description": "Antenna port with gain and noise temperature",
+                "id": "antenna",
+                "models": [
+                    {
+                        "block": "antenna",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Antenna",
+                "parameters": [
+                    {
+                        "default": "0",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dBi"
+                    },
+                    {
+                        "default": "290",
+                        "label": "Antenna noise temperature",
+                        "name": "temp",
+                        "unit": "K"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "ANT",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    -16
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -10,
+                                    -20
+                                ],
+                                [
+                                    10,
+                                    -20
+                                ],
+                                [
+                                    0,
+                                    -6
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                20
+                            ],
+                            "direction": "up",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        30,
+                        -10
+                    ],
+                    "valueAt": [
+                        30,
+                        5
+                    ]
+                }
+            },
+            "rf-system:attenuator": {
+                "category": "RF/Passive",
+                "description": "Matched fixed attenuator",
+                "id": "attenuator",
+                "models": [
+                    {
+                        "block": "attenuator",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Attenuator",
+                "parameters": [
+                    {
+                        "default": "3",
+                        "label": "Attenuation",
+                        "name": "il",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "AT",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    0
+                                ],
+                                [
+                                    -14,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -14,
+                                    0
+                                ],
+                                [
+                                    -12,
+                                    -5
+                                ],
+                                [
+                                    -8,
+                                    5
+                                ],
+                                [
+                                    -4,
+                                    -5
+                                ],
+                                [
+                                    0,
+                                    5
+                                ],
+                                [
+                                    4,
+                                    -5
+                                ],
+                                [
+                                    8,
+                                    5
+                                ],
+                                [
+                                    12,
+                                    -5
+                                ],
+                                [
+                                    14,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    14,
+                                    0
+                                ],
+                                [
+                                    20,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:phase_shifter": {
+                "category": "RF/Passive",
+                "description": "Matched phase shifter",
+                "id": "phase_shifter",
+                "models": [
+                    {
+                        "block": "phase_shifter",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Phase shifter",
+                "parameters": [
+                    {
+                        "default": "90",
+                        "label": "Phase shift (lag)",
+                        "name": "phase",
+                        "shown": true,
+                        "unit": "deg"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Insertion loss",
+                        "name": "il",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "PS",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "size": 12,
+                            "text": "Δφ",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:termination": {
+                "category": "RF/Ports",
+                "description": "Matched load to ground",
+                "id": "termination",
+                "models": [
+                    {
+                        "block": "termination",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Termination",
+                "parameters": [
+                    {
+                        "default": "50",
+                        "label": "Impedance",
+                        "name": "z0",
+                        "shown": true,
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "TERM",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    -10
+                                ],
+                                [
+                                    -5,
+                                    -8
+                                ],
+                                [
+                                    5,
+                                    -4
+                                ],
+                                [
+                                    -5,
+                                    0
+                                ],
+                                [
+                                    5,
+                                    4
+                                ],
+                                [
+                                    -5,
+                                    8
+                                ],
+                                [
+                                    0,
+                                    10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -8,
+                                    14
+                                ],
+                                [
+                                    8,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -5,
+                                    18
+                                ],
+                                [
+                                    5,
+                                    18
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -2,
+                                    22
+                                ],
+                                [
+                                    2,
+                                    22
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                -20
+                            ],
+                            "direction": "down",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        30,
+                        -5
+                    ],
+                    "valueAt": [
+                        30,
+                        10
+                    ]
+                }
+            }
+        },
+        "junctions": [
+        ],
+        "labels": [
+        ],
+        "nextId": 15,
+        "simulation": {
+            "analyses": [
+                {
+                    "bandwidth": "10MHz",
+                    "frequency": "10GHz",
+                    "id": "a1",
+                    "mismatch": "actual",
+                    "name": "Rx channel",
+                    "power": "-100",
+                    "spurs": {
+                        "enabled": false,
+                        "maxOrder": "5"
+                    },
+                    "type": "rf-budget"
+                }
+            ]
+        },
+        "texts": [
+            {
+                "at": [
+                    -600,
+                    -110
+                ],
+                "id": "t14",
+                "size": 14,
+                "text": "Receive channel of one T/R module: limiter, LNA, phase shifter, attenuator, driver"
+            }
+        ],
+        "variables": [
+        ],
+        "wires": [
+            {
+                "id": "w8",
+                "points": [
+                    [
+                        -600,
+                        20
+                    ],
+                    [
+                        -430,
+                        20
+                    ],
+                    [
+                        -430,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w9",
+                "points": [
+                    [
+                        -370,
+                        0
+                    ],
+                    [
+                        -230,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w10",
+                "points": [
+                    [
+                        -170,
+                        0
+                    ],
+                    [
+                        -30,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w11",
+                "points": [
+                    [
+                        30,
+                        0
+                    ],
+                    [
+                        170,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w12",
+                "points": [
+                    [
+                        230,
+                        0
+                    ],
+                    [
+                        370,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w13",
+                "points": [
+                    [
+                        430,
+                        0
+                    ],
+                    [
+                        600,
+                        0
+                    ],
+                    [
+                        600,
+                        -20
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "rf",
+    "version": 1
+}

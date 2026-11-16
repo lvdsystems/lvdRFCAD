@@ -1,0 +1,19 @@
+Common-emitter amplifier: bias, gain, noise, sensitivity
+VCC vcc 0 12
+VIN in 0 DC 0 AC 1m SIN(0 10m 1k)
+C1 in b 10u
+R1 vcc b 47k
+R2 b 0 10k
+RC vcc c 4.7k
+RE e 0 1k
+CE e 0 100u
+Q1 c b e QN
+CL c out 10u
+RL out 0 100k
+.model QN NPN(IS=6.7f BF=416 VAF=74 IKF=67m RB=10 RC=1 CJE=4.5p CJC=3.6p TF=301p TR=240n)
+.op
+.ac dec 10 10 100meg
+.noise v(out) VIN dec 10 10 10meg
+.tran 10u 3m
+.sens v(c)
+.end

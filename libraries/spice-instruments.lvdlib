@@ -1,0 +1,214 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "spice-instruments",
+    "description": "Virtual instruments for SPICE schematics: oscilloscope, voltmeter, ammeter, function generator, spectrum analyser and Bode plotter",
+    "components": [
+        {
+            "id": "oscilloscope",
+            "name": "Oscilloscope",
+            "category": "Instruments",
+            "description": "Two-channel oscilloscope on a transient result: channel voltages against the reference pin, time and volts per division with an offset per channel, and a rising-edge trigger. Like a real scope it shows the latest triggered sweep (ten divisions). Adds no circuit element.",
+            "referencePrefix": "SC",
+            "pins": [
+                { "name": "ch1" },
+                { "name": "ch2" },
+                { "name": "ref" }
+            ],
+            "parameters": [
+                { "name": "tdiv", "label": "Time per division", "unit": "s", "default": "100us", "shown": true },
+                { "name": "vdiv1", "label": "Channel 1 volts per division", "unit": "V", "default": "1" },
+                { "name": "vdiv2", "label": "Channel 2 volts per division", "unit": "V", "default": "1" },
+                { "name": "offset1", "label": "Channel 1 voltage at the centre line", "unit": "V", "default": "0" },
+                { "name": "offset2", "label": "Channel 2 voltage at the centre line", "unit": "V", "default": "0" },
+                { "name": "trigger", "label": "Trigger source", "unit": "", "default": "ch1", "choices": ["ch1", "ch2", "none"] },
+                { "name": "level", "label": "Trigger level", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-40, -30], "to": [40, 30], "fill": "background" },
+                    { "type": "rect", "from": [-32, -24], "to": [20, 18], "fill": "none" },
+                    { "type": "line", "points": [[-30, -3], [-24, -14], [-18, -3], [-12, 8], [-6, -3], [0, -14], [6, -3], [12, 8], [18, -3]] },
+                    { "type": "circle", "center": [30, -14], "radius": 3, "fill": "none" },
+                    { "type": "circle", "center": [30, 4], "radius": 3, "fill": "none" },
+                    { "type": "text", "at": [-36, -14], "text": "1", "size": 7, "anchor": "left" },
+                    { "type": "text", "at": [-36, 13], "text": "2", "size": 7, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "ch1", "at": [-60, -10], "length": 20, "direction": "right" },
+                    { "pin": "ch2", "at": [-60, 10], "length": 20, "direction": "right" },
+                    { "pin": "ref", "at": [0, 50], "length": 20, "direction": "up" }
+                ],
+                "referenceAt": [0, -40],
+                "valueAt": [50, 40]
+            },
+            "models": [
+                { "kind": "spice", "template": "", "instrument": "oscilloscope" }
+            ]
+        },
+        {
+            "id": "voltmeter",
+            "name": "Voltmeter",
+            "category": "Instruments",
+            "description": "Multimeter measuring the voltage between its pins: DC value (operating point or the mean of a transient), true RMS and the AC RMS of a transient. Adds no circuit element.",
+            "referencePrefix": "VM",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "background" },
+                    { "type": "text", "at": [0, 5], "text": "V", "size": 14, "anchor": "center" },
+                    { "type": "text", "at": [8, -24], "text": "+", "size": 9, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -40], "length": 20, "direction": "down" },
+                    { "pin": "n", "at": [0, 40], "length": 20, "direction": "up" }
+                ],
+                "referenceAt": [26, -6],
+                "valueAt": [26, 8]
+            },
+            "models": [
+                { "kind": "spice", "template": "", "instrument": "voltmeter" }
+            ]
+        },
+        {
+            "id": "ammeter",
+            "name": "Ammeter",
+            "category": "Instruments",
+            "description": "Multimeter in series measuring the current entering pin p: DC, RMS and AC RMS. It is a 0 V source, so it also works as a current probe.",
+            "referencePrefix": "AM",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "background" },
+                    { "type": "text", "at": [0, 5], "text": "A", "size": 14, "anchor": "center" },
+                    { "type": "line", "points": [[-34, -8], [-26, -8]] },
+                    { "type": "polygon", "points": [[-26, -11], [-22, -8], [-26, -5]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "n", "at": [40, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -28],
+                "valueAt": [0, 32]
+            },
+            "models": [
+                { "kind": "spice", "template": "V{ref} {pin:p} {pin:n} 0", "instrument": "ammeter" }
+            ]
+        },
+        {
+            "id": "function_generator",
+            "name": "Function generator",
+            "category": "Instruments",
+            "description": "Sine, square, triangle or sawtooth voltage (V(p) - V(n) = offset + amplitude * shape) with an AC magnitude for AC analyses. Square and edges are slightly rounded so the simulator can follow them.",
+            "referencePrefix": "FG",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "shape", "label": "Waveform", "unit": "", "default": "sine", "shown": true, "choices": ["sine", "square", "triangle", "sawtooth"] },
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "1kHz", "shown": true },
+                { "name": "amplitude", "label": "Amplitude (peak)", "unit": "V", "default": "1", "shown": true },
+                { "name": "offset", "label": "Offset", "unit": "V", "default": "0" },
+                { "name": "phase", "label": "Phase", "unit": "deg", "default": "0" },
+                { "name": "ac", "label": "AC magnitude", "unit": "V", "default": "1" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-24, -24], "to": [24, 24], "fill": "background" },
+                    { "type": "line", "points": [[-18, 0], [-14, -8], [-9, -10], [-4, -8], [0, 0], [4, 8], [9, 10], [14, 8], [18, 0]] },
+                    { "type": "text", "at": [8, -27], "text": "+", "size": 9, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -40], "length": 16, "direction": "down" },
+                    { "pin": "n", "at": [0, 40], "length": 16, "direction": "up" }
+                ],
+                "referenceAt": [32, -14],
+                "valueAt": [32, 0]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "V{ref}_ac {pin:p} fg_{ref} DC 0 AC {ac}\nB{ref} fg_{ref} {pin:n} V={offset}+({amplitude})*lvd_fg_{shape}(({freq})*time+({phase})/360)",
+                    "subcircuit": ".func lvd_fg_sine(x) {sin(6.283185307179586*x)}\n.func lvd_fg_square(x) {tanh(40*sin(6.283185307179586*x))}\n.func lvd_fg_triangle(x) {0.6366197723675814*asin(0.9999*sin(6.283185307179586*x))}\n.func lvd_fg_sawtooth(x) {2*(x-floor(x+0.5))}",
+                    "instrument": "function-generator"
+                }
+            ]
+        },
+        {
+            "id": "spectrum_analyzer",
+            "name": "Spectrum analyser",
+            "category": "Instruments",
+            "description": "Amplitude spectrum (FFT) of the voltage at its input against the reference pin, from a transient result, in dBV. Adds no circuit element.",
+            "referencePrefix": "SA",
+            "pins": [
+                { "name": "in" },
+                { "name": "ref" }
+            ],
+            "parameters": [
+                { "name": "fmax", "label": "Highest frequency shown (0: all)", "unit": "Hz", "default": "0" },
+                { "name": "window", "label": "Window", "unit": "", "default": "hann", "choices": ["hann", "hamming", "blackman", "blackmanharris", "flattop", "rectangular"] }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-40, -30], "to": [40, 30], "fill": "background" },
+                    { "type": "line", "points": [[-30, 20], [30, 20]] },
+                    { "type": "line", "points": [[-22, 20], [-22, -18]] },
+                    { "type": "line", "points": [[-10, 20], [-10, 2]] },
+                    { "type": "line", "points": [[2, 20], [2, -6]] },
+                    { "type": "line", "points": [[14, 20], [14, 10]] },
+                    { "type": "line", "points": [[26, 20], [26, 14]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-60, 0], "length": 20, "direction": "right" },
+                    { "pin": "ref", "at": [0, 50], "length": 20, "direction": "up" }
+                ],
+                "referenceAt": [0, -40],
+                "valueAt": [50, 40]
+            },
+            "models": [
+                { "kind": "spice", "template": "", "instrument": "spectrum-analyzer" }
+            ]
+        },
+        {
+            "id": "bode_plotter",
+            "name": "Bode plotter",
+            "category": "Instruments",
+            "description": "Gain (dB) and phase of V(out)/V(in), both against the reference pin, from an AC result. Adds no circuit element; the circuit needs a source with an AC magnitude.",
+            "referencePrefix": "BP",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" },
+                { "name": "ref" }
+            ],
+            "parameters": [],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-40, -30], "to": [40, 30], "fill": "background" },
+                    { "type": "line", "points": [[-30, -14], [-4, -14], [24, 16]] },
+                    { "type": "line", "points": [[-30, 20], [30, 20]] },
+                    { "type": "text", "at": [-36, -6], "text": "in", "size": 7, "anchor": "left" },
+                    { "type": "text", "at": [36, -6], "text": "out", "size": 7, "anchor": "right" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-60, -10], "length": 20, "direction": "right" },
+                    { "pin": "out", "at": [60, -10], "length": 20, "direction": "left" },
+                    { "pin": "ref", "at": [0, 50], "length": 20, "direction": "up" }
+                ],
+                "referenceAt": [0, -40],
+                "valueAt": [50, 40]
+            },
+            "models": [
+                { "kind": "spice", "template": "", "instrument": "bode-plotter" }
+            ]
+        }
+    ]
+}

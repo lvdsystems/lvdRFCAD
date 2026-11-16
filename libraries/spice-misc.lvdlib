@@ -1,0 +1,520 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "spice-misc",
+    "description": "SPICE passives and magnetics, switches, transmission lines and waveform probes",
+    "components": [
+        {
+            "id": "potentiometer",
+            "name": "Potentiometer",
+            "category": "Passive",
+            "description": "Three-terminal potentiometer; position 0 puts the wiper at a, 1 at b",
+            "referencePrefix": "RV",
+            "pins": [{ "name": "a" }, { "name": "w" }, { "name": "b" }],
+            "parameters": [
+                { "name": "r", "label": "Total resistance", "unit": "ohm", "default": "10k", "shown": true },
+                { "name": "pos", "label": "Wiper position (0..1)", "unit": "", "default": "0.5", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "line",
+                        "points": [[-20, 0], [-18, -6], [-12, 6], [-6, -6], [0, 6], [6, -6], [12, 6], [18, -6], [20, 0]]
+                    },
+                    { "type": "polygon", "points": [[0, -7], [-3, -13], [3, -13]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "w", "at": [0, -30], "length": 17, "direction": "down" },
+                    { "pin": "b", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [-22, -18],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:w} {pin:b} lvd_pot params: rt={r} pos={pos}",
+                    "subcircuit": ".subckt lvd_pot a w b params: rt=10e3 pos=0.5\n* potentiometer: pos = 0 puts the wiper at a, pos = 1 at b\nRa a w {max(rt*pos,1e-3)}\nRb w b {max(rt*(1-pos),1e-3)}\n.ends lvd_pot"
+                }
+            ]
+        },
+        {
+            "id": "coupled_inductors",
+            "name": "Coupled inductors",
+            "category": "Passive/Magnetics",
+            "description": "Two coupled inductors (primary lp, secondary ls, coupling k); dots mark p1 and p2",
+            "referencePrefix": "TR",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [
+                { "name": "lp", "label": "Primary inductance", "unit": "H", "default": "1m", "shown": true },
+                { "name": "ls", "label": "Secondary inductance", "unit": "H", "default": "1m", "shown": true },
+                { "name": "k", "label": "Coupling coefficient (0..1)", "unit": "", "default": "0.99", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-10, -15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, -5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "circle", "center": [-16, -24], "radius": 2, "fill": "outline" },
+                    { "type": "circle", "center": [16, -24], "radius": 2, "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -20], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-30, 20], "length": 20, "direction": "right" },
+                    { "pin": "p2", "at": [30, -20], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [30, 20], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -34],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} lvd_xfmr params: lp={lp} ls={ls} k={k}",
+                    "subcircuit": ".subckt lvd_xfmr p1 n1 p2 n2 params: lp=1e-3 ls=1e-3 k=0.99\n* coupled inductors; 1 Gohm from each winding to ground keeps floating windings solvable\nLp p1 n1 {lp}\nLs p2 n2 {ls}\nKps Lp Ls {k}\nRg1 n1 0 1e9\nRg2 n2 0 1e9\n.ends lvd_xfmr"
+                }
+            ]
+        },
+        {
+            "id": "transformer",
+            "name": "Transformer (turns ratio)",
+            "category": "Passive/Magnetics",
+            "description": "Transformer from primary inductance, turns ratio n = Ns/Np and coupling k (secondary inductance lp * n^2)",
+            "referencePrefix": "TR",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [
+                { "name": "n", "label": "Turns ratio Ns/Np", "unit": "", "default": "2", "shown": true },
+                { "name": "lp", "label": "Primary inductance", "unit": "H", "default": "10m" },
+                { "name": "k", "label": "Coupling coefficient (0..1)", "unit": "", "default": "0.999" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-10, -15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, -5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "circle", "center": [-16, -24], "radius": 2, "fill": "outline" },
+                    { "type": "circle", "center": [16, -24], "radius": 2, "fill": "outline" },
+                    { "type": "line", "points": [[-2, -20], [-2, 20]] },
+                    { "type": "line", "points": [[2, -20], [2, 20]] }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -20], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-30, 20], "length": 20, "direction": "right" },
+                    { "pin": "p2", "at": [30, -20], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [30, 20], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -34],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} lvd_xfmr_n params: lp={lp} ratio={n} k={k}",
+                    "subcircuit": ".subckt lvd_xfmr_n p1 n1 p2 n2 params: lp=1e-3 ratio=1 k=0.999\n* transformer from primary inductance and turns ratio ns/np: ls = lp * ratio^2\nLp p1 n1 {lp}\nLs p2 n2 {lp*ratio*ratio}\nKps Lp Ls {k}\nRg1 n1 0 1e9\nRg2 n2 0 1e9\n.ends lvd_xfmr_n"
+                }
+            ]
+        },
+        {
+            "id": "ideal_transformer",
+            "name": "Ideal transformer",
+            "category": "Passive/Magnetics",
+            "description": "Ideal transformer (controlled sources): V(p2,n2) = n V(p1,n1), works down to DC",
+            "referencePrefix": "TR",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [{ "name": "n", "label": "Turns ratio Ns/Np", "unit": "", "default": "2", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-10, -15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, -5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, -5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-10, 15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "circle", "center": [-16, -24], "radius": 2, "fill": "outline" },
+                    { "type": "circle", "center": [16, -24], "radius": 2, "fill": "outline" },
+                    { "type": "line", "points": [[-2, -20], [-2, 20]] },
+                    { "type": "line", "points": [[2, -20], [2, 20]] },
+                    { "type": "text", "at": [0, 30], "text": "IDEAL", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -20], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-30, 20], "length": 20, "direction": "right" },
+                    { "pin": "p2", "at": [30, -20], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [30, 20], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -34],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} lvd_ideal_xfmr params: ratio={n}",
+                    "subcircuit": ".subckt lvd_ideal_xfmr p1 n1 p2 n2 params: ratio=1\n* ideal transformer: V(p2,n2) = ratio * V(p1,n1), I1 = -ratio * I2; 1 Gohm from each winding to ground\nEs p2 x p1 n1 {ratio}\nVs x n2 0\nFp p1 n1 Vs {-ratio}\nRg1 n1 0 1e9\nRg2 n2 0 1e9\n.ends lvd_ideal_xfmr"
+                }
+            ]
+        },
+        {
+            "id": "crystal",
+            "name": "Quartz crystal",
+            "category": "Passive",
+            "description": "Butterworth-Van Dyke crystal model; defaults are a typical 10 MHz fundamental AT-cut crystal",
+            "referencePrefix": "Y",
+            "pins": [{ "name": "a" }, { "name": "b" }],
+            "parameters": [
+                { "name": "rs", "label": "Motional resistance R1", "unit": "ohm", "default": "10" },
+                { "name": "ls", "label": "Motional inductance L1", "unit": "H", "default": "10.13m" },
+                { "name": "cs", "label": "Motional capacitance C1", "unit": "F", "default": "25f" },
+                { "name": "cp", "label": "Shunt capacitance C0", "unit": "F", "default": "5p" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-8, 0]] },
+                    { "type": "line", "points": [[8, 0], [20, 0]] },
+                    { "type": "line", "points": [[-8, -10], [-8, 10]] },
+                    { "type": "line", "points": [[8, -10], [8, 10]] },
+                    { "type": "rect", "from": [-4, -12], "to": [4, 12], "fill": "none" },
+                    { "type": "text", "at": [0, 22], "text": "XTAL", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "b", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:a} {pin:b} lvd_crystal params: rs={rs} ls={ls} cs={cs} cp={cp}",
+                    "subcircuit": ".subckt lvd_crystal a b params: rs=10 ls=10.13e-3 cs=25e-15 cp=5e-12\n* Butterworth-Van Dyke crystal: motional rs, ls, cs in parallel with the shunt capacitance cp\nRm a m1 {rs}\nLm m1 m2 {ls}\nCm m2 b {cs}\nCp a b {cp}\n.ends lvd_crystal"
+                }
+            ]
+        },
+        {
+            "id": "vswitch",
+            "name": "Voltage-controlled switch",
+            "category": "Switches",
+            "description": "Voltage-controlled switch (S element): on when V(cp,cn) > vt + vh, off below vt - vh",
+            "referencePrefix": "S",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [
+                { "name": "vt", "label": "Threshold voltage", "unit": "V", "default": "2.5", "shown": true },
+                { "name": "vh", "label": "Hysteresis voltage", "unit": "V", "default": "0" },
+                { "name": "ron", "label": "On resistance", "unit": "ohm", "default": "1" },
+                { "name": "roff", "label": "Off resistance", "unit": "ohm", "default": "1meg" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [-17, 0], "radius": 3, "fill": "none" },
+                    { "type": "circle", "center": [17, 0], "radius": 3, "fill": "none" },
+                    { "type": "line", "points": [[-14, -1], [14, -12]] },
+                    { "type": "rect", "from": [-14, 10], "to": [14, 18], "fill": "none" },
+                    { "type": "line", "points": [[0, 10], [0, 4]] },
+                    { "type": "line", "points": [[0, 2], [0, -4]] },
+                    { "type": "text", "at": [-8, 14], "text": "+", "size": 6, "anchor": "center" },
+                    { "type": "text", "at": [8, 14], "text": "-", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "cp", "at": [-10, 30], "length": 12, "direction": "up" },
+                    { "pin": "cn", "at": [10, 30], "length": 12, "direction": "up" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "S{ref} {pin:p} {pin:n} {pin:cp} {pin:cn} lvd_sw_{ref}\n.model lvd_sw_{ref} SW(vt={vt} vh={vh} ron={ron} roff={roff})"
+                }
+            ]
+        },
+        {
+            "id": "iswitch",
+            "name": "Current-controlled switch",
+            "category": "Switches",
+            "description": "Current-controlled switch (W element): on when the current from cp to cn exceeds it + ih; cp-cn is a 0 V sense branch",
+            "referencePrefix": "W",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [
+                { "name": "it", "label": "Threshold current", "unit": "A", "default": "1m", "shown": true },
+                { "name": "ih", "label": "Hysteresis current", "unit": "A", "default": "0" },
+                { "name": "ron", "label": "On resistance", "unit": "ohm", "default": "1" },
+                { "name": "roff", "label": "Off resistance", "unit": "ohm", "default": "1meg" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [-17, 0], "radius": 3, "fill": "none" },
+                    { "type": "circle", "center": [17, 0], "radius": 3, "fill": "none" },
+                    { "type": "line", "points": [[-14, -1], [14, -12]] },
+                    { "type": "line", "points": [[-20, 20], [20, 20]] },
+                    { "type": "polygon", "points": [[4, 20], [-2, 17], [-2, 23]], "fill": "outline" },
+                    { "type": "line", "points": [[0, 18], [0, 10]] },
+                    { "type": "line", "points": [[0, 7], [0, -1]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "cp", "at": [-30, 20], "length": 10, "direction": "right" },
+                    { "pin": "cn", "at": [30, 20], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "V{ref}_s {pin:cp} {pin:cn} 0\nW{ref} {pin:p} {pin:n} V{ref}_s lvd_csw_{ref}\n.model lvd_csw_{ref} CSW(it={it} ih={ih} ron={ron} roff={roff})"
+                }
+            ]
+        },
+        {
+            "id": "tswitch_close",
+            "name": "Timed switch (closes)",
+            "category": "Switches",
+            "description": "Switch that is open until time ton and closed afterwards (transient)",
+            "referencePrefix": "S",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "ton", "label": "Closing time (> 0)", "unit": "s", "default": "1m", "shown": true },
+                { "name": "ttr", "label": "Transition time", "unit": "s", "default": "1n" },
+                { "name": "ron", "label": "On resistance", "unit": "ohm", "default": "10m" },
+                { "name": "roff", "label": "Off resistance", "unit": "ohm", "default": "1G" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [-17, 0], "radius": 3, "fill": "none" },
+                    { "type": "circle", "center": [17, 0], "radius": 3, "fill": "none" },
+                    { "type": "line", "points": [[-14, -1], [14, -12]] },
+                    { "type": "circle", "center": [0, 14], "radius": 6, "fill": "none" },
+                    { "type": "line", "points": [[0, 14], [0, 10]] },
+                    { "type": "line", "points": [[0, 14], [3, 14]] },
+                    { "type": "text", "at": [0, 26], "text": "ON", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 38]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:p} {pin:n} lvd_tswitch_on params: ton={ton} ttr={ttr} ron={ron} roff={roff}",
+                    "subcircuit": ".subckt lvd_tswitch_on p n params: ton=1e-3 ttr=1e-9 ron=10e-3 roff=1e9\n* switch open until ton, closed after ton + ttr\nVc c 0 PWL(0 0 {ton} 0 {ton+ttr} 1)\nS1 p n c 0 swm\n.model swm SW(vt=0.5 vh=0 ron={ron} roff={roff})\n.ends lvd_tswitch_on"
+                }
+            ]
+        },
+        {
+            "id": "tswitch_open",
+            "name": "Timed switch (opens)",
+            "category": "Switches",
+            "description": "Switch that is closed until time toff and open afterwards (transient)",
+            "referencePrefix": "S",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "toff", "label": "Opening time (> 0)", "unit": "s", "default": "1m", "shown": true },
+                { "name": "ttr", "label": "Transition time", "unit": "s", "default": "1n" },
+                { "name": "ron", "label": "On resistance", "unit": "ohm", "default": "10m" },
+                { "name": "roff", "label": "Off resistance", "unit": "ohm", "default": "1G" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [-17, 0], "radius": 3, "fill": "none" },
+                    { "type": "circle", "center": [17, 0], "radius": 3, "fill": "none" },
+                    { "type": "line", "points": [[-14, -1], [14, -12]] },
+                    { "type": "circle", "center": [0, 14], "radius": 6, "fill": "none" },
+                    { "type": "line", "points": [[0, 14], [0, 10]] },
+                    { "type": "line", "points": [[0, 14], [3, 14]] },
+                    { "type": "text", "at": [0, 26], "text": "OFF", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 38]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "X{ref} {pin:p} {pin:n} lvd_tswitch_off params: toff={toff} ttr={ttr} ron={ron} roff={roff}",
+                    "subcircuit": ".subckt lvd_tswitch_off p n params: toff=1e-3 ttr=1e-9 ron=10e-3 roff=1e9\n* switch closed until toff, open after toff + ttr\nVc c 0 PWL(0 1 {toff} 1 {toff+ttr} 0)\nS1 p n c 0 swm\n.model swm SW(vt=0.5 vh=0 ron={ron} roff={roff})\n.ends lvd_tswitch_off"
+                }
+            ]
+        },
+        {
+            "id": "tline",
+            "name": "Lossless line (delay)",
+            "category": "Transmission lines",
+            "description": "Lossless transmission line (T element) given by z0 and delay td; n1/n2 are the return conductors",
+            "referencePrefix": "T",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [
+                { "name": "z0", "label": "Characteristic impedance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "td", "label": "Delay", "unit": "s", "default": "1n", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -8], "to": [20, 8], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "T", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-20, 30], "length": 22, "direction": "up" },
+                    { "pin": "p2", "at": [40, 0], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [20, 30], "length": 22, "direction": "up" }
+                ],
+                "referenceAt": [0, -18],
+                "valueAt": [0, 40]
+            },
+            "models": [{ "kind": "spice", "template": "T{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} Z0={z0} TD={td}" }]
+        },
+        {
+            "id": "tline_f",
+            "name": "Lossless line (frequency)",
+            "category": "Transmission lines",
+            "description": "Lossless transmission line (T element) given by z0 and its length nl in wavelengths at f",
+            "referencePrefix": "T",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [
+                { "name": "z0", "label": "Characteristic impedance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "f", "label": "Frequency", "unit": "Hz", "default": "100meg", "shown": true },
+                {
+                    "name": "nl",
+                    "label": "Electrical length at f",
+                    "unit": "wavelengths",
+                    "default": "0.25",
+                    "shown": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -8], "to": [20, 8], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "T", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-20, 30], "length": 22, "direction": "up" },
+                    { "pin": "p2", "at": [40, 0], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [20, 30], "length": 22, "direction": "up" }
+                ],
+                "referenceAt": [0, -18],
+                "valueAt": [0, 40]
+            },
+            "models": [{ "kind": "spice", "template": "T{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} Z0={z0} F={f} NL={nl}" }]
+        },
+        {
+            "id": "ltra",
+            "name": "Lossy line (LTRA)",
+            "category": "Transmission lines",
+            "description": "Lossy RLGC transmission line (ngspice LTRA, O element); defaults approximate a 50 ohm coax with v = 2e8 m/s",
+            "referencePrefix": "T",
+            "pins": [{ "name": "p1" }, { "name": "n1" }, { "name": "p2" }, { "name": "n2" }],
+            "parameters": [
+                { "name": "r", "label": "Resistance per metre", "unit": "ohm/m", "default": "0.1" },
+                { "name": "l", "label": "Inductance per metre", "unit": "H/m", "default": "250n" },
+                { "name": "g", "label": "Conductance per metre", "unit": "S/m", "default": "0" },
+                { "name": "c", "label": "Capacitance per metre", "unit": "F/m", "default": "100p" },
+                { "name": "len", "label": "Length", "unit": "m", "default": "1", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -8], "to": [20, 8], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "RLGC", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-40, 0], "length": 20, "direction": "right" },
+                    { "pin": "n1", "at": [-20, 30], "length": 22, "direction": "up" },
+                    { "pin": "p2", "at": [40, 0], "length": 20, "direction": "left" },
+                    { "pin": "n2", "at": [20, 30], "length": 22, "direction": "up" }
+                ],
+                "referenceAt": [0, -18],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "O{ref} {pin:p1} {pin:n1} {pin:p2} {pin:n2} lvd_ltra_{ref}\n.model lvd_ltra_{ref} LTRA(r={r} l={l} g={g} c={c} len={len})"
+                }
+            ]
+        },
+        {
+            "id": "vprobe",
+            "name": "Voltage probe",
+            "category": "Probes",
+            "description": "Marks a node voltage for the waveform viewer; no circuit effect",
+            "referencePrefix": "PR",
+            "pins": [{ "name": "p" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, 10], [-8, 0], [-8, -14], [8, -14], [8, 0]], "fill": "none" },
+                    { "type": "text", "at": [0, -6], "text": "V", "size": 8, "anchor": "center" }
+                ],
+                "pins": [{ "pin": "p", "at": [0, 20], "length": 10, "direction": "up" }],
+                "referenceAt": [20, -14],
+                "valueAt": [20, -4]
+            },
+            "models": [{ "kind": "spice", "template": "", "probe": "voltage" }]
+        },
+        {
+            "id": "vdiffprobe",
+            "name": "Differential voltage probe",
+            "category": "Probes",
+            "description": "Marks the voltage V(p) - V(n) for the waveform viewer; no circuit effect",
+            "referencePrefix": "PR",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-16, -14], "to": [16, 6], "fill": "none" },
+                    { "type": "text", "at": [0, -4], "text": "V+-", "size": 7, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-10, 20], "length": 14, "direction": "up" },
+                    { "pin": "n", "at": [10, 20], "length": 14, "direction": "up" }
+                ],
+                "referenceAt": [28, -14],
+                "valueAt": [28, -4]
+            },
+            "models": [{ "kind": "spice", "template": "", "probe": "differential" }]
+        },
+        {
+            "id": "iprobe",
+            "name": "Current probe",
+            "category": "Probes",
+            "description": "Ammeter placed in series: a 0 V source; positive current flows into p and out of n",
+            "referencePrefix": "PR",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 10, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "A", "size": 9, "anchor": "center" },
+                    { "type": "line", "points": [[-8, 15], [6, 15]] },
+                    { "type": "polygon", "points": [[9, 15], [4, 12], [4, 18]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 20, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 20, "direction": "left" }
+                ],
+                "referenceAt": [0, -18],
+                "valueAt": [0, 28]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} 0", "probe": "current" }]
+        }
+    ]
+}

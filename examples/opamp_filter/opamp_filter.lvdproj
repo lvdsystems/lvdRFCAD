@@ -1,0 +1,9 @@
+{
+    "documents": [
+        {
+            "path": "opamp_filter.lvdspice"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

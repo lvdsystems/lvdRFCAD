@@ -1,0 +1,767 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    -400,
+                    20
+                ],
+                "definition": "rf-system:port",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "num": "1"
+                },
+                "reference": "P1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -150,
+                    0
+                ],
+                "definition": "basic:inductor",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                    "l": "Lin"
+                },
+                "reference": "L1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    150,
+                    0
+                ],
+                "definition": "rf-system:nport2",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "file": "amp.s2p"
+                },
+                "reference": "AMP1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    450,
+                    20
+                ],
+                "definition": "rf-system:port",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "num": "2"
+                },
+                "reference": "P2",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -280,
+                    100
+                ],
+                "definition": "basic:capacitor",
+                "id": "c8",
+                "mirror": false,
+                "parameters": {
+                    "c": "Cin"
+                },
+                "reference": "C1",
+                "rotation": 90
+            },
+            {
+                "at": [
+                    -280,
+                    170
+                ],
+                "definition": "basic:ground",
+                "id": "c11",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND1",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "basic:capacitor": {
+                "category": "Passive",
+                "description": "Capacitor with optional finite Q (q = 0 is ideal)",
+                "id": "capacitor",
+                "models": [
+                    {
+                        "element": "capacitor",
+                        "kind": "rf-element"
+                    },
+                    {
+                        "kind": "spice",
+                        "template": "C{ref} {pin:p} {pin:n} {c}"
+                    }
+                ],
+                "name": "Capacitor",
+                "parameters": [
+                    {
+                        "default": "1pF",
+                        "label": "Capacitance",
+                        "name": "c",
+                        "shown": true,
+                        "unit": "F"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Unloaded Q (0 = ideal)",
+                        "name": "q"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Frequency at which Q applies",
+                        "name": "freq",
+                        "unit": "Hz"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    },
+                    {
+                        "name": "n"
+                    }
+                ],
+                "referencePrefix": "C",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    0
+                                ],
+                                [
+                                    -4,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    4,
+                                    0
+                                ],
+                                [
+                                    20,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -4,
+                                    -12
+                                ],
+                                [
+                                    -4,
+                                    12
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    4,
+                                    -12
+                                ],
+                                [
+                                    4,
+                                    12
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "p"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "n"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -20
+                    ],
+                    "valueAt": [
+                        0,
+                        20
+                    ]
+                }
+            },
+            "basic:ground": {
+                "category": "Power",
+                "description": "Ground: connects to the global net 0",
+                "id": "ground",
+                "name": "Ground",
+                "netName": "0",
+                "pins": [
+                    {
+                        "name": "gnd"
+                    }
+                ],
+                "referencePrefix": "GND",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -12,
+                                    10
+                                ],
+                                [
+                                    12,
+                                    10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -8,
+                                    15
+                                ],
+                                [
+                                    8,
+                                    15
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -4,
+                                    20
+                                ],
+                                [
+                                    4,
+                                    20
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "direction": "down",
+                            "length": 10,
+                            "pin": "gnd"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        32
+                    ],
+                    "valueAt": [
+                        0,
+                        42
+                    ]
+                }
+            },
+            "basic:inductor": {
+                "category": "Passive",
+                "description": "Inductor with optional finite Q (q = 0 is ideal)",
+                "id": "inductor",
+                "models": [
+                    {
+                        "element": "inductor",
+                        "kind": "rf-element"
+                    },
+                    {
+                        "kind": "spice",
+                        "template": "L{ref} {pin:p} {pin:n} {l}"
+                    }
+                ],
+                "name": "Inductor",
+                "parameters": [
+                    {
+                        "default": "1nH",
+                        "label": "Inductance",
+                        "name": "l",
+                        "shown": true,
+                        "unit": "H"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Unloaded Q (0 = ideal)",
+                        "name": "q"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Frequency at which Q applies",
+                        "name": "freq",
+                        "unit": "Hz"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    },
+                    {
+                        "name": "n"
+                    }
+                ],
+                "referencePrefix": "L",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                -15,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                -5,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                5,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                15,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "p"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "n"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -20
+                    ],
+                    "valueAt": [
+                        0,
+                        20
+                    ]
+                }
+            },
+            "rf-system:nport2": {
+                "category": "RF/S-parameters",
+                "description": "Linear 2-port block from a Touchstone file",
+                "id": "nport2",
+                "models": [
+                    {
+                        "file": "{file}",
+                        "kind": "sparameters"
+                    }
+                ],
+                "name": "2-port S-parameters",
+                "parameters": [
+                    {
+                        "default": "",
+                        "file": true,
+                        "label": "Touchstone file (.s2p)",
+                        "name": "file",
+                        "shown": true
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p1"
+                    },
+                    {
+                        "name": "p2"
+                    }
+                ],
+                "referencePrefix": "SP",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "size": 10,
+                            "text": "S2P",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "p1"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "p2"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:port": {
+                "category": "RF/Ports",
+                "description": "Numbered simulation port with reference impedance",
+                "id": "port",
+                "models": [
+                    {
+                        "block": "port",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "RF port",
+                "parameters": [
+                    {
+                        "default": "1",
+                        "label": "Port number",
+                        "name": "num",
+                        "shown": true
+                    },
+                    {
+                        "default": "50",
+                        "label": "Reference impedance",
+                        "name": "z0",
+                        "shown": true,
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "PORT",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                0,
+                                0
+                            ],
+                            "radius": 10,
+                            "type": "circle"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "size": 8,
+                            "text": "P",
+                            "type": "text"
+                        },
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -8,
+                                    14
+                                ],
+                                [
+                                    8,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -5,
+                                    18
+                                ],
+                                [
+                                    5,
+                                    18
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -2,
+                                    22
+                                ],
+                                [
+                                    2,
+                                    22
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                -20
+                            ],
+                            "direction": "down",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        35,
+                        -5
+                    ],
+                    "valueAt": [
+                        35,
+                        10
+                    ]
+                }
+            }
+        },
+        "junctions": [
+            {
+                "at": [
+                    -180,
+                    0
+                ],
+                "id": "j10"
+            }
+        ],
+        "labels": [
+        ],
+        "nextId": 14,
+        "simulation": {
+            "analyses": [
+                {
+                    "id": "a1",
+                    "name": "Band",
+                    "noise": true,
+                    "points": "151",
+                    "start": "1GHz",
+                    "stop": "4GHz",
+                    "sweep": "linear",
+                    "type": "rf-linear"
+                }
+            ],
+            "plots": [
+                {
+                    "analysis": "a1",
+                    "id": "p1",
+                    "kind": "rectangular",
+                    "name": "Response",
+                    "traces": [
+                        "dB(S(1,1))",
+                        "dB(S(1,2))",
+                        "dB(S(2,1))",
+                        "dB(S(2,2))",
+                        "NF"
+                    ]
+                },
+                {
+                    "analysis": "a1",
+                    "id": "p2",
+                    "kind": "smith",
+                    "name": "Reflection",
+                    "traces": [
+                        "S(1,1)",
+                        "S(2,2)"
+                    ]
+                }
+            ]
+        },
+        "texts": [
+            {
+                "at": [
+                    -400,
+                    -100
+                ],
+                "id": "t13",
+                "size": 14,
+                "text": "Amplifier from amp.s2p (with noise parameters), input L-match"
+            }
+        ],
+        "variables": [
+            {
+                "name": "Lin",
+                "value": "2nH"
+            },
+            {
+                "name": "Cin",
+                "value": "1pF"
+            }
+        ],
+        "wires": [
+            {
+                "id": "w5",
+                "points": [
+                    [
+                        -400,
+                        0
+                    ],
+                    [
+                        -180,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w6",
+                "points": [
+                    [
+                        -120,
+                        0
+                    ],
+                    [
+                        120,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w7",
+                "points": [
+                    [
+                        180,
+                        0
+                    ],
+                    [
+                        450,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w9",
+                "points": [
+                    [
+                        -280,
+                        70
+                    ],
+                    [
+                        -180,
+                        70
+                    ],
+                    [
+                        -180,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w12",
+                "points": [
+                    [
+                        -280,
+                        130
+                    ],
+                    [
+                        -280,
+                        170
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "rf",
+    "version": 1
+}

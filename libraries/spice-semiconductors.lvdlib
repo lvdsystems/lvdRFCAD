@@ -1,0 +1,984 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "spice-semiconductors",
+    "description": "SPICE diodes, BJTs, MOSFETs and JFETs: generic parts with editable models and common real parts",
+    "components": [
+        {
+            "id": "diode",
+            "name": "Diode (generic)",
+            "category": "Semiconductors/Diodes",
+            "description": "Generic junction diode with editable SPICE model parameters (defaults: small-signal silicon diode)",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "parameters": [
+                { "name": "is", "label": "Saturation current IS", "unit": "A", "default": "4n", "shown": true },
+                { "name": "n", "label": "Emission coefficient N", "unit": "", "default": "1.9", "shown": true },
+                { "name": "rs", "label": "Series resistance RS", "unit": "ohm", "default": "0.6" },
+                { "name": "cjo", "label": "Zero-bias junction capacitance CJO", "unit": "F", "default": "2p" },
+                { "name": "vj", "label": "Junction potential VJ", "unit": "V", "default": "0.75" },
+                { "name": "m", "label": "Grading coefficient M", "unit": "", "default": "0.33" },
+                { "name": "tt", "label": "Transit time TT", "unit": "s", "default": "5n" },
+                { "name": "bv", "label": "Reverse breakdown voltage BV", "unit": "V", "default": "100" },
+                { "name": "ibv", "label": "Current at BV", "unit": "A", "default": "100u" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -10], [10, 10]] }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_dm_{ref}\n.model lvd_dm_{ref} D(is={is} n={n} rs={rs} cjo={cjo} vj={vj} m={m} tt={tt} bv={bv} ibv={ibv})"
+                }
+            ]
+        },
+        {
+            "id": "zener",
+            "name": "Zener diode (generic)",
+            "category": "Semiconductors/Diodes",
+            "description": "Generic zener: breakdown bv at test current izt; rz sets the slope above the knee",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "parameters": [
+                { "name": "bv", "label": "Zener voltage at izt", "unit": "V", "default": "5.1", "shown": true },
+                { "name": "izt", "label": "Test current", "unit": "A", "default": "5m" },
+                { "name": "rz", "label": "Series resistance", "unit": "ohm", "default": "5" },
+                { "name": "cjo", "label": "Junction capacitance", "unit": "F", "default": "100p" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[6, -12], [10, -10], [10, 10], [14, 12]] }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_dz_{ref}\n.model lvd_dz_{ref} D(is=1e-14 n=1 rs={rz} cjo={cjo} vj=0.75 m=0.33 bv={bv} ibv={izt} nbv=1.5)"
+                }
+            ]
+        },
+        {
+            "id": "1n4148",
+            "name": "1N4148 small-signal diode",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical parameters for the 1N4148/1N914 fast switching diode (widely published manufacturer model)",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -10], [10, 10]] },
+                    { "type": "text", "at": [0, 18], "text": "1N4148", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_1N4148",
+                    "subcircuit": ".model lvd_1N4148 D(is=2.52n rs=0.568 n=1.752 cjo=4p m=0.4 vj=0.75 tt=20n bv=100 ibv=100u)"
+                }
+            ]
+        },
+        {
+            "id": "1n4007",
+            "name": "1N4007 rectifier",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical parameters for the 1N4007 1 A / 1000 V general-purpose rectifier",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -10], [10, 10]] },
+                    { "type": "text", "at": [0, 18], "text": "1N4007", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_1N4007",
+                    "subcircuit": ".model lvd_1N4007 D(is=7.03n rs=34m n=1.81 eg=1.05 xti=5 cjo=10p vj=0.7 m=0.5 tt=4u bv=1000 ibv=5u)"
+                }
+            ]
+        },
+        {
+            "id": "1n5819",
+            "name": "1N5819 Schottky",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical parameters for the 1N5819 1 A / 40 V Schottky rectifier, fitted to datasheet forward curves",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[14, -6], [14, -10], [10, -10], [10, 10], [6, 10], [6, 6]] },
+                    { "type": "text", "at": [0, 18], "text": "1N5819", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_1N5819",
+                    "subcircuit": ".model lvd_1N5819 D(is=31.7u rs=51m n=1.373 eg=0.69 xti=2 cjo=110p vj=0.35 m=0.35 bv=40 ibv=1m)"
+                }
+            ]
+        },
+        {
+            "id": "bat54",
+            "name": "BAT54 Schottky",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical parameters for the BAT54 small-signal Schottky diode, fitted to datasheet forward voltage (0.32 V at 1 mA)",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[14, -6], [14, -10], [10, -10], [10, 10], [6, 10], [6, 6]] },
+                    { "type": "text", "at": [0, 18], "text": "BAT54", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_BAT54",
+                    "subcircuit": ".model lvd_BAT54 D(is=97n rs=3.2 n=1.34 eg=0.69 xti=2 cjo=10p vj=0.35 m=0.5 bv=30 ibv=2u)"
+                }
+            ]
+        },
+        {
+            "id": "bzx84c5v1",
+            "name": "BZX84C5V1 zener",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical parameters for the BZX84C5V1 5.1 V zener (5.1 V at 5 mA)",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[6, -12], [10, -10], [10, 10], [14, 12]] },
+                    { "type": "text", "at": [0, 18], "text": "BZX84C5V1", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -22],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_BZX84C5V1",
+                    "subcircuit": ".model lvd_BZX84C5V1 D(is=1e-14 n=1 rs=8 cjo=130p vj=0.75 m=0.33 bv=5.06 ibv=5m nbv=1.5)"
+                }
+            ]
+        },
+        {
+            "id": "led_red",
+            "name": "LED (red)",
+            "category": "Semiconductors/Diodes",
+            "description": "Typical red LED: about 1.75 V at 1 mA and 1.9 V at 20 mA",
+            "referencePrefix": "D",
+            "pins": [{ "name": "a" }, { "name": "k" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[10, 0], [20, 0]] },
+                    { "type": "polygon", "points": [[-10, -10], [10, 0], [-10, 10]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -10], [10, 10]] },
+                    { "type": "line", "points": [[0, -12], [6, -18]] },
+                    { "type": "polygon", "points": [[8, -20], [3, -18], [6, -15]], "fill": "outline" },
+                    { "type": "line", "points": [[5, -10], [11, -16]] },
+                    { "type": "polygon", "points": [[13, -18], [8, -16], [11, -13]], "fill": "outline" },
+                    { "type": "text", "at": [0, 18], "text": "LED", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "a", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "k", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [-14, -20],
+                "valueAt": [0, 28]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "D{ref} {pin:a} {pin:k} lvd_LED_RED",
+                    "subcircuit": ".model lvd_LED_RED D(is=7e-19 n=1.94 rs=2 cjo=20p vj=1.6 m=0.4 bv=5 ibv=10u)"
+                }
+            ]
+        },
+        {
+            "id": "npn",
+            "name": "NPN transistor (generic)",
+            "category": "Semiconductors/BJT",
+            "description": "Generic NPN Gummel-Poon transistor with editable model parameters",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "parameters": [
+                { "name": "bf", "label": "Forward beta BF", "unit": "", "default": "200", "shown": true },
+                { "name": "is", "label": "Saturation current IS", "unit": "A", "default": "10f" },
+                { "name": "vaf", "label": "Early voltage VAF", "unit": "V", "default": "100" },
+                { "name": "br", "label": "Reverse beta BR", "unit": "", "default": "1" },
+                { "name": "ikf", "label": "Forward knee current IKF", "unit": "A", "default": "100m" },
+                { "name": "rb", "label": "Base resistance RB", "unit": "ohm", "default": "10" },
+                { "name": "rc", "label": "Collector resistance RC", "unit": "ohm", "default": "1" },
+                { "name": "re", "label": "Emitter resistance RE", "unit": "ohm", "default": "0.5" },
+                { "name": "cje", "label": "B-E capacitance CJE", "unit": "F", "default": "10p" },
+                { "name": "cjc", "label": "B-C capacitance CJC", "unit": "F", "default": "5p" },
+                { "name": "tf", "label": "Forward transit time TF", "unit": "s", "default": "400p" },
+                { "name": "tr", "label": "Reverse transit time TR", "unit": "s", "default": "50n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[8, 14], [1, 14], [4, 9]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_qn_{ref}\n.model lvd_qn_{ref} NPN(is={is} bf={bf} vaf={vaf} br={br} ikf={ikf} rb={rb} rc={rc} re={re} cje={cje} cjc={cjc} tf={tf} tr={tr})"
+                }
+            ]
+        },
+        {
+            "id": "pnp",
+            "name": "PNP transistor (generic)",
+            "category": "Semiconductors/BJT",
+            "description": "Generic PNP Gummel-Poon transistor with editable model parameters",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "parameters": [
+                { "name": "bf", "label": "Forward beta BF", "unit": "", "default": "200", "shown": true },
+                { "name": "is", "label": "Saturation current IS", "unit": "A", "default": "10f" },
+                { "name": "vaf", "label": "Early voltage VAF", "unit": "V", "default": "100" },
+                { "name": "br", "label": "Reverse beta BR", "unit": "", "default": "1" },
+                { "name": "ikf", "label": "Forward knee current IKF", "unit": "A", "default": "100m" },
+                { "name": "rb", "label": "Base resistance RB", "unit": "ohm", "default": "10" },
+                { "name": "rc", "label": "Collector resistance RC", "unit": "ohm", "default": "1" },
+                { "name": "re", "label": "Emitter resistance RE", "unit": "ohm", "default": "0.5" },
+                { "name": "cje", "label": "B-E capacitance CJE", "unit": "F", "default": "10p" },
+                { "name": "cjc", "label": "B-C capacitance CJC", "unit": "F", "default": "5p" },
+                { "name": "tf", "label": "Forward transit time TF", "unit": "s", "default": "400p" },
+                { "name": "tr", "label": "Reverse transit time TR", "unit": "s", "default": "50n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[-2, -9], [5, -9], [2, -14]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_qp_{ref}\n.model lvd_qp_{ref} PNP(is={is} bf={bf} vaf={vaf} br={br} ikf={ikf} rb={rb} rc={rc} re={re} cje={cje} cjc={cjc} tf={tf} tr={tr})"
+                }
+            ]
+        },
+        {
+            "id": "2n3904",
+            "name": "2N3904 NPN",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the 2N3904 small-signal NPN (classic manufacturer-published model)",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[8, 14], [1, 14], [4, 9]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "2N3904", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_2N3904",
+                    "subcircuit": ".model lvd_2N3904 NPN(is=6.734f xti=3 eg=1.11 vaf=74.03 bf=416.4 ne=1.259 ise=6.734f ikf=66.78m xtb=1.5 br=0.7371 nc=2 isc=0 ikr=0 rc=1 cjc=3.638p mjc=0.3085 vjc=0.75 fc=0.5 cje=4.493p mje=0.2593 vje=0.75 tr=239.5n tf=301.2p itf=0.4 vtf=4 xtf=2 rb=10)"
+                }
+            ]
+        },
+        {
+            "id": "2n3906",
+            "name": "2N3906 PNP",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the 2N3906 small-signal PNP (classic manufacturer-published model)",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[-2, -9], [5, -9], [2, -14]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "2N3906", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_2N3906",
+                    "subcircuit": ".model lvd_2N3906 PNP(is=1.41f xti=3 eg=1.11 vaf=18.7 bf=180.7 ne=1.5 ise=0 ikf=80m xtb=1.5 br=4.977 nc=2 isc=0 ikr=0 rc=2.5 cjc=9.728p mjc=0.5776 vjc=0.75 fc=0.5 cje=8.063p mje=0.3677 vje=0.75 tr=33.42n tf=179.3p itf=0.4 vtf=4 xtf=6 rb=10)"
+                }
+            ]
+        },
+        {
+            "id": "2n2222a",
+            "name": "2N2222A NPN",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the 2N2222A general-purpose NPN (classic manufacturer-published model)",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[8, 14], [1, 14], [4, 9]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "2N2222A", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_2N2222A",
+                    "subcircuit": ".model lvd_2N2222A NPN(is=14.34f xti=3 eg=1.11 vaf=74.03 bf=255.9 ne=1.307 ise=14.34f ikf=0.2847 xtb=1.5 br=6.092 nc=2 isc=0 ikr=0 rc=1 cjc=7.306p mjc=0.3416 vjc=0.75 fc=0.5 cje=22.01p mje=0.377 vje=0.75 tr=46.91n tf=411.1p itf=0.6 vtf=1.7 xtf=3 rb=10)"
+                }
+            ]
+        },
+        {
+            "id": "bc547b",
+            "name": "BC547B NPN",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the BC547B low-noise NPN (hFE group B), after the manufacturer-published model",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[8, 14], [1, 14], [4, 9]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "BC547B", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_BC547B",
+                    "subcircuit": ".model lvd_BC547B NPN(is=23.9f nf=1.008 ise=3.545f ne=1.541 bf=294.3 ikf=0.1357 vaf=63.2 nr=1.004 isc=62.72f nc=1.243 br=7.946 ikr=0.1144 var=25.9 rb=1 irb=1u rbm=1 re=0.4683 rc=0.85 eg=1.11 xti=3 cje=13.58p vje=0.65 mje=0.3279 tf=439.1p xtf=120 vtf=2.643 itf=0.7495 cjc=3.728p vjc=0.3997 mjc=0.2955 xcjc=0.6193 tr=10n fc=0.9579)"
+                }
+            ]
+        },
+        {
+            "id": "bc557b",
+            "name": "BC557B PNP",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the BC557B low-noise PNP (hFE group B), after the manufacturer-published model",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[-2, -9], [5, -9], [2, -14]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "BC557B", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_BC557B",
+                    "subcircuit": ".model lvd_BC557B PNP(is=38.3f nf=1.008 ise=12.2f ne=1.528 bf=344.4 ikf=80.39m vaf=21.11 nr=1.005 isc=285f nc=1.28 br=14.84 ikr=47m var=32.02 rb=1 irb=1u rbm=1 re=0.6202 rc=0.5713 eg=1.11 xti=3 cje=12.3p vje=0.6106 mje=0.378 tf=560p xtf=3.414 vtf=5.035 itf=0.1022 cjc=13.47p vjc=0.1 mjc=0.3271 xcjc=0.6288 tr=10n fc=0.8027)"
+                }
+            ]
+        },
+        {
+            "id": "tip31c",
+            "name": "TIP31C NPN",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the TIP31C 3 A / 100 V power NPN, fitted to datasheet typical hFE, VBE(on) and fT",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[8, 14], [1, 14], [4, 9]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "TIP31C", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_TIP31C",
+                    "subcircuit": ".model lvd_TIP31C NPN(is=1p bf=70 nf=1 vaf=100 ikf=2.5 ise=10p ne=1.5 br=5 rb=5 irb=0.1 rbm=0.5 re=50m rc=0.1 cje=250p vje=0.7 mje=0.35 cjc=100p vjc=0.6 mjc=0.4 tf=40n tr=1u xtb=1.5)"
+                }
+            ]
+        },
+        {
+            "id": "tip32c",
+            "name": "TIP32C PNP",
+            "category": "Semiconductors/BJT",
+            "description": "Typical parameters for the TIP32C 3 A / 100 V power PNP (complement of TIP31C), fitted to datasheet typicals",
+            "referencePrefix": "Q",
+            "pins": [{ "name": "c" }, { "name": "b" }, { "name": "e" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-10, -12], [-10, 12]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-10, -5], [10, -15]] },
+                    { "type": "line", "points": [[-10, 5], [10, 15]] },
+                    { "type": "polygon", "points": [[-2, -9], [5, -9], [2, -14]], "fill": "outline" },
+                    { "type": "text", "at": [24, 18], "text": "TIP32C", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "c", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "b", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "e", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "Q{ref} {pin:c} {pin:b} {pin:e} lvd_TIP32C",
+                    "subcircuit": ".model lvd_TIP32C PNP(is=1p bf=60 nf=1 vaf=80 ikf=2 ise=10p ne=1.5 br=5 rb=5 irb=0.1 rbm=0.5 re=60m rc=0.12 cje=300p vje=0.7 mje=0.35 cjc=150p vjc=0.6 mjc=0.4 tf=45n tr=1u xtb=1.5)"
+                }
+            ]
+        },
+        {
+            "id": "nmos",
+            "name": "NMOS (generic, level 1)",
+            "category": "Semiconductors/MOSFET",
+            "description": "Generic level-1 enhancement NMOS, bulk tied to source; VTO, KP, LAMBDA, W and L editable",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "parameters": [
+                { "name": "vto", "label": "Threshold voltage VTO", "unit": "V", "default": "1", "shown": true },
+                { "name": "kp", "label": "Transconductance parameter KP", "unit": "A/V^2", "default": "20u" },
+                { "name": "lambda", "label": "Channel-length modulation LAMBDA", "unit": "1/V", "default": "0.02" },
+                { "name": "w", "label": "Channel width W", "unit": "m", "default": "100u", "shown": true },
+                { "name": "l", "label": "Channel length L", "unit": "m", "default": "1u", "shown": true },
+                { "name": "cgso", "label": "Gate-source overlap capacitance CGSO", "unit": "F/m", "default": "0.4n" },
+                { "name": "cgdo", "label": "Gate-drain overlap capacitance CGDO", "unit": "F/m", "default": "0.4n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, 9]] },
+                    { "type": "polygon", "points": [[-3, 0], [3, -3], [3, 3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} {pin:s} lvd_mn_{ref} w={w} l={l}\n.model lvd_mn_{ref} NMOS(level=1 vto={vto} kp={kp} lambda={lambda} cgso={cgso} cgdo={cgdo})"
+                }
+            ]
+        },
+        {
+            "id": "pmos",
+            "name": "PMOS (generic, level 1)",
+            "category": "Semiconductors/MOSFET",
+            "description": "Generic level-1 enhancement PMOS, bulk tied to source; VTO (negative), KP, LAMBDA, W and L editable",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "parameters": [
+                { "name": "vto", "label": "Threshold voltage VTO", "unit": "V", "default": "-1", "shown": true },
+                { "name": "kp", "label": "Transconductance parameter KP", "unit": "A/V^2", "default": "10u" },
+                { "name": "lambda", "label": "Channel-length modulation LAMBDA", "unit": "1/V", "default": "0.02" },
+                { "name": "w", "label": "Channel width W", "unit": "m", "default": "100u", "shown": true },
+                { "name": "l", "label": "Channel length L", "unit": "m", "default": "1u", "shown": true },
+                { "name": "cgso", "label": "Gate-source overlap capacitance CGSO", "unit": "F/m", "default": "0.4n" },
+                { "name": "cgdo", "label": "Gate-drain overlap capacitance CGDO", "unit": "F/m", "default": "0.4n" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, -9]] },
+                    { "type": "polygon", "points": [[9, 0], [3, -3], [3, 3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} {pin:s} lvd_mp_{ref} w={w} l={l}\n.model lvd_mp_{ref} PMOS(level=1 vto={vto} kp={kp} lambda={lambda} cgso={cgso} cgdo={cgdo})"
+                }
+            ]
+        },
+        {
+            "id": "2n7000",
+            "name": "2N7000 N-MOSFET",
+            "category": "Semiconductors/MOSFET",
+            "description": "Typical parameters for the 2N7000 small-signal N-MOSFET (VDMOS model fitted to datasheet VGS(th), RDS(on), capacitances)",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, 9]] },
+                    { "type": "polygon", "points": [[-3, 0], [3, -3], [3, 3]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -12], [20, -12], [20, 12], [10, 12]] },
+                    { "type": "polygon", "points": [[16, 4], [24, 4], [20, -3]], "fill": "outline" },
+                    { "type": "line", "points": [[16, -3], [24, -3]] },
+                    { "type": "text", "at": [26, 22], "text": "2N7000", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [40, -8],
+                "valueAt": [40, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} lvd_2N7000",
+                    "subcircuit": ".model lvd_2N7000 VDMOS(vto=2.1 kp=0.15 lambda=0.01 rd=0.3 rs=0.2 rg=10 cgs=22p cgdmax=20p cgdmin=3p a=0.5 cjo=25p is=1e-13 n=1 bv=60 ibv=10u tt=20n)"
+                }
+            ]
+        },
+        {
+            "id": "bss138",
+            "name": "BSS138 N-MOSFET",
+            "category": "Semiconductors/MOSFET",
+            "description": "Typical parameters for the BSS138 logic-level N-MOSFET (VDMOS model fitted to datasheet typicals)",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, 9]] },
+                    { "type": "polygon", "points": [[-3, 0], [3, -3], [3, 3]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -12], [20, -12], [20, 12], [10, 12]] },
+                    { "type": "polygon", "points": [[16, 4], [24, 4], [20, -3]], "fill": "outline" },
+                    { "type": "line", "points": [[16, -3], [24, -3]] },
+                    { "type": "text", "at": [26, 22], "text": "BSS138", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [40, -8],
+                "valueAt": [40, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} lvd_BSS138",
+                    "subcircuit": ".model lvd_BSS138 VDMOS(vto=1.3 kp=0.25 lambda=0.01 rd=0.3 rs=0.1 rg=10 cgs=25p cgdmax=10p cgdmin=2p a=0.5 cjo=15p is=1e-13 n=1 bv=50 ibv=10u tt=20n)"
+                }
+            ]
+        },
+        {
+            "id": "bss84",
+            "name": "BSS84 P-MOSFET",
+            "category": "Semiconductors/MOSFET",
+            "description": "Typical parameters for the BSS84 small-signal P-MOSFET (VDMOS model fitted to datasheet typicals)",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, -9]] },
+                    { "type": "polygon", "points": [[9, 0], [3, -3], [3, 3]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -12], [20, -12], [20, 12], [10, 12]] },
+                    { "type": "polygon", "points": [[16, 4], [24, 4], [20, -3]], "fill": "outline" },
+                    { "type": "line", "points": [[16, -3], [24, -3]] },
+                    { "type": "text", "at": [26, 22], "text": "BSS84", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [40, -8],
+                "valueAt": [40, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} lvd_BSS84",
+                    "subcircuit": ".model lvd_BSS84 VDMOS(pchan vto=-1.7 kp=0.15 lambda=0.01 rd=0.5 rs=0.2 rg=10 cgs=20p cgdmax=10p cgdmin=2p a=0.5 cjo=15p is=1e-12 n=1 bv=50 ibv=10u tt=20n)"
+                }
+            ]
+        },
+        {
+            "id": "irf540n",
+            "name": "IRF540N N-MOSFET",
+            "category": "Semiconductors/MOSFET",
+            "description": "Typical parameters for the IRF540N 100 V / 33 A power N-MOSFET (VDMOS model fitted to datasheet RDS(on), VGS(th), Ciss/Crss, body diode)",
+            "referencePrefix": "M",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-10, -10], [-10, 10]] },
+                    { "type": "line", "points": [[-20, 0], [-10, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, -6]] },
+                    { "type": "line", "points": [[-4, -3], [-4, 3]] },
+                    { "type": "line", "points": [[-4, 6], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -9], [10, -9], [10, -15]] },
+                    { "type": "line", "points": [[-4, 9], [10, 9], [10, 15]] },
+                    { "type": "line", "points": [[-4, 0], [10, 0], [10, 9]] },
+                    { "type": "polygon", "points": [[-3, 0], [3, -3], [3, 3]], "fill": "outline" },
+                    { "type": "line", "points": [[10, -12], [20, -12], [20, 12], [10, 12]] },
+                    { "type": "polygon", "points": [[16, 4], [24, 4], [20, -3]], "fill": "outline" },
+                    { "type": "line", "points": [[16, -3], [24, -3]] },
+                    { "type": "text", "at": [26, 22], "text": "IRF540N", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [40, -8],
+                "valueAt": [40, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "M{ref} {pin:d} {pin:g} {pin:s} lvd_IRF540N",
+                    "subcircuit": ".model lvd_IRF540N VDMOS(vto=3.5 kp=20 lambda=0.01 rd=25m rs=5m rg=3 cgs=1.5n cgdmax=1.2n cgdmin=50p a=0.5 cjo=1n is=2.5e-10 n=1.2 rb=5m bv=100 ibv=250u tt=100n)"
+                }
+            ]
+        },
+        {
+            "id": "njf",
+            "name": "N-JFET (generic)",
+            "category": "Semiconductors/JFET",
+            "description": "Generic N-channel JFET (Shichman-Hodges) with editable parameters",
+            "referencePrefix": "J",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "parameters": [
+                { "name": "vto", "label": "Pinch-off voltage VTO", "unit": "V", "default": "-2", "shown": true },
+                {
+                    "name": "beta",
+                    "label": "Transconductance parameter BETA",
+                    "unit": "A/V^2",
+                    "default": "1m",
+                    "shown": true
+                },
+                { "name": "lambda", "label": "Channel-length modulation LAMBDA", "unit": "1/V", "default": "10m" },
+                { "name": "rd", "label": "Drain resistance RD", "unit": "ohm", "default": "1" },
+                { "name": "rs", "label": "Source resistance RS", "unit": "ohm", "default": "1" },
+                { "name": "cgs", "label": "Gate-source capacitance CGS", "unit": "F", "default": "3p" },
+                { "name": "cgd", "label": "Gate-drain capacitance CGD", "unit": "F", "default": "1.5p" },
+                { "name": "is", "label": "Gate saturation current IS", "unit": "A", "default": "10f" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -8], [10, -8], [10, -15]] },
+                    { "type": "line", "points": [[-4, 8], [10, 8], [10, 15]] },
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "polygon", "points": [[-4, 0], [-10, -3], [-10, 3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "J{ref} {pin:d} {pin:g} {pin:s} lvd_jn_{ref}\n.model lvd_jn_{ref} NJF(vto={vto} beta={beta} lambda={lambda} rd={rd} rs={rs} cgs={cgs} cgd={cgd} is={is})"
+                }
+            ]
+        },
+        {
+            "id": "pjf",
+            "name": "P-JFET (generic)",
+            "category": "Semiconductors/JFET",
+            "description": "Generic P-channel JFET (Shichman-Hodges) with editable parameters",
+            "referencePrefix": "J",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "parameters": [
+                { "name": "vto", "label": "Pinch-off voltage VTO", "unit": "V", "default": "-2", "shown": true },
+                {
+                    "name": "beta",
+                    "label": "Transconductance parameter BETA",
+                    "unit": "A/V^2",
+                    "default": "1m",
+                    "shown": true
+                },
+                { "name": "lambda", "label": "Channel-length modulation LAMBDA", "unit": "1/V", "default": "10m" },
+                { "name": "rd", "label": "Drain resistance RD", "unit": "ohm", "default": "1" },
+                { "name": "rs", "label": "Source resistance RS", "unit": "ohm", "default": "1" },
+                { "name": "cgs", "label": "Gate-source capacitance CGS", "unit": "F", "default": "3p" },
+                { "name": "cgd", "label": "Gate-drain capacitance CGD", "unit": "F", "default": "1.5p" },
+                { "name": "is", "label": "Gate saturation current IS", "unit": "A", "default": "10f" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -8], [10, -8], [10, -15]] },
+                    { "type": "line", "points": [[-4, 8], [10, 8], [10, 15]] },
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "polygon", "points": [[-12, 0], [-6, -3], [-6, 3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, 30], "length": 15, "direction": "up" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, -30], "length": 15, "direction": "down" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "J{ref} {pin:d} {pin:g} {pin:s} lvd_jp_{ref}\n.model lvd_jp_{ref} PJF(vto={vto} beta={beta} lambda={lambda} rd={rd} rs={rs} cgs={cgs} cgd={cgd} is={is})"
+                }
+            ]
+        },
+        {
+            "id": "j310",
+            "name": "J310 N-JFET",
+            "category": "Semiconductors/JFET",
+            "description": "Typical parameters for the J310 VHF N-JFET (IDSS about 30 mA, VGS(off) about -3 V)",
+            "referencePrefix": "J",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -8], [10, -8], [10, -15]] },
+                    { "type": "line", "points": [[-4, 8], [10, 8], [10, 15]] },
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "polygon", "points": [[-4, 0], [-10, -3], [-10, 3]], "fill": "outline" },
+                    { "type": "text", "at": [14, 22], "text": "J310", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "J{ref} {pin:d} {pin:g} {pin:s} lvd_J310",
+                    "subcircuit": ".model lvd_J310 NJF(vto=-3 beta=3.3m lambda=20m rd=1 rs=1 cgs=2.5p cgd=2.5p is=10f pb=1 fc=0.5)"
+                }
+            ]
+        },
+        {
+            "id": "2n5457",
+            "name": "2N5457 N-JFET",
+            "category": "Semiconductors/JFET",
+            "description": "Typical parameters for the 2N5457 general-purpose N-JFET (IDSS about 3 mA, VGS(off) about -1.5 V)",
+            "referencePrefix": "J",
+            "pins": [{ "name": "d" }, { "name": "g" }, { "name": "s" }],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[-4, -8], [10, -8], [10, -15]] },
+                    { "type": "line", "points": [[-4, 8], [10, 8], [10, 15]] },
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "polygon", "points": [[-4, 0], [-10, -3], [-10, 3]], "fill": "outline" },
+                    { "type": "text", "at": [14, 22], "text": "2N5457", "size": 6, "anchor": "left" }
+                ],
+                "pins": [
+                    { "pin": "d", "at": [10, -30], "length": 15, "direction": "down" },
+                    { "pin": "g", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "s", "at": [10, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "J{ref} {pin:d} {pin:g} {pin:s} lvd_2N5457",
+                    "subcircuit": ".model lvd_2N5457 NJF(vto=-1.5 beta=1.3m lambda=2m rd=1 rs=1 cgs=4p cgd=1.5p is=10f pb=1 fc=0.5)"
+                }
+            ]
+        }
+    ]
+}

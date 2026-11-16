@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "path": "common_emitter.lvdspice"
+        },
+        {
+            "path": "imported_netlist.lvdspice"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

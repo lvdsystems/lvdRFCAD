@@ -1,0 +1,18 @@
+{
+    "documents": [
+        {
+            "path": "patch_x.lvdelem"
+        },
+        {
+            "path": "dipole_over_ground.lvdelem"
+        },
+        {
+            "path": "gnss_patch_rhcp.lvdelem"
+        },
+        {
+            "path": "measured_horn.lvdelem"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

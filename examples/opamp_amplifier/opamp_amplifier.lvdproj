@@ -1,0 +1,9 @@
+{
+    "documents": [
+        {
+            "path": "amplifier.lvdspice"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

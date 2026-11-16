@@ -1,0 +1,13 @@
+Behavioural source, XSPICE gain block and limiter
+V1 in 0 SIN(0 2 1k)
+B1 sq 0 V=tanh(5*V(in))
+R1 sq 0 1k
+A1 in g gain1
+.model gain1 gain(gain=2.5 in_offset=0.1)
+R2 g 0 1k
+A2 in lim limiter1
+.model limiter1 limit(gain=10 out_lower_limit=-1 out_upper_limit=1)
+R3 lim 0 1k
+.dc V1 -2 2 0.05
+.tran 10u 2m
+.end

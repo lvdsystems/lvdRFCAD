@@ -1,0 +1,836 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "rf-system",
+    "description": "Behavioural RF system blocks for budget, spur and linear RF analyses",
+    "components": [
+        {
+            "id": "amplifier",
+            "name": "Amplifier",
+            "category": "RF/Amplifiers",
+            "description": "Behavioural amplifier",
+            "referencePrefix": "A",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "gain", "label": "Gain", "unit": "dB", "default": "15", "shown": true },
+                { "name": "nf", "label": "Noise figure", "unit": "dB", "default": "2", "shown": true },
+                { "name": "oip3", "label": "Output IP3", "unit": "dBm", "default": "30" },
+                { "name": "oip2", "label": "Output IP2", "unit": "dBm", "default": "45" },
+                { "name": "op1db", "label": "Output P1dB", "unit": "dBm", "default": "18" },
+                { "name": "isolation", "label": "Reverse isolation", "unit": "dB", "default": "40" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-20, -20], [20, 0], [-20, 20]], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "amplifier" }
+            ]
+        },
+        {
+            "id": "attenuator",
+            "name": "Attenuator",
+            "category": "RF/Passive",
+            "description": "Matched fixed attenuator",
+            "referencePrefix": "AT",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Attenuation", "unit": "dB", "default": "3", "shown": true },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-14, 0]] },
+                    {
+                        "type": "line",
+                        "points": [[-14, 0], [-12, -5], [-8, 5], [-4, -5], [0, 5], [4, -5], [8, 5], [12, -5], [14, 0]]
+                    },
+                    { "type": "line", "points": [[14, 0], [20, 0]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "attenuator" }
+            ]
+        },
+        {
+            "id": "filter",
+            "name": "Filter",
+            "category": "RF/Filters",
+            "description": "Behavioural lowpass, highpass, bandpass or bandstop filter",
+            "referencePrefix": "F",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                {
+                    "name": "type",
+                    "label": "Type",
+                    "unit": "",
+                    "default": "bandpass",
+                    "shown": true,
+                    "choices": ["lowpass", "highpass", "bandpass", "bandstop"]
+                },
+                {
+                    "name": "response",
+                    "label": "Response",
+                    "unit": "",
+                    "default": "butterworth",
+                    "choices": ["ideal", "butterworth", "chebyshev"]
+                },
+                { "name": "order", "label": "Order", "unit": "", "default": "5" },
+                {
+                    "name": "fc",
+                    "label": "Cutoff (LP/HP) or centre frequency (BP/BS)",
+                    "unit": "Hz",
+                    "default": "1GHz",
+                    "shown": true
+                },
+                { "name": "bw", "label": "Bandwidth (BP/BS)", "unit": "Hz", "default": "100MHz" },
+                { "name": "il", "label": "Passband insertion loss", "unit": "dB", "default": "1" },
+                { "name": "ripple", "label": "Passband ripple (Chebyshev)", "unit": "dB", "default": "0.1" },
+                { "name": "rejection", "label": "Maximum stopband attenuation", "unit": "dB", "default": "80" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "arc", "center": [-4, -8], "radius": 4, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, -8], "radius": 4, "startAngle": 180, "spanAngle": 180 },
+                    { "type": "arc", "center": [-4, 0], "radius": 4, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, 0], "radius": 4, "startAngle": 180, "spanAngle": 180 },
+                    { "type": "arc", "center": [-4, 8], "radius": 4, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, 8], "radius": 4, "startAngle": 180, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "filter" }
+            ]
+        },
+        {
+            "id": "mixer",
+            "name": "Mixer",
+            "category": "RF/Mixers",
+            "description": "Behavioural mixer: rf and lo in, if out",
+            "referencePrefix": "MX",
+            "pins": [
+                { "name": "rf" },
+                { "name": "lo" },
+                { "name": "if" }
+            ],
+            "parameters": [
+                { "name": "gain", "label": "Conversion gain", "unit": "dB", "default": "-7", "shown": true },
+                { "name": "nf", "label": "Noise figure (SSB)", "unit": "dB", "default": "7" },
+                { "name": "iip3", "label": "Input IP3", "unit": "dBm", "default": "15" },
+                { "name": "lo_power", "label": "Nominal LO drive", "unit": "dBm", "default": "13" },
+                { "name": "lo_rf_isolation", "label": "LO to RF isolation", "unit": "dB", "default": "35" },
+                { "name": "lo_if_isolation", "label": "LO to IF isolation", "unit": "dB", "default": "30" },
+                { "name": "rf_if_isolation", "label": "RF to IF isolation", "unit": "dB", "default": "25" },
+                { "name": "side", "label": "LO side", "unit": "", "default": "low", "choices": ["low", "high"] },
+                { "name": "product", "label": "Wanted product", "unit": "", "default": "auto", "shown": true, "choices": ["auto", "difference", "sum"] },
+                { "name": "spur_table", "label": "Spur table file", "unit": "", "default": "", "file": true },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "line", "points": [[-14, -14], [14, 14]] },
+                    { "type": "line", "points": [[-14, 14], [14, -14]] }
+                ],
+                "pins": [
+                    { "pin": "rf", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "lo", "at": [0, 30], "length": 10, "direction": "up" },
+                    { "pin": "if", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [30, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "mixer" }
+            ]
+        },
+        {
+            "id": "source",
+            "name": "Signal source",
+            "category": "RF/Sources",
+            "description": "CW signal source driving a budget chain",
+            "referencePrefix": "SRC",
+            "pins": [
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "1GHz", "shown": true },
+                { "name": "power", "label": "Power", "unit": "dBm", "default": "-30", "shown": true },
+                { "name": "z0", "label": "Source impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "arc", "center": [-5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [5, 0], "radius": 5, "startAngle": 180, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "source" }
+            ]
+        },
+        {
+            "id": "lo",
+            "name": "Local oscillator",
+            "category": "RF/Sources",
+            "description": "Local oscillator with optional phase noise",
+            "referencePrefix": "LO",
+            "pins": [
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "2GHz", "shown": true },
+                { "name": "power", "label": "Power", "unit": "dBm", "default": "13", "shown": true },
+                { "name": "phase_noise", "label": "Phase noise file", "unit": "", "default": "", "file": true },
+                { "name": "z0", "label": "Source impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "LO", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "lo" }
+            ]
+        },
+        {
+            "id": "splitter",
+            "name": "Power splitter",
+            "category": "RF/Passive",
+            "description": "Two-way in-phase power splitter",
+            "referencePrefix": "SPL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out1" },
+                { "name": "out2" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Excess insertion loss", "unit": "dB", "default": "0.5", "shown": true },
+                { "name": "isolation", "label": "Output isolation", "unit": "dB", "default": "20" },
+                { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.1" },
+                { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "1" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[-4, 0], [20, -10]] },
+                    { "type": "line", "points": [[-4, 0], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out1", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "out2", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "splitter" }
+            ]
+        },
+        {
+            "id": "combiner",
+            "name": "Power combiner",
+            "category": "RF/Passive",
+            "description": "Two-way in-phase power combiner",
+            "referencePrefix": "CMB",
+            "pins": [
+                { "name": "in1" },
+                { "name": "in2" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Excess insertion loss", "unit": "dB", "default": "0.5", "shown": true },
+                { "name": "isolation", "label": "Input isolation", "unit": "dB", "default": "20" },
+                { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.1" },
+                { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "1" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, -10], [4, 0]] },
+                    { "type": "line", "points": [[-20, 10], [4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] }
+                ],
+                "pins": [
+                    { "pin": "in1", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "in2", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "combiner" }
+            ]
+        },
+        {
+            "id": "coupler",
+            "name": "Directional coupler",
+            "category": "RF/Passive",
+            "description": "Four-port directional coupler",
+            "referencePrefix": "DC",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" },
+                { "name": "cpl" },
+                { "name": "iso" }
+            ],
+            "parameters": [
+                { "name": "coupling", "label": "Coupling", "unit": "dB", "default": "20", "shown": true },
+                { "name": "directivity", "label": "Directivity", "unit": "dB", "default": "25" },
+                { "name": "il", "label": "Main line insertion loss", "unit": "dB", "default": "0.3" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, -10], [20, -10]] },
+                    { "type": "line", "points": [[-20, 10], [-10, 0], [10, 0], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "cpl", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "iso", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "coupler" }
+            ]
+        },
+        {
+            "id": "switch_spdt",
+            "name": "SPDT switch",
+            "category": "RF/Switches",
+            "description": "Single-pole double-throw switch",
+            "referencePrefix": "SW",
+            "pins": [
+                { "name": "com" },
+                { "name": "t1" },
+                { "name": "t2" }
+            ],
+            "parameters": [
+                {
+                    "name": "state",
+                    "label": "Selected throw",
+                    "unit": "",
+                    "default": "t1",
+                    "shown": true,
+                    "choices": ["t1", "t2"]
+                },
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.5" },
+                { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-12, 0]] },
+                    { "type": "circle", "center": [-10, 0], "radius": 2, "fill": "outline" },
+                    { "type": "line", "points": [[-9, -2], [8, -9]] },
+                    { "type": "circle", "center": [10, -10], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, 10], "radius": 2, "fill": "none" },
+                    { "type": "line", "points": [[12, -10], [20, -10]] },
+                    { "type": "line", "points": [[12, 10], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "com", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "t1", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "t2", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "switch_spdt" }
+            ]
+        },
+        {
+            "id": "isolator",
+            "name": "Isolator",
+            "category": "RF/Passive",
+            "description": "Two-port isolator, forward from in to out",
+            "referencePrefix": "ISO",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.5", "shown": true },
+                { "name": "isolation", "label": "Reverse isolation", "unit": "dB", "default": "20" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-12, 0], [8, 0]] },
+                    { "type": "polygon", "points": [[14, 0], [6, -5], [6, 5]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "isolator" }
+            ]
+        },
+        {
+            "id": "circulator",
+            "name": "Circulator",
+            "category": "RF/Passive",
+            "description": "Three-port circulator, p1 to p2 to p3 to p1",
+            "referencePrefix": "CIR",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.5", "shown": true },
+                { "name": "isolation", "label": "Reverse isolation", "unit": "dB", "default": "20" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "arc", "center": [0, 0], "radius": 10, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "polygon", "points": [[10, 4], [6, -2], [14, -2]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [0, 30], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [30, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "circulator" }
+            ]
+        },
+        {
+            "id": "cable",
+            "name": "Cable",
+            "category": "RF/Passive",
+            "description": "Coaxial cable with length-proportional loss",
+            "referencePrefix": "CBL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "length", "label": "Length", "unit": "m", "default": "1", "shown": true },
+                { "name": "loss_per_m", "label": "Loss per metre at freq", "unit": "dB/m", "default": "0.5" },
+                { "name": "freq", "label": "Frequency of loss_per_m", "unit": "Hz", "default": "1GHz" },
+                { "name": "il", "label": "Fixed loss (connectors)", "unit": "dB", "default": "0.1" },
+                { "name": "vf", "label": "Velocity factor", "unit": "", "default": "0.7" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [-14, 0], "radius": 6, "fill": "none" },
+                    { "type": "line", "points": [[-14, -6], [14, -6]] },
+                    { "type": "line", "points": [[-14, 6], [14, 6]] },
+                    { "type": "arc", "center": [14, 0], "radius": 6, "startAngle": -90, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "cable" }
+            ]
+        },
+        {
+            "id": "antenna",
+            "name": "Antenna",
+            "category": "RF/Antennas",
+            "description": "Antenna port with gain and noise temperature",
+            "referencePrefix": "ANT",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "gain", "label": "Gain", "unit": "dBi", "default": "0", "shown": true },
+                { "name": "temp", "label": "Antenna noise temperature", "unit": "K", "default": "290" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[0, 10], [0, -16]] },
+                    { "type": "polygon", "points": [[-10, -20], [10, -20], [0, -6]], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, 20], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [30, -10],
+                "valueAt": [30, 5]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "antenna" }
+            ]
+        },
+        {
+            "id": "multiplier",
+            "name": "Frequency multiplier",
+            "category": "RF/Mixers",
+            "description": "Frequency multiplier by an integer factor",
+            "referencePrefix": "MUL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "factor", "label": "Multiplication factor", "unit": "", "default": "2", "shown": true },
+                { "name": "gain", "label": "Conversion gain", "unit": "dB", "default": "-12" },
+                { "name": "rejection", "label": "Unwanted harmonic rejection", "unit": "dBc", "default": "20" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "×N", "size": 12, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "multiplier" }
+            ]
+        },
+        {
+            "id": "phase_shifter",
+            "name": "Phase shifter",
+            "category": "RF/Passive",
+            "description": "Matched phase shifter",
+            "referencePrefix": "PS",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "phase", "label": "Phase shift (lag)", "unit": "deg", "default": "90", "shown": true },
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "1" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "Δφ", "size": 12, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "phase_shifter" }
+            ]
+        },
+        {
+            "id": "adc",
+            "name": "ADC",
+            "category": "RF/Converters",
+            "description": "Analogue to digital converter at the end of a receive chain",
+            "referencePrefix": "ADC",
+            "pins": [
+                { "name": "in" }
+            ],
+            "parameters": [
+                { "name": "fs", "label": "Sample rate", "unit": "Hz", "default": "100MHz", "shown": true },
+                { "name": "bits", "label": "Resolution", "unit": "bit", "default": "12", "shown": true },
+                { "name": "full_scale", "label": "Full-scale input power", "unit": "dBm", "default": "4" },
+                { "name": "nf", "label": "Noise figure", "unit": "dB", "default": "30" },
+                { "name": "z0", "label": "Input impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "polygon",
+                        "points": [[-20, 0], [-10, -20], [20, -20], [20, 20], [-10, 20]],
+                        "fill": "none"
+                    },
+                    { "type": "text", "at": [4, 0], "text": "ADC", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "adc" }
+            ]
+        },
+        {
+            "id": "nport1",
+            "name": "1-port S-parameters",
+            "category": "RF/S-parameters",
+            "description": "Linear 1-port block from a Touchstone file",
+            "referencePrefix": "SP",
+            "pins": [
+                { "name": "p1" }
+            ],
+            "parameters": [
+                {
+                    "name": "file",
+                    "label": "Touchstone file (.s1p)",
+                    "unit": "",
+                    "default": "",
+                    "shown": true,
+                    "file": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "S1P", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "sparameters", "file": "{file}" }
+            ]
+        },
+        {
+            "id": "nport2",
+            "name": "2-port S-parameters",
+            "category": "RF/S-parameters",
+            "description": "Linear 2-port block from a Touchstone file",
+            "referencePrefix": "SP",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" }
+            ],
+            "parameters": [
+                {
+                    "name": "file",
+                    "label": "Touchstone file (.s2p)",
+                    "unit": "",
+                    "default": "",
+                    "shown": true,
+                    "file": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "S2P", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "sparameters", "file": "{file}" }
+            ]
+        },
+        {
+            "id": "nport3",
+            "name": "3-port S-parameters",
+            "category": "RF/S-parameters",
+            "description": "Linear 3-port block from a Touchstone file",
+            "referencePrefix": "SP",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" }
+            ],
+            "parameters": [
+                {
+                    "name": "file",
+                    "label": "Touchstone file (.s3p)",
+                    "unit": "",
+                    "default": "",
+                    "shown": true,
+                    "file": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "S3P", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [0, 30], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [30, 30]
+            },
+            "models": [
+                { "kind": "sparameters", "file": "{file}" }
+            ]
+        },
+        {
+            "id": "nport4",
+            "name": "4-port S-parameters",
+            "category": "RF/S-parameters",
+            "description": "Linear 4-port block from a Touchstone file",
+            "referencePrefix": "SP",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" },
+                { "name": "p4" }
+            ],
+            "parameters": [
+                {
+                    "name": "file",
+                    "label": "Touchstone file (.s4p)",
+                    "unit": "",
+                    "default": "",
+                    "shown": true,
+                    "file": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "S4P", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "p4", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "sparameters", "file": "{file}" }
+            ]
+        },
+        {
+            "id": "port",
+            "name": "RF port",
+            "category": "RF/Ports",
+            "description": "Numbered simulation port with reference impedance",
+            "referencePrefix": "PORT",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "num", "label": "Port number", "unit": "", "default": "1", "shown": true },
+                { "name": "z0", "label": "Reference impedance", "unit": "ohm", "default": "50", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 10, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "P", "size": 8, "anchor": "center" },
+                    { "type": "line", "points": [[0, 10], [0, 14]] },
+                    { "type": "line", "points": [[-8, 14], [8, 14]] },
+                    { "type": "line", "points": [[-5, 18], [5, 18]] },
+                    { "type": "line", "points": [[-2, 22], [2, 22]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -20], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [35, -5],
+                "valueAt": [35, 10]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "port" }
+            ]
+        },
+        {
+            "id": "termination",
+            "name": "Termination",
+            "category": "RF/Ports",
+            "description": "Matched load to ground",
+            "referencePrefix": "TERM",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "z0", "label": "Impedance", "unit": "ohm", "default": "50", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[0, -10], [-5, -8], [5, -4], [-5, 0], [5, 4], [-5, 8], [0, 10]] },
+                    { "type": "line", "points": [[0, 10], [0, 14]] },
+                    { "type": "line", "points": [[-8, 14], [8, 14]] },
+                    { "type": "line", "points": [[-5, 18], [5, 18]] },
+                    { "type": "line", "points": [[-2, 22], [2, 22]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -20], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [30, -5],
+                "valueAt": [30, 10]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "termination" }
+            ]
+        }
+    ]
+}

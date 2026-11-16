@@ -1,0 +1,82 @@
+{
+    "content": {
+        "aesa": {
+            "amplitudeError": 0,
+            "attenuatorBits": 0,
+            "attenuatorStep": 0.5,
+            "delayLsb": 0,
+            "failed": [
+            ],
+            "failedFraction": 0,
+            "phaseBits": 0,
+            "phaseError": 0,
+            "seed": 1
+        },
+        "designFrequency": 10000000000,
+        "element": "library:antenna-elements:cos15",
+        "excitation": {
+            "pattern": "delta-az",
+            "steerPhi": 0,
+            "steerTheta": 0,
+            "steering": "phase",
+            "taperX": {
+                "kind": "taylor",
+                "nbar": 5,
+                "sll": 30
+            },
+            "taperY": {
+                "kind": "taylor",
+                "nbar": 5,
+                "sll": 30
+            }
+        },
+        "frequency": 10000000000,
+        "geometry": {
+            "aperture": "none",
+            "apertureX": 0,
+            "apertureY": 0,
+            "dx": 0.5,
+            "dy": 0.5,
+            "kind": "rectangular",
+            "nx": 16,
+            "ny": 16,
+            "unit": "lambda"
+        },
+        "sweeps": {
+            "bandPoints": 21,
+            "bandStart": 0,
+            "bandStop": 0,
+            "scanMax": 60,
+            "scanPlane": 0,
+            "scanStep": 2
+        },
+        "synthesis": {
+            "iterations": 300,
+            "mainBeam": 0,
+            "phaseOnly": false,
+            "sll": -30
+        },
+        "trModule": {
+            "ambientTemperature": 290,
+            "antennaTemperature": 290,
+            "beamformerLoss": 6,
+            "frontLoss": 0.5,
+            "rx": {
+                "gain": 25,
+                "nf": 3,
+                "power": 40,
+                "source": "typed"
+            },
+            "tx": {
+                "gain": 25,
+                "nf": 3,
+                "power": 40,
+                "source": "typed"
+            },
+            "txTaper": false
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna",
+    "version": 1
+}

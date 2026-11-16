@@ -1,0 +1,600 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "spice-sources",
+    "description": "SPICE sources: independent voltage and current sources, controlled sources (E, F, G, H) and behavioural sources",
+    "components": [
+        {
+            "id": "vdc",
+            "name": "DC voltage source",
+            "category": "Sources/Voltage",
+            "description": "DC voltage source with optional AC magnitude for AC analysis",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "dc", "label": "DC voltage", "unit": "V", "default": "5", "shown": true },
+                { "name": "ac", "label": "AC magnitude", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[-5, -6], [5, -6]] },
+                    { "type": "line", "points": [[0, -11], [0, -1]] },
+                    { "type": "line", "points": [[-5, 7], [5, 7]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} DC {dc} AC {ac}" }]
+        },
+        {
+            "id": "idc",
+            "name": "DC current source",
+            "category": "Sources/Current",
+            "description": "DC current source; current enters at p (bottom) and leaves at n (top), into the circuit",
+            "referencePrefix": "I",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "dc", "label": "DC current", "unit": "A", "default": "1m", "shown": true },
+                { "name": "ac", "label": "AC magnitude", "unit": "A", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[0, 10], [0, -8]] },
+                    { "type": "polygon", "points": [[-4, -3], [0, -10], [4, -3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "n", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "p", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "I{ref} {pin:p} {pin:n} DC {dc} AC {ac}" }]
+        },
+        {
+            "id": "vsin",
+            "name": "Sine voltage source",
+            "category": "Sources/Voltage",
+            "description": "Damped sine SIN(vo va freq td theta phase); the DC value for operating point is the offset",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "vo", "label": "Offset", "unit": "V", "default": "0" },
+                { "name": "va", "label": "Amplitude", "unit": "V", "default": "1", "shown": true },
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "1k", "shown": true },
+                { "name": "td", "label": "Delay", "unit": "s", "default": "0" },
+                { "name": "theta", "label": "Damping factor", "unit": "1/s", "default": "0" },
+                { "name": "phase", "label": "Phase", "unit": "deg", "default": "0" },
+                { "name": "ac", "label": "AC magnitude", "unit": "V", "default": "1" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "arc", "center": [-4, 0], "radius": 4, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, 0], "radius": 4, "startAngle": 180, "spanAngle": 180 },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "V{ref} {pin:p} {pin:n} DC {vo} AC {ac} SIN({vo} {va} {freq} {td} {theta} {phase})"
+                }
+            ]
+        },
+        {
+            "id": "vpulse",
+            "name": "Pulse voltage source",
+            "category": "Sources/Voltage",
+            "description": "Trapezoidal pulse PULSE(v1 v2 td tr tf pw per)",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "v1", "label": "Initial value", "unit": "V", "default": "0" },
+                { "name": "v2", "label": "Pulsed value", "unit": "V", "default": "5", "shown": true },
+                { "name": "td", "label": "Delay", "unit": "s", "default": "0" },
+                { "name": "tr", "label": "Rise time", "unit": "s", "default": "10n" },
+                { "name": "tf", "label": "Fall time", "unit": "s", "default": "10n" },
+                { "name": "pw", "label": "Pulse width", "unit": "s", "default": "0.5m", "shown": true },
+                { "name": "per", "label": "Period", "unit": "s", "default": "1m", "shown": true },
+                { "name": "ac", "label": "AC magnitude", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[-10, 5], [-5, 5], [-5, -5], [4, -5], [4, 5], [10, 5]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "V{ref} {pin:p} {pin:n} DC {v1} AC {ac} PULSE({v1} {v2} {td} {tr} {tf} {pw} {per})"
+                }
+            ]
+        },
+        {
+            "id": "vpwl",
+            "name": "PWL voltage source",
+            "category": "Sources/Voltage",
+            "description": "Piecewise-linear source; points are SPICE text 't1 v1 t2 v2 ...' (SPICE number syntax: M is milli, use meg)",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                {
+                    "name": "points",
+                    "label": "Time/value pairs (SPICE syntax)",
+                    "unit": "",
+                    "default": "0 0 1m 1 2m 1 3m 0",
+                    "shown": true,
+                    "text": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[-10, 6], [-5, -4], [0, 2], [5, -7], [10, 6]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} PWL({points})" }]
+        },
+        {
+            "id": "vexp",
+            "name": "Exponential voltage source",
+            "category": "Sources/Voltage",
+            "description": "Exponential pulse EXP(v1 v2 td1 tau1 td2 tau2)",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "v1", "label": "Initial value", "unit": "V", "default": "0" },
+                { "name": "v2", "label": "Pulsed value", "unit": "V", "default": "1", "shown": true },
+                { "name": "td1", "label": "Rise delay", "unit": "s", "default": "0" },
+                { "name": "tau1", "label": "Rise time constant", "unit": "s", "default": "100u", "shown": true },
+                { "name": "td2", "label": "Fall delay", "unit": "s", "default": "1m" },
+                { "name": "tau2", "label": "Fall time constant", "unit": "s", "default": "200u" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    {
+                        "type": "line",
+                        "points": [[-10, 6], [-6, 6], [-5, 0], [-3, -4], [0, -6], [3, -6], [4, -1], [6, 3], [9, 5], [10, 6]]
+                    },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} EXP({v1} {v2} {td1} {tau1} {td2} {tau2})" }]
+        },
+        {
+            "id": "vsffm",
+            "name": "SFFM voltage source",
+            "category": "Sources/Voltage",
+            "description": "Single-frequency FM: SFFM(vo va fc mdi fs), v = vo + va sin(2 pi fc t + mdi sin(2 pi fs t))",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "vo", "label": "Offset", "unit": "V", "default": "0" },
+                { "name": "va", "label": "Amplitude", "unit": "V", "default": "1", "shown": true },
+                { "name": "fc", "label": "Carrier frequency", "unit": "Hz", "default": "10k", "shown": true },
+                { "name": "mdi", "label": "Modulation index", "unit": "", "default": "5" },
+                { "name": "fs", "label": "Signal frequency", "unit": "Hz", "default": "1k" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "FM", "size": 7, "anchor": "center" },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} SFFM({vo} {va} {fc} {mdi} {fs})" }]
+        },
+        {
+            "id": "vac",
+            "name": "AC voltage source",
+            "category": "Sources/Voltage",
+            "description": "Small-signal source for AC analysis (magnitude and phase) with a DC value",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "mag", "label": "AC magnitude", "unit": "V", "default": "1", "shown": true },
+                { "name": "phase", "label": "AC phase", "unit": "deg", "default": "0" },
+                { "name": "dc", "label": "DC value", "unit": "V", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "AC", "size": 7, "anchor": "center" },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} DC {dc} AC {mag} {phase}" }]
+        },
+        {
+            "id": "vsrc",
+            "name": "Voltage source (SPICE spec)",
+            "category": "Sources/Voltage",
+            "description": "Voltage source with a free SPICE specification, for example 'DC 0 AC 1 SIN(0 1 1k)'",
+            "referencePrefix": "V",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                {
+                    "name": "spec",
+                    "label": "SPICE source specification",
+                    "unit": "",
+                    "default": "DC 0 AC 1 SIN(0 1 1k)",
+                    "shown": true,
+                    "text": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "V", "size": 9, "anchor": "center" },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref} {pin:p} {pin:n} {spec}" }]
+        },
+        {
+            "id": "isin",
+            "name": "Sine current source",
+            "category": "Sources/Current",
+            "description": "Damped sine current SIN(io ia freq td theta phase); current leaves at n (top)",
+            "referencePrefix": "I",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "io", "label": "Offset", "unit": "A", "default": "0" },
+                { "name": "ia", "label": "Amplitude", "unit": "A", "default": "1m", "shown": true },
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "1k", "shown": true },
+                { "name": "td", "label": "Delay", "unit": "s", "default": "0" },
+                { "name": "theta", "label": "Damping factor", "unit": "1/s", "default": "0" },
+                { "name": "phase", "label": "Phase", "unit": "deg", "default": "0" },
+                { "name": "ac", "label": "AC magnitude", "unit": "A", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[0, 10], [0, -8]] },
+                    { "type": "polygon", "points": [[-4, -3], [0, -10], [4, -3]], "fill": "outline" },
+                    { "type": "arc", "center": [7, 0], "radius": 2, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [11, 0], "radius": 2, "startAngle": 180, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "n", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "p", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "I{ref} {pin:p} {pin:n} DC {io} AC {ac} SIN({io} {ia} {freq} {td} {theta} {phase})"
+                }
+            ]
+        },
+        {
+            "id": "ipulse",
+            "name": "Pulse current source",
+            "category": "Sources/Current",
+            "description": "Trapezoidal current pulse PULSE(i1 i2 td tr tf pw per); current leaves at n (top)",
+            "referencePrefix": "I",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                { "name": "i1", "label": "Initial value", "unit": "A", "default": "0" },
+                { "name": "i2", "label": "Pulsed value", "unit": "A", "default": "1m", "shown": true },
+                { "name": "td", "label": "Delay", "unit": "s", "default": "0" },
+                { "name": "tr", "label": "Rise time", "unit": "s", "default": "10n" },
+                { "name": "tf", "label": "Fall time", "unit": "s", "default": "10n" },
+                { "name": "pw", "label": "Pulse width", "unit": "s", "default": "0.5m", "shown": true },
+                { "name": "per", "label": "Period", "unit": "s", "default": "1m", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[0, 10], [0, -8]] },
+                    { "type": "polygon", "points": [[-4, -3], [0, -10], [4, -3]], "fill": "outline" },
+                    { "type": "line", "points": [[4, 3], [6, 3], [6, -3], [10, -3], [10, 3], [12, 3]] }
+                ],
+                "pins": [
+                    { "pin": "n", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "p", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [
+                {
+                    "kind": "spice",
+                    "template": "I{ref} {pin:p} {pin:n} DC {i1} PULSE({i1} {i2} {td} {tr} {tf} {pw} {per})"
+                }
+            ]
+        },
+        {
+            "id": "isrc",
+            "name": "Current source (SPICE spec)",
+            "category": "Sources/Current",
+            "description": "Current source with a free SPICE specification, for example 'DC 1m AC 1'",
+            "referencePrefix": "I",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                {
+                    "name": "spec",
+                    "label": "SPICE source specification",
+                    "unit": "",
+                    "default": "DC 1m AC 1",
+                    "shown": true,
+                    "text": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 15, "fill": "none" },
+                    { "type": "line", "points": [[0, 10], [0, -8]] },
+                    { "type": "polygon", "points": [[-4, -3], [0, -10], [4, -3]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "n", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "p", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "I{ref} {pin:p} {pin:n} {spec}" }]
+        },
+        {
+            "id": "vcvs",
+            "name": "VCVS (E)",
+            "category": "Sources/Controlled",
+            "description": "Voltage-controlled voltage source: V(p,n) = gain * V(cp,cn)",
+            "referencePrefix": "E",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [{ "name": "gain", "label": "Voltage gain", "unit": "V/V", "default": "10", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "line", "points": [[-4, -6], [4, -6]] },
+                    { "type": "line", "points": [[0, -10], [0, -2]] },
+                    { "type": "line", "points": [[-4, 7], [4, 7]] },
+                    { "type": "line", "points": [[-30, -10], [-20, -10], [-12, -3]] },
+                    { "type": "line", "points": [[-30, 10], [-20, 10], [-12, 3]] },
+                    { "type": "line", "points": [[-32, -17], [-26, -17]] },
+                    { "type": "line", "points": [[-29, -20], [-29, -14]] },
+                    { "type": "line", "points": [[-32, 17], [-26, 17]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" },
+                    { "pin": "cp", "at": [-40, -10], "length": 10, "direction": "right" },
+                    { "pin": "cn", "at": [-40, 10], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "E{ref} {pin:p} {pin:n} {pin:cp} {pin:cn} {gain}" }]
+        },
+        {
+            "id": "vccs",
+            "name": "VCCS (G)",
+            "category": "Sources/Controlled",
+            "description": "Voltage-controlled current source: current gm * V(cp,cn) flows from p through the source to n",
+            "referencePrefix": "G",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [{ "name": "gm", "label": "Transconductance", "unit": "S", "default": "1m", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "line", "points": [[0, -9], [0, 7]] },
+                    { "type": "polygon", "points": [[-3, 2], [0, 8], [3, 2]], "fill": "outline" },
+                    { "type": "line", "points": [[-30, -10], [-20, -10], [-12, -3]] },
+                    { "type": "line", "points": [[-30, 10], [-20, 10], [-12, 3]] },
+                    { "type": "line", "points": [[-32, -17], [-26, -17]] },
+                    { "type": "line", "points": [[-29, -20], [-29, -14]] },
+                    { "type": "line", "points": [[-32, 17], [-26, 17]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" },
+                    { "pin": "cp", "at": [-40, -10], "length": 10, "direction": "right" },
+                    { "pin": "cn", "at": [-40, 10], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "G{ref} {pin:p} {pin:n} {pin:cp} {pin:cn} {gm}" }]
+        },
+        {
+            "id": "cccs",
+            "name": "CCCS (F)",
+            "category": "Sources/Controlled",
+            "description": "Current-controlled current source: current gain * I(cp->cn) flows from p through the source to n; cp-cn is a 0 V sense branch placed in series with the controlling current",
+            "referencePrefix": "F",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [{ "name": "gain", "label": "Current gain", "unit": "A/A", "default": "10", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "line", "points": [[0, -9], [0, 7]] },
+                    { "type": "polygon", "points": [[-3, 2], [0, 8], [3, 2]], "fill": "outline" },
+                    { "type": "line", "points": [[-30, -10], [-20, -10], [-12, -3]] },
+                    { "type": "line", "points": [[-30, 10], [-20, 10], [-12, 3]] },
+                    { "type": "line", "points": [[-32, -17], [-26, -17]] },
+                    { "type": "line", "points": [[-29, -20], [-29, -14]] },
+                    { "type": "line", "points": [[-32, 17], [-26, 17]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" },
+                    { "pin": "cp", "at": [-40, -10], "length": 10, "direction": "right" },
+                    { "pin": "cn", "at": [-40, 10], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref}_s {pin:cp} {pin:cn} 0\nF{ref} {pin:p} {pin:n} V{ref}_s {gain}" }]
+        },
+        {
+            "id": "ccvs",
+            "name": "CCVS (H)",
+            "category": "Sources/Controlled",
+            "description": "Current-controlled voltage source: V(p,n) = rm * I(cp->cn); cp-cn is a 0 V sense branch",
+            "referencePrefix": "H",
+            "pins": [{ "name": "p" }, { "name": "n" }, { "name": "cp" }, { "name": "cn" }],
+            "parameters": [{ "name": "rm", "label": "Transresistance", "unit": "ohm", "default": "1k", "shown": true }],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "line", "points": [[-4, -6], [4, -6]] },
+                    { "type": "line", "points": [[0, -10], [0, -2]] },
+                    { "type": "line", "points": [[-4, 7], [4, 7]] },
+                    { "type": "line", "points": [[-30, -10], [-20, -10], [-12, -3]] },
+                    { "type": "line", "points": [[-30, 10], [-20, 10], [-12, 3]] },
+                    { "type": "line", "points": [[-32, -17], [-26, -17]] },
+                    { "type": "line", "points": [[-29, -20], [-29, -14]] },
+                    { "type": "line", "points": [[-32, 17], [-26, 17]] },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" },
+                    { "pin": "cp", "at": [-40, -10], "length": 10, "direction": "right" },
+                    { "pin": "cn", "at": [-40, 10], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "V{ref}_s {pin:cp} {pin:cn} 0\nH{ref} {pin:p} {pin:n} V{ref}_s {rm}" }]
+        },
+        {
+            "id": "bvsrc",
+            "name": "Behavioural voltage source",
+            "category": "Sources/Behavioural",
+            "description": "B source V(p,n) = expression (ngspice syntax: time, V(<net>), I(<vsource>), sin, exp, ...)",
+            "referencePrefix": "B",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                {
+                    "name": "expr",
+                    "label": "Voltage expression",
+                    "unit": "",
+                    "default": "2.5+2.5*sin(2*pi*1k*time)",
+                    "shown": true,
+                    "text": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "V=", "size": 7, "anchor": "center" },
+                    { "type": "line", "points": [[8, -24], [14, -24]] },
+                    { "type": "line", "points": [[11, -27], [11, -21]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "B{ref} {pin:p} {pin:n} V={expr}" }]
+        },
+        {
+            "id": "bisrc",
+            "name": "Behavioural current source",
+            "category": "Sources/Behavioural",
+            "description": "B source: current = expression flows from p through the source to n (ngspice syntax)",
+            "referencePrefix": "B",
+            "pins": [{ "name": "p" }, { "name": "n" }],
+            "parameters": [
+                {
+                    "name": "expr",
+                    "label": "Current expression",
+                    "unit": "",
+                    "default": "1m*sin(2*pi*1k*time)",
+                    "shown": true,
+                    "text": true
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[0, -15], [15, 0], [0, 15], [-15, 0]], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "I=", "size": 7, "anchor": "center" },
+                    { "type": "line", "points": [[22, 8], [22, -8]] },
+                    { "type": "polygon", "points": [[19, 4], [22, 10], [25, 4]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 15, "direction": "down" },
+                    { "pin": "n", "at": [0, 30], "length": 15, "direction": "up" }
+                ],
+                "referenceAt": [35, -8],
+                "valueAt": [35, 8]
+            },
+            "models": [{ "kind": "spice", "template": "B{ref} {pin:p} {pin:n} I={expr}" }]
+        }
+    ]
+}

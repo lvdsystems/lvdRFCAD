@@ -1,0 +1,15 @@
+{
+    "documents": [
+        {
+            "path": "synthesised_line.lvdant"
+        },
+        {
+            "path": "two_beams_nulls.lvdant"
+        },
+        {
+            "path": "monopulse.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

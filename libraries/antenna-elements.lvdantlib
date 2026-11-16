@@ -1,0 +1,184 @@
+{
+  "format": "lvdrfcad-antenna-library",
+  "version": 1,
+  "name": "antenna-elements",
+  "description": "Analytic antenna element models: isotropic, cos^n, dipoles, monopole, patches, apertures and horns.",
+  "entries": [
+    {
+      "id": "isotropic",
+      "name": "Isotropic",
+      "kind": "element",
+      "description": "Ideal isotropic radiator (array factor only).",
+      "data": {
+        "model": "isotropic",
+        "polarisation": "x",
+        "frequency": 10000000000.0,
+        "efficiency": 0
+      }
+    },
+    {
+      "id": "cos15",
+      "name": "Generic array element cos^1.5",
+      "kind": "element",
+      "description": "Typical embedded element pattern of a well-matched planar array element (about 5.4 dBi, scan loss cos^1.5).",
+      "data": {
+        "model": "cosn",
+        "polarisation": "x",
+        "frequency": 10000000000.0,
+        "efficiency": -0.5,
+        "exponent": 1.5,
+        "backLobe": -25
+      }
+    },
+    {
+      "id": "cos12-slant",
+      "name": "cos^1.2 element, slant 45",
+      "kind": "element",
+      "description": "Wide-beam base-station style element, slant +45 polarisation.",
+      "data": {
+        "model": "cosn",
+        "polarisation": "slant45",
+        "frequency": 3500000000.0,
+        "efficiency": -0.3,
+        "exponent": 1.2,
+        "backLobe": -25
+      }
+    },
+    {
+      "id": "dipole-half-wave",
+      "name": "Half-wave dipole",
+      "kind": "element",
+      "description": "Free-space half-wave dipole along x, 2.15 dBi.",
+      "data": {
+        "model": "dipole",
+        "polarisation": "x",
+        "frequency": 1000000000.0,
+        "efficiency": 0,
+        "length": 0
+      }
+    },
+    {
+      "id": "dipole-over-ground",
+      "name": "Dipole a quarter wave over ground",
+      "kind": "element",
+      "description": "Half-wave dipole a quarter wavelength over an infinite ground plane; classic array element.",
+      "data": {
+        "model": "dipole-ground",
+        "polarisation": "x",
+        "frequency": 3000000000.0,
+        "efficiency": -0.2,
+        "length": 0,
+        "height": 0
+      }
+    },
+    {
+      "id": "monopole-quarter-wave",
+      "name": "Quarter-wave monopole",
+      "kind": "element",
+      "description": "Vertical monopole on an infinite ground plane, 5.16 dBi at the horizon.",
+      "data": {
+        "model": "monopole",
+        "polarisation": "x",
+        "frequency": 1000000000.0,
+        "efficiency": 0,
+        "length": 0
+      }
+    },
+    {
+      "id": "patch-x-ro4003",
+      "name": "Patch 10 GHz, RO4003C 0.813 mm",
+      "kind": "element",
+      "description": "Rectangular patch for 10 GHz on Rogers RO4003C (er 3.55, 0.813 mm), cavity model, dimensions from the design equations.",
+      "data": {
+        "model": "patch",
+        "polarisation": "x",
+        "frequency": 10000000000.0,
+        "efficiency": -0.8,
+        "patchWidth": 0,
+        "patchLength": 0,
+        "substrateHeight": 0.000813,
+        "permittivity": 3.55,
+        "backLobe": -20
+      }
+    },
+    {
+      "id": "patch-c-fr4",
+      "name": "Patch 5.8 GHz, FR-4 1.6 mm",
+      "kind": "element",
+      "description": "Rectangular patch for 5.8 GHz on FR-4 (er 4.4, 1.6 mm); FR-4 losses lower the efficiency.",
+      "data": {
+        "model": "patch",
+        "polarisation": "x",
+        "frequency": 5800000000.0,
+        "efficiency": -2.5,
+        "patchWidth": 0,
+        "patchLength": 0,
+        "substrateHeight": 0.0016,
+        "permittivity": 4.4,
+        "backLobe": -18
+      }
+    },
+    {
+      "id": "patch-gnss-rhcp",
+      "name": "GNSS patch L1, RHCP",
+      "kind": "element",
+      "description": "Ceramic patch for 1575.42 MHz (er 6.15, 4 mm), dual fed for right-hand circular polarisation.",
+      "data": {
+        "model": "patch",
+        "polarisation": "rhcp",
+        "frequency": 1575420000.0,
+        "efficiency": -1.5,
+        "patchWidth": 0,
+        "patchLength": 0,
+        "substrateHeight": 0.004,
+        "permittivity": 6.15,
+        "backLobe": -15
+      }
+    },
+    {
+      "id": "open-waveguide-wr90",
+      "name": "Open waveguide WR-90",
+      "kind": "element",
+      "description": "Open-ended WR-90 waveguide (22.86 x 10.16 mm), TE10 aperture model.",
+      "data": {
+        "model": "aperture",
+        "polarisation": "x",
+        "frequency": 10000000000.0,
+        "efficiency": -0.1,
+        "apertureA": 0.02286,
+        "apertureB": 0.01016,
+        "distribution": "cosine"
+      }
+    },
+    {
+      "id": "horn-x-15dbi",
+      "name": "Pyramidal horn 10 GHz, 15 dBi",
+      "kind": "element",
+      "description": "Pyramidal horn with a 60 x 46 mm aperture; aperture model without phase error.",
+      "data": {
+        "model": "aperture",
+        "polarisation": "x",
+        "frequency": 10000000000.0,
+        "efficiency": -0.2,
+        "apertureA": 0.06,
+        "apertureB": 0.046,
+        "distribution": "cosine"
+      }
+    },
+    {
+      "id": "horn-ku-20dbi",
+      "name": "Pyramidal horn 12 GHz, 20 dBi",
+      "kind": "element",
+      "description": "Pyramidal horn with a 92 x 72 mm aperture for 12 GHz; aperture model without phase error.",
+      "data": {
+        "model": "aperture",
+        "polarisation": "x",
+        "frequency": 12000000000.0,
+        "efficiency": -0.2,
+        "apertureA": 0.092,
+        "apertureB": 0.072,
+        "distribution": "cosine"
+      }
+    }
+  ]
+}

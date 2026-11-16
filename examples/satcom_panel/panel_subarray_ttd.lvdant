@@ -1,0 +1,92 @@
+{
+    "content": {
+        "aesa": {
+            "amplitudeError": 0.5,
+            "attenuatorBits": 5,
+            "attenuatorStep": 0.5,
+            "delayLsb": 0,
+            "failed": [
+            ],
+            "failedFraction": 0,
+            "phaseBits": 5,
+            "phaseError": 4,
+            "seed": 1
+        },
+        "designFrequency": 11700000000,
+        "element": "",
+        "excitation": {
+            "steerPhi": 0,
+            "steerTheta": 45,
+            "steering": "subarray-ttd",
+            "subarrayTaper": false,
+            "subarrayX": 4,
+            "subarrayY": 4,
+            "taperX": {
+                "kind": "cosine-pedestal",
+                "pedestal": -10
+            },
+            "taperY": {
+                "kind": "cosine-pedestal",
+                "pedestal": -10
+            }
+        },
+        "frequency": 11700000000,
+        "geometry": {
+            "aperture": "none",
+            "apertureX": 0,
+            "apertureY": 0,
+            "dx": 0.55,
+            "dy": 0.55,
+            "kind": "rectangular",
+            "nx": 32,
+            "ny": 32,
+            "unit": "lambda"
+        },
+        "inlineElement": {
+            "backLobe": -25,
+            "efficiency": -0.6,
+            "exponent": 1.3,
+            "frequency": 11700000000,
+            "model": "cosn",
+            "polarisation": "rhcp"
+        },
+        "sweeps": {
+            "bandPoints": 21,
+            "bandStart": 10700000000,
+            "bandStop": 12750000000,
+            "scanMax": 60,
+            "scanPlane": 0,
+            "scanStep": 2
+        },
+        "synthesis": {
+            "iterations": 300,
+            "mainBeam": 0,
+            "phaseOnly": false,
+            "sll": -30
+        },
+        "trModule": {
+            "ambientTemperature": 290,
+            "antennaTemperature": 60,
+            "beamformerLoss": 3,
+            "frontLoss": 0.4,
+            "rx": {
+                "gain": 30,
+                "nf": 1.4,
+                "power": 40,
+                "preset": "antenna-tr-modules:ku-satcom",
+                "source": "preset"
+            },
+            "tx": {
+                "gain": 28,
+                "nf": 3,
+                "power": 24,
+                "preset": "antenna-tr-modules:ku-satcom",
+                "source": "preset"
+            },
+            "txTaper": false
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna",
+    "version": 1
+}

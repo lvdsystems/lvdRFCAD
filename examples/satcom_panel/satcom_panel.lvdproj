@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "path": "panel_phase.lvdant"
+        },
+        {
+            "path": "panel_subarray_ttd.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

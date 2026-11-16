@@ -1,0 +1,15 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.3,
+            "frequency": 10000000000,
+            "model": "imported",
+            "patternFile": "patterns/sample-horn-x.csv",
+            "polarisation": "x"
+        },
+        "notes": "Imported from libraries/patterns/sample-horn-x.csv (synthetic sample data)."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

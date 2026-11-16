@@ -1,0 +1,15 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.2,
+            "frequency": 3000000000,
+            "height": 0,
+            "length": 0,
+            "model": "dipole-ground",
+            "polarisation": "x"
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

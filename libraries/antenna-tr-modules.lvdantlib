@@ -1,0 +1,140 @@
+{
+  "format": "lvdrfcad-antenna-library",
+  "version": 1,
+  "name": "antenna-tr-modules",
+  "description": "Generic T/R module presets (typical values, not vendor data).",
+  "entries": [
+    {
+      "id": "x-gan-10w",
+      "name": "X-band GaN, 10 W",
+      "kind": "tr-module",
+      "description": "Generic X-band radar T/R module: GaN HPA, 6-bit phase and attenuation.",
+      "data": {
+        "tx": {
+          "power": 40,
+          "gain": 30
+        },
+        "rx": {
+          "gain": 25,
+          "nf": 3.0
+        },
+        "phaseBits": 6,
+        "attenuatorBits": 6,
+        "attenuatorStep": 0.5,
+        "amplitudeError": 0.4,
+        "phaseError": 3.0,
+        "frontLoss": 0.8
+      }
+    },
+    {
+      "id": "x-gaas-2w",
+      "name": "X-band GaAs, 2 W",
+      "kind": "tr-module",
+      "description": "Generic X-band GaAs T/R module for lighter arrays.",
+      "data": {
+        "tx": {
+          "power": 33,
+          "gain": 28
+        },
+        "rx": {
+          "gain": 24,
+          "nf": 2.5
+        },
+        "phaseBits": 6,
+        "attenuatorBits": 6,
+        "attenuatorStep": 0.5,
+        "amplitudeError": 0.3,
+        "phaseError": 2.5,
+        "frontLoss": 0.7
+      }
+    },
+    {
+      "id": "s-gan-50w",
+      "name": "S-band GaN, 50 W",
+      "kind": "tr-module",
+      "description": "Generic S-band surveillance radar T/R module.",
+      "data": {
+        "tx": {
+          "power": 47,
+          "gain": 35
+        },
+        "rx": {
+          "gain": 28,
+          "nf": 2.0
+        },
+        "phaseBits": 6,
+        "attenuatorBits": 6,
+        "attenuatorStep": 0.5,
+        "amplitudeError": 0.4,
+        "phaseError": 3.0,
+        "frontLoss": 0.6
+      }
+    },
+    {
+      "id": "ku-satcom",
+      "name": "Ku-band satcom Rx/Tx channel",
+      "kind": "tr-module",
+      "description": "Satcom flat-panel channel: low-noise receive, modest transmit.",
+      "data": {
+        "tx": {
+          "power": 24,
+          "gain": 28
+        },
+        "rx": {
+          "gain": 30,
+          "nf": 1.4
+        },
+        "phaseBits": 5,
+        "attenuatorBits": 5,
+        "attenuatorStep": 0.5,
+        "amplitudeError": 0.5,
+        "phaseError": 4.0,
+        "frontLoss": 0.4
+      }
+    },
+    {
+      "id": "ka-bf-ic",
+      "name": "Ka-band beamformer IC channel",
+      "kind": "tr-module",
+      "description": "Silicon beamformer channel at 28 GHz with external LNA/PA.",
+      "data": {
+        "tx": {
+          "power": 18,
+          "gain": 20
+        },
+        "rx": {
+          "gain": 22,
+          "nf": 4.5
+        },
+        "phaseBits": 5,
+        "attenuatorBits": 5,
+        "attenuatorStep": 0.5,
+        "amplitudeError": 0.6,
+        "phaseError": 5.0,
+        "frontLoss": 1.0
+      }
+    },
+    {
+      "id": "n78-mmimo",
+      "name": "3.5 GHz massive-MIMO channel",
+      "kind": "tr-module",
+      "description": "Base-station radio channel (digital beamforming, fine quantisation).",
+      "data": {
+        "tx": {
+          "power": 37,
+          "gain": 30
+        },
+        "rx": {
+          "gain": 30,
+          "nf": 2.2
+        },
+        "phaseBits": 10,
+        "attenuatorBits": 10,
+        "attenuatorStep": 0.1,
+        "amplitudeError": 0.2,
+        "phaseError": 1.0,
+        "frontLoss": 0.5
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+    "content": {
+        "element": {
+            "backLobe": -15,
+            "efficiency": -1.5,
+            "frequency": 1575420000,
+            "model": "patch",
+            "patchLength": 0,
+            "patchWidth": 0,
+            "permittivity": 6.15,
+            "polarisation": "rhcp",
+            "substrateHeight": 0.004
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

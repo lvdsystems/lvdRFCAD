@@ -1,0 +1,32 @@
+{
+  "format": "lvdrfcad-antenna-library",
+  "version": 1,
+  "name": "antenna-patterns",
+  "description": "Pattern-file elements. The two samples are synthetic; add measured or vendor patterns here.",
+  "entries": [
+    {
+      "id": "sample-horn-x",
+      "name": "Sample measured horn, X band",
+      "kind": "pattern",
+      "description": "Synthetic 'measured' pattern of a 15 dBi X-band horn, 9.5 to 10.5 GHz, with measurement ripple and cross-polarisation.",
+      "data": {
+        "model": "imported",
+        "frequency": 10000000000.0,
+        "efficiency": -0.3,
+        "patternFile": "patterns/sample-horn-x.csv"
+      }
+    },
+    {
+      "id": "sample-pcb-patch-5g8",
+      "name": "Sample PCB patch 5.8 GHz",
+      "kind": "pattern",
+      "description": "Synthetic 'measured' pattern of a patch on a small ground plane: tilted beam, back radiation, 5.7 to 5.9 GHz.",
+      "data": {
+        "model": "imported",
+        "frequency": 5800000000.0,
+        "efficiency": -2.0,
+        "patternFile": "patterns/sample-pcb-patch-5g8.csv"
+      }
+    }
+  ]
+}

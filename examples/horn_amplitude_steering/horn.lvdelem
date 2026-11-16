@@ -1,0 +1,17 @@
+{
+    "content": {
+        "element": {
+            "apertureA": 0.0353,
+            "apertureB": 0.0271,
+            "distribution": "cosine",
+            "efficiency": -0.2,
+            "frequency": 17000000000,
+            "model": "aperture",
+            "polarisation": "x"
+        },
+        "notes": "15 dBi horn for 17 GHz (35.3 x 27.1 mm aperture model); ten of them form the fans."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

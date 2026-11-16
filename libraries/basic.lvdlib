@@ -1,0 +1,155 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "basic",
+    "description": "Basic parts shared by RF and SPICE schematics: R, L, C, ground and hierarchical ports",
+    "components": [
+        {
+            "id": "resistor",
+            "name": "Resistor",
+            "category": "Passive",
+            "description": "Ideal resistor (ANSI symbol)",
+            "referencePrefix": "R",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "r", "label": "Resistance", "unit": "ohm", "default": "1k", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "line",
+                        "points": [[-20, 0], [-18, -6], [-12, 6], [-6, -6], [0, 6], [6, -6], [12, 6], [18, -6], [20, 0]]
+                    }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "resistor" },
+                { "kind": "spice", "template": "R{ref} {pin:p} {pin:n} {r}" }
+            ]
+        },
+        {
+            "id": "capacitor",
+            "name": "Capacitor",
+            "category": "Passive",
+            "description": "Capacitor with optional finite Q (q = 0 is ideal)",
+            "referencePrefix": "C",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "c", "label": "Capacitance", "unit": "F", "default": "1pF", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[4, -12], [4, 12]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "capacitor" },
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}" }
+            ]
+        },
+        {
+            "id": "inductor",
+            "name": "Inductor",
+            "category": "Passive",
+            "description": "Inductor with optional finite Q (q = 0 is ideal)",
+            "referencePrefix": "L",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "l", "label": "Inductance", "unit": "H", "default": "1nH", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [-5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "inductor" },
+                { "kind": "spice", "template": "L{ref} {pin:p} {pin:n} {l}" }
+            ]
+        },
+        {
+            "id": "ground",
+            "name": "Ground",
+            "category": "Power",
+            "description": "Ground: connects to the global net 0",
+            "referencePrefix": "GND",
+            "pins": [
+                { "name": "gnd" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-12, 10], [12, 10]] },
+                    { "type": "line", "points": [[-8, 15], [8, 15]] },
+                    { "type": "line", "points": [[-4, 20], [4, 20]] }
+                ],
+                "pins": [
+                    { "pin": "gnd", "at": [0, 0], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [0, 32],
+                "valueAt": [0, 42]
+            },
+            "netName": "0"
+        },
+        {
+            "id": "sheet_port",
+            "name": "Sheet port",
+            "category": "Hierarchy",
+            "description": "Hierarchical port: becomes a pin of this schematic's sheet symbol",
+            "referencePrefix": "P",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "name", "label": "Port name", "unit": "", "default": "P1", "shown": true, "text": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-10, -8], [12, -8], [20, 0], [12, 8], [-10, 8]], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-20, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "role": "sheet-port"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+CMOS inverter transfer curve and transfer function
+VDD vdd 0 3.3
+VIN in 0 1.65
+M1 out in 0 0 NM W=2u L=0.5u
+M2 out in vdd vdd PM W=5u L=0.5u
+.model NM NMOS(LEVEL=1 VTO=0.6 KP=120u LAMBDA=0.05)
+.model PM PMOS(LEVEL=1 VTO=-0.7 KP=50u LAMBDA=0.05)
+.dc VIN 0 3.3 0.01
+.tf v(out) VIN
+.end

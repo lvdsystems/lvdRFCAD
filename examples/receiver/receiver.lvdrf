@@ -1,0 +1,1031 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    -700,
+                    0
+                ],
+                "definition": "rf-system:antenna",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "temp": "150"
+                },
+                "reference": "ANT1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -500,
+                    0
+                ],
+                "definition": "rf-system:filter",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                    "bw": "100MHz",
+                    "fc": "f_rf",
+                    "il": "1.5",
+                    "order": "3"
+                },
+                "reference": "F1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -300,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "gain": "18",
+                    "nf": "1",
+                    "oip3": "28",
+                    "op1db": "16"
+                },
+                "reference": "LNA1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -100,
+                    0
+                ],
+                "definition": "rf-system:mixer",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "gain": "-7",
+                    "iip3": "15",
+                    "nf": "7",
+                    "product": "difference"
+                },
+                "reference": "MX1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -100,
+                    200
+                ],
+                "definition": "rf-system:lo",
+                "id": "c5",
+                "mirror": false,
+                "parameters": {
+                    "freq": "f_rf - f_if",
+                    "power": "13"
+                },
+                "reference": "LO1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    150,
+                    0
+                ],
+                "definition": "sheet:if_strip",
+                "id": "c6",
+                "mirror": false,
+                "parameters": {
+                    "gain": "if_gain"
+                },
+                "reference": "X1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    400,
+                    0
+                ],
+                "definition": "rf-system:adc",
+                "id": "c7",
+                "mirror": false,
+                "parameters": {
+                    "bits": "14",
+                    "fs": "100MHz"
+                },
+                "reference": "ADC1",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "rf-system:adc": {
+                "category": "RF/Converters",
+                "description": "Analogue to digital converter at the end of a receive chain",
+                "id": "adc",
+                "models": [
+                    {
+                        "block": "adc",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "ADC",
+                "parameters": [
+                    {
+                        "default": "100MHz",
+                        "label": "Sample rate",
+                        "name": "fs",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "12",
+                        "label": "Resolution",
+                        "name": "bits",
+                        "shown": true,
+                        "unit": "bit"
+                    },
+                    {
+                        "default": "4",
+                        "label": "Full-scale input power",
+                        "name": "full_scale",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "30",
+                        "label": "Noise figure",
+                        "name": "nf",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Input impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    }
+                ],
+                "referencePrefix": "ADC",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    0
+                                ],
+                                [
+                                    -10,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    20
+                                ],
+                                [
+                                    -10,
+                                    20
+                                ]
+                            ],
+                            "type": "polygon"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                4,
+                                0
+                            ],
+                            "size": 10,
+                            "text": "ADC",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:amplifier": {
+                "category": "RF/Amplifiers",
+                "description": "Behavioural amplifier",
+                "id": "amplifier",
+                "models": [
+                    {
+                        "block": "amplifier",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Amplifier",
+                "parameters": [
+                    {
+                        "default": "15",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "2",
+                        "label": "Noise figure",
+                        "name": "nf",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "30",
+                        "label": "Output IP3",
+                        "name": "oip3",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "45",
+                        "label": "Output IP2",
+                        "name": "oip2",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "18",
+                        "label": "Output P1dB",
+                        "name": "op1db",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "40",
+                        "label": "Reverse isolation",
+                        "name": "isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "A",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    0
+                                ],
+                                [
+                                    -20,
+                                    20
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:antenna": {
+                "category": "RF/Antennas",
+                "description": "Antenna port with gain and noise temperature",
+                "id": "antenna",
+                "models": [
+                    {
+                        "block": "antenna",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Antenna",
+                "parameters": [
+                    {
+                        "default": "0",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dBi"
+                    },
+                    {
+                        "default": "290",
+                        "label": "Antenna noise temperature",
+                        "name": "temp",
+                        "unit": "K"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "ANT",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    -16
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -10,
+                                    -20
+                                ],
+                                [
+                                    10,
+                                    -20
+                                ],
+                                [
+                                    0,
+                                    -6
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                20
+                            ],
+                            "direction": "up",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        30,
+                        -10
+                    ],
+                    "valueAt": [
+                        30,
+                        5
+                    ]
+                }
+            },
+            "rf-system:filter": {
+                "category": "RF/Filters",
+                "description": "Behavioural lowpass, highpass, bandpass or bandstop filter",
+                "id": "filter",
+                "models": [
+                    {
+                        "block": "filter",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Filter",
+                "parameters": [
+                    {
+                        "choices": [
+                            "lowpass",
+                            "highpass",
+                            "bandpass",
+                            "bandstop"
+                        ],
+                        "default": "bandpass",
+                        "label": "Type",
+                        "name": "type",
+                        "shown": true
+                    },
+                    {
+                        "choices": [
+                            "ideal",
+                            "butterworth",
+                            "chebyshev"
+                        ],
+                        "default": "butterworth",
+                        "label": "Response",
+                        "name": "response"
+                    },
+                    {
+                        "default": "5",
+                        "label": "Order",
+                        "name": "order"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Cutoff (LP/HP) or centre frequency (BP/BS)",
+                        "name": "fc",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "100MHz",
+                        "label": "Bandwidth (BP/BS)",
+                        "name": "bw",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Passband insertion loss",
+                        "name": "il",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0.1",
+                        "label": "Passband ripple (Chebyshev)",
+                        "name": "ripple",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "80",
+                        "label": "Maximum stopband attenuation",
+                        "name": "rejection",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "F",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                -8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                -8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                0
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                0
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:lo": {
+                "category": "RF/Sources",
+                "description": "Local oscillator with optional phase noise",
+                "id": "lo",
+                "models": [
+                    {
+                        "block": "lo",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Local oscillator",
+                "parameters": [
+                    {
+                        "default": "2GHz",
+                        "label": "Frequency",
+                        "name": "freq",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "13",
+                        "label": "Power",
+                        "name": "power",
+                        "shown": true,
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "",
+                        "file": true,
+                        "label": "Phase noise file",
+                        "name": "phase_noise"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Source impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "LO",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                0,
+                                0
+                            ],
+                            "radius": 20,
+                            "type": "circle"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "size": 10,
+                            "text": "LO",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:mixer": {
+                "category": "RF/Mixers",
+                "description": "Behavioural mixer: rf and lo in, if out",
+                "id": "mixer",
+                "models": [
+                    {
+                        "block": "mixer",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Mixer",
+                "parameters": [
+                    {
+                        "default": "-7",
+                        "label": "Conversion gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "7",
+                        "label": "Noise figure (SSB)",
+                        "name": "nf",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "15",
+                        "label": "Input IP3",
+                        "name": "iip3",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "13",
+                        "label": "Nominal LO drive",
+                        "name": "lo_power",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "35",
+                        "label": "LO to RF isolation",
+                        "name": "lo_rf_isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "30",
+                        "label": "LO to IF isolation",
+                        "name": "lo_if_isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "25",
+                        "label": "RF to IF isolation",
+                        "name": "rf_if_isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "choices": [
+                            "low",
+                            "high"
+                        ],
+                        "default": "low",
+                        "label": "LO side",
+                        "name": "side"
+                    },
+                    {
+                        "choices": [
+                            "auto",
+                            "difference",
+                            "sum"
+                        ],
+                        "default": "auto",
+                        "label": "Wanted product",
+                        "name": "product",
+                        "shown": true
+                    },
+                    {
+                        "default": "",
+                        "file": true,
+                        "label": "Spur table file",
+                        "name": "spur_table"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "rf"
+                    },
+                    {
+                        "name": "lo"
+                    },
+                    {
+                        "name": "if"
+                    }
+                ],
+                "referencePrefix": "MX",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                0,
+                                0
+                            ],
+                            "radius": 20,
+                            "type": "circle"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -14,
+                                    -14
+                                ],
+                                [
+                                    14,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -14,
+                                    14
+                                ],
+                                [
+                                    14,
+                                    -14
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "rf"
+                        },
+                        {
+                            "at": [
+                                0,
+                                30
+                            ],
+                            "direction": "up",
+                            "length": 10,
+                            "pin": "lo"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "if"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        30,
+                        30
+                    ]
+                }
+            }
+        },
+        "junctions": [
+        ],
+        "labels": [
+        ],
+        "nextId": 15,
+        "simulation": {
+            "analyses": [
+                {
+                    "bandwidth": "1MHz",
+                    "frequency": "f_rf",
+                    "id": "a1",
+                    "mismatch": "actual",
+                    "name": "Receiver budget",
+                    "power": "-90",
+                    "spurs": {
+                        "enabled": true,
+                        "maxOrder": "5"
+                    },
+                    "sweep": {
+                        "points": "121",
+                        "start": "2.3GHz",
+                        "stop": "2.6GHz"
+                    },
+                    "type": "rf-budget"
+                }
+            ]
+        },
+        "texts": [
+            {
+                "at": [
+                    -700,
+                    -120
+                ],
+                "id": "t14",
+                "size": 14,
+                "text": "2.45 GHz receiver, 70 MHz IF, 14-bit ADC at 100 MS/s"
+            }
+        ],
+        "variables": [
+            {
+                "name": "f_rf",
+                "value": "2.45GHz"
+            },
+            {
+                "name": "f_if",
+                "value": "70MHz"
+            },
+            {
+                "name": "if_gain",
+                "value": "28"
+            }
+        ],
+        "wires": [
+            {
+                "id": "w8",
+                "points": [
+                    [
+                        -700,
+                        20
+                    ],
+                    [
+                        -530,
+                        20
+                    ],
+                    [
+                        -530,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w9",
+                "points": [
+                    [
+                        -470,
+                        0
+                    ],
+                    [
+                        -330,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w10",
+                "points": [
+                    [
+                        -270,
+                        0
+                    ],
+                    [
+                        -130,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w11",
+                "points": [
+                    [
+                        -70,
+                        200
+                    ],
+                    [
+                        -100,
+                        200
+                    ],
+                    [
+                        -100,
+                        30
+                    ]
+                ]
+            },
+            {
+                "id": "w12",
+                "points": [
+                    [
+                        -70,
+                        0
+                    ],
+                    [
+                        90,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w13",
+                "points": [
+                    [
+                        210,
+                        0
+                    ],
+                    [
+                        370,
+                        0
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "rf",
+    "version": 1
+}

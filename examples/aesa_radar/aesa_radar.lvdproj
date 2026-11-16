@@ -1,0 +1,18 @@
+{
+    "documents": [
+        {
+            "path": "rx_channel.lvdrf"
+        },
+        {
+            "path": "tx_channel.lvdrf"
+        },
+        {
+            "path": "patch.lvdelem"
+        },
+        {
+            "path": "aesa.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

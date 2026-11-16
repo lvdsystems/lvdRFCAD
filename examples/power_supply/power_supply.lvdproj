@@ -1,0 +1,9 @@
+{
+    "documents": [
+        {
+            "path": "supply.lvdspice"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

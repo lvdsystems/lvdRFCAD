@@ -1,0 +1,761 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    -600,
+                    0
+                ],
+                "definition": "rf-system:source",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "freq": "10GHz",
+                    "power": "0"
+                },
+                "reference": "SRC1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -400,
+                    0
+                ],
+                "definition": "rf-system:phase_shifter",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                    "il": "6",
+                    "phase": "0"
+                },
+                "reference": "PS1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -200,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "gain": "22",
+                    "nf": "5",
+                    "oip3": "35",
+                    "op1db": "25"
+                },
+                "reference": "DRV1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    0,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "gain": "25",
+                    "nf": "6",
+                    "oip3": "52",
+                    "op1db": "42"
+                },
+                "reference": "HPA1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    200,
+                    0
+                ],
+                "definition": "rf-system:isolator",
+                "id": "c5",
+                "mirror": false,
+                "parameters": {
+                    "il": "0.4"
+                },
+                "reference": "CIR1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    400,
+                    0
+                ],
+                "definition": "rf-system:termination",
+                "id": "c6",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "R1",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "rf-system:amplifier": {
+                "category": "RF/Amplifiers",
+                "description": "Behavioural amplifier",
+                "id": "amplifier",
+                "models": [
+                    {
+                        "block": "amplifier",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Amplifier",
+                "parameters": [
+                    {
+                        "default": "15",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "2",
+                        "label": "Noise figure",
+                        "name": "nf",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "30",
+                        "label": "Output IP3",
+                        "name": "oip3",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "45",
+                        "label": "Output IP2",
+                        "name": "oip2",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "18",
+                        "label": "Output P1dB",
+                        "name": "op1db",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "40",
+                        "label": "Reverse isolation",
+                        "name": "isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "A",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    0
+                                ],
+                                [
+                                    -20,
+                                    20
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:isolator": {
+                "category": "RF/Passive",
+                "description": "Two-port isolator, forward from in to out",
+                "id": "isolator",
+                "models": [
+                    {
+                        "block": "isolator",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Isolator",
+                "parameters": [
+                    {
+                        "default": "0.5",
+                        "label": "Insertion loss",
+                        "name": "il",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "20",
+                        "label": "Reverse isolation",
+                        "name": "isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "ISO",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -12,
+                                    0
+                                ],
+                                [
+                                    8,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "fill": "outline",
+                            "points": [
+                                [
+                                    14,
+                                    0
+                                ],
+                                [
+                                    6,
+                                    -5
+                                ],
+                                [
+                                    6,
+                                    5
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:phase_shifter": {
+                "category": "RF/Passive",
+                "description": "Matched phase shifter",
+                "id": "phase_shifter",
+                "models": [
+                    {
+                        "block": "phase_shifter",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Phase shifter",
+                "parameters": [
+                    {
+                        "default": "90",
+                        "label": "Phase shift (lag)",
+                        "name": "phase",
+                        "shown": true,
+                        "unit": "deg"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Insertion loss",
+                        "name": "il",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "PS",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "size": 12,
+                            "text": "Δφ",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:source": {
+                "category": "RF/Sources",
+                "description": "CW signal source driving a budget chain",
+                "id": "source",
+                "models": [
+                    {
+                        "block": "source",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Signal source",
+                "parameters": [
+                    {
+                        "default": "1GHz",
+                        "label": "Frequency",
+                        "name": "freq",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "-30",
+                        "label": "Power",
+                        "name": "power",
+                        "shown": true,
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Source impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "SRC",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                0,
+                                0
+                            ],
+                            "radius": 20,
+                            "type": "circle"
+                        },
+                        {
+                            "center": [
+                                -5,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                5,
+                                0
+                            ],
+                            "radius": 5,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:termination": {
+                "category": "RF/Ports",
+                "description": "Matched load to ground",
+                "id": "termination",
+                "models": [
+                    {
+                        "block": "termination",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Termination",
+                "parameters": [
+                    {
+                        "default": "50",
+                        "label": "Impedance",
+                        "name": "z0",
+                        "shown": true,
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "TERM",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    -10
+                                ],
+                                [
+                                    -5,
+                                    -8
+                                ],
+                                [
+                                    5,
+                                    -4
+                                ],
+                                [
+                                    -5,
+                                    0
+                                ],
+                                [
+                                    5,
+                                    4
+                                ],
+                                [
+                                    -5,
+                                    8
+                                ],
+                                [
+                                    0,
+                                    10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -8,
+                                    14
+                                ],
+                                [
+                                    8,
+                                    14
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -5,
+                                    18
+                                ],
+                                [
+                                    5,
+                                    18
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -2,
+                                    22
+                                ],
+                                [
+                                    2,
+                                    22
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                -20
+                            ],
+                            "direction": "down",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        30,
+                        -5
+                    ],
+                    "valueAt": [
+                        30,
+                        10
+                    ]
+                }
+            }
+        },
+        "junctions": [
+        ],
+        "labels": [
+        ],
+        "nextId": 13,
+        "simulation": {
+            "analyses": [
+                {
+                    "bandwidth": "10MHz",
+                    "frequency": "10GHz",
+                    "id": "a1",
+                    "mismatch": "actual",
+                    "name": "Tx channel",
+                    "power": "0",
+                    "spurs": {
+                        "enabled": false,
+                        "maxOrder": "5"
+                    },
+                    "type": "rf-budget"
+                }
+            ]
+        },
+        "texts": [
+            {
+                "at": [
+                    -600,
+                    -110
+                ],
+                "id": "t12",
+                "size": 14,
+                "text": "Transmit channel of one T/R module: phase shifter, driver, GaN HPA, circulator"
+            }
+        ],
+        "variables": [
+        ],
+        "wires": [
+            {
+                "id": "w7",
+                "points": [
+                    [
+                        -570,
+                        0
+                    ],
+                    [
+                        -430,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w8",
+                "points": [
+                    [
+                        -370,
+                        0
+                    ],
+                    [
+                        -230,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w9",
+                "points": [
+                    [
+                        -170,
+                        0
+                    ],
+                    [
+                        -30,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w10",
+                "points": [
+                    [
+                        30,
+                        0
+                    ],
+                    [
+                        170,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w11",
+                "points": [
+                    [
+                        230,
+                        0
+                    ],
+                    [
+                        400,
+                        0
+                    ],
+                    [
+                        400,
+                        -20
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "rf",
+    "version": 1
+}

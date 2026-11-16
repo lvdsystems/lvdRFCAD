@@ -1,0 +1,15 @@
+Parameterised subcircuit op-amp as integrator, pole-zero
+.subckt amp inp inn out params: a0=1e5 fp=10
+E1 x 0 inp inn {a0}
+R1 x y 1k
+C1 y 0 {1/(6.283185307*1k*fp)}
+E2 out 0 y 0 1
+.ends
+V1 in 0 PULSE(-1 1 0 1u 1u 0.5m 1m) AC 1
+R1 in inn 10k
+C1 inn out 10n
+X1 0 inn out amp params: a0=2e5 fp=5
+.tran 1u 3m
+.ac dec 10 1 1meg
+.pz in 0 out 0 vol pz
+.end

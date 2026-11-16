@@ -1,0 +1,15 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.5,
+            "frequency": 400000000,
+            "length": 0,
+            "model": "monopole",
+            "polarisation": "x"
+        },
+        "notes": "Quarter-wave monopole on a large ground plane, 400 MHz."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

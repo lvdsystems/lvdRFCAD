@@ -1,0 +1,19 @@
+{
+    "content": {
+        "element": {
+            "backLobe": -20,
+            "efficiency": -0.8,
+            "frequency": 10000000000,
+            "model": "patch",
+            "patchLength": 0,
+            "patchWidth": 0,
+            "permittivity": 3.55,
+            "polarisation": "x",
+            "substrateHeight": 0.000813
+        },
+        "notes": "Patch for 10 GHz on RO4003C, 0.813 mm; the AESA uses it as its element."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

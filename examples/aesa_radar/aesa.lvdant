@@ -1,0 +1,84 @@
+{
+    "content": {
+        "aesa": {
+            "amplitudeError": 0.4,
+            "attenuatorBits": 6,
+            "attenuatorStep": 0.5,
+            "delayLsb": 0,
+            "failed": [
+            ],
+            "failedFraction": 0.02,
+            "phaseBits": 6,
+            "phaseError": 3,
+            "seed": 3
+        },
+        "designFrequency": 10000000000,
+        "element": "element:patch",
+        "excitation": {
+            "radial": true,
+            "steerPhi": 0,
+            "steerTheta": 30,
+            "steering": "phase",
+            "taperX": {
+                "kind": "taylor",
+                "nbar": 5,
+                "sll": 35
+            },
+            "taperY": {
+                "kind": "uniform"
+            }
+        },
+        "frequency": 10000000000,
+        "geometry": {
+            "aperture": "circle",
+            "apertureX": 6.9,
+            "apertureY": 0,
+            "dx": 0.6,
+            "dy": 0.5196,
+            "kind": "triangular",
+            "nx": 24,
+            "ny": 28,
+            "unit": "lambda"
+        },
+        "sweeps": {
+            "bandPoints": 21,
+            "bandStart": 0,
+            "bandStop": 0,
+            "scanMax": 60,
+            "scanPlane": 0,
+            "scanStep": 2
+        },
+        "synthesis": {
+            "iterations": 300,
+            "mainBeam": 0,
+            "phaseOnly": false,
+            "sll": -30
+        },
+        "trModule": {
+            "ambientTemperature": 290,
+            "antennaTemperature": 150,
+            "beamformerLoss": 6,
+            "frontLoss": 0.8,
+            "rx": {
+                "document": "rx_channel",
+                "gain": 25,
+                "nf": 3,
+                "power": 40,
+                "preset": "antenna-tr-modules:x-gan-10w",
+                "source": "linked"
+            },
+            "tx": {
+                "document": "tx_channel",
+                "gain": 30,
+                "nf": 3,
+                "power": 40,
+                "preset": "antenna-tr-modules:x-gan-10w",
+                "source": "linked"
+            },
+            "txTaper": false
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna",
+    "version": 1
+}

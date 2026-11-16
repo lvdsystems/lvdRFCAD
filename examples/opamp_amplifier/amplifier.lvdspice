@@ -1,0 +1,1604 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    0,
+                    0
+                ],
+                "definition": "spice-instruments:function_generator",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "amplitude": "0.2",
+                    "freq": "1kHz"
+                },
+                "reference": "FG1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    300,
+                    -50
+                ],
+                "definition": "spice-ics:opamp_tl072",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "U1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    170,
+                    60
+                ],
+                "definition": "basic:resistor",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "r": "1k"
+                },
+                "reference": "RG",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    300,
+                    60
+                ],
+                "definition": "basic:resistor",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "r": "10k"
+                },
+                "reference": "RF",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    450,
+                    -50
+                ],
+                "definition": "basic:resistor",
+                "id": "c5",
+                "mirror": false,
+                "parameters": {
+                    "r": "10k"
+                },
+                "reference": "RL",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -260,
+                    0
+                ],
+                "definition": "spice-sources:vdc",
+                "id": "c6",
+                "mirror": false,
+                "parameters": {
+                    "dc": "15"
+                },
+                "reference": "VP",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -160,
+                    0
+                ],
+                "definition": "spice-sources:vdc",
+                "id": "c7",
+                "mirror": false,
+                "parameters": {
+                    "dc": "15"
+                },
+                "reference": "VN",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    640,
+                    140
+                ],
+                "definition": "spice-instruments:oscilloscope",
+                "id": "c8",
+                "mirror": false,
+                "parameters": {
+                    "tdiv": "200us",
+                    "vdiv1": "0.5",
+                    "vdiv2": "1"
+                },
+                "reference": "SC1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    860,
+                    140
+                ],
+                "definition": "spice-instruments:bode_plotter",
+                "id": "c9",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "BP1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    0,
+                    80
+                ],
+                "definition": "basic:ground",
+                "id": "c11",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    140,
+                    100
+                ],
+                "definition": "basic:ground",
+                "id": "c15",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND2",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    480,
+                    -10
+                ],
+                "definition": "basic:ground",
+                "id": "c19",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND3",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -260,
+                    70
+                ],
+                "definition": "basic:ground",
+                "id": "c26",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND4",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -160,
+                    -70
+                ],
+                "definition": "basic:ground",
+                "id": "c28",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND5",
+                "rotation": 180
+            },
+            {
+                "at": [
+                    640,
+                    230
+                ],
+                "definition": "basic:ground",
+                "id": "c33",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND6",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    860,
+                    230
+                ],
+                "definition": "basic:ground",
+                "id": "c37",
+                "mirror": false,
+                "parameters": {
+                },
+                "reference": "GND7",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "basic:ground": {
+                "category": "Power",
+                "description": "Ground: connects to the global net 0",
+                "id": "ground",
+                "name": "Ground",
+                "netName": "0",
+                "pins": [
+                    {
+                        "name": "gnd"
+                    }
+                ],
+                "referencePrefix": "GND",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -12,
+                                    10
+                                ],
+                                [
+                                    12,
+                                    10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -8,
+                                    15
+                                ],
+                                [
+                                    8,
+                                    15
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -4,
+                                    20
+                                ],
+                                [
+                                    4,
+                                    20
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                0
+                            ],
+                            "direction": "down",
+                            "length": 10,
+                            "pin": "gnd"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        32
+                    ],
+                    "valueAt": [
+                        0,
+                        42
+                    ]
+                }
+            },
+            "basic:resistor": {
+                "category": "Passive",
+                "description": "Ideal resistor (ANSI symbol)",
+                "id": "resistor",
+                "models": [
+                    {
+                        "element": "resistor",
+                        "kind": "rf-element"
+                    },
+                    {
+                        "kind": "spice",
+                        "template": "R{ref} {pin:p} {pin:n} {r}"
+                    }
+                ],
+                "name": "Resistor",
+                "parameters": [
+                    {
+                        "default": "1k",
+                        "label": "Resistance",
+                        "name": "r",
+                        "shown": true,
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    },
+                    {
+                        "name": "n"
+                    }
+                ],
+                "referencePrefix": "R",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    0
+                                ],
+                                [
+                                    -18,
+                                    -6
+                                ],
+                                [
+                                    -12,
+                                    6
+                                ],
+                                [
+                                    -6,
+                                    -6
+                                ],
+                                [
+                                    0,
+                                    6
+                                ],
+                                [
+                                    6,
+                                    -6
+                                ],
+                                [
+                                    12,
+                                    6
+                                ],
+                                [
+                                    18,
+                                    -6
+                                ],
+                                [
+                                    20,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "p"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "n"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -20
+                    ],
+                    "valueAt": [
+                        0,
+                        20
+                    ]
+                }
+            },
+            "spice-ics:opamp_tl072": {
+                "category": "ICs/Op-amps",
+                "description": "Generic preset with TL072 datasheet-typical figures: 106 dB gain, 3 MHz GBW, 13 V/us, output 1.5 V from the rails (not a vendor model)",
+                "id": "opamp_tl072",
+                "models": [
+                    {
+                        "kind": "spice",
+                        "subcircuit": ".subckt lvd_opamp inp inn out vcc vee params: aol=1e5 gbw=1e6 sr=1 vos=0 rin=1e12 rout=50 ilim=25e-3 vohr=1.5 volr=1.5 iq=1e-3\n* single-pole behavioural op-amp: slew-limited transconductance into a 1 nF integrator,\n* output clamp vohr below vcc and volr above vee, current-limited output stage fed from the supplies\nRin inp inn {rin}\nBgm 0 n1 I=({sr*1e-3})*tanh((V(inp,inn)+({vos}))*({6.283185307*gbw/(sr*1e6)}))\nR1 n1 0 {aol/(6.283185307e-9*gbw)}\nC1 n1 0 1e-9\nBcl n1 0 I=(V(n1)-V(vcc)+({vohr})+sqrt((V(n1)-V(vcc)+({vohr}))^2+1e-6))/2-(V(vee)+({volr})-V(n1)+sqrt((V(vee)+({volr})-V(n1))^2+1e-6))/2\nBsrc vcc out I=({ilim})*(tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nBsnk out vee I=({ilim})*(-tanh((V(n1)-V(out))/({rout*ilim}))+sqrt(tanh((V(n1)-V(out))/({rout*ilim}))^2+1e-8))/2\nIq vcc vee {iq}\n.ends lvd_opamp",
+                        "template": "X{ref} {pin:inp} {pin:inn} {pin:out} {pin:vcc} {pin:vee} lvd_opamp params: aol={aol} gbw={gbw} sr={sr} vos={vos} rin={rin} rout={rout} ilim={ilim} vohr={vohr} volr={volr} iq={iq}"
+                    }
+                ],
+                "name": "Op-amp, TL072-like",
+                "parameters": [
+                    {
+                        "default": "200k",
+                        "label": "Open-loop DC gain",
+                        "name": "aol",
+                        "unit": "V/V"
+                    },
+                    {
+                        "default": "3meg",
+                        "label": "Gain-bandwidth product",
+                        "name": "gbw",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "13",
+                        "label": "Slew rate",
+                        "name": "sr",
+                        "shown": true,
+                        "unit": "V/us"
+                    },
+                    {
+                        "default": "1.5",
+                        "label": "Output headroom below vcc",
+                        "name": "vohr",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "1.5",
+                        "label": "Output headroom above vee",
+                        "name": "volr",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "100",
+                        "label": "Output resistance",
+                        "name": "rout",
+                        "unit": "ohm"
+                    },
+                    {
+                        "default": "25m",
+                        "label": "Output current limit",
+                        "name": "ilim",
+                        "unit": "A"
+                    },
+                    {
+                        "default": "1.4m",
+                        "label": "Supply current",
+                        "name": "iq",
+                        "unit": "A"
+                    },
+                    {
+                        "default": "1T",
+                        "label": "Differential input resistance",
+                        "name": "rin",
+                        "unit": "ohm"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Input offset voltage",
+                        "name": "vos",
+                        "unit": "V"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "inp"
+                    },
+                    {
+                        "name": "inn"
+                    },
+                    {
+                        "name": "out"
+                    },
+                    {
+                        "name": "vcc"
+                    },
+                    {
+                        "name": "vee"
+                    }
+                ],
+                "referencePrefix": "U",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -30,
+                                    -30
+                                ],
+                                [
+                                    30,
+                                    0
+                                ],
+                                [
+                                    -30,
+                                    30
+                                ]
+                            ],
+                            "type": "polygon"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -26,
+                                    -10
+                                ],
+                                [
+                                    -20,
+                                    -10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -23,
+                                    -13
+                                ],
+                                [
+                                    -23,
+                                    -7
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -26,
+                                    10
+                                ],
+                                [
+                                    -20,
+                                    10
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "anchor": "center",
+                            "at": [
+                                -4,
+                                0
+                            ],
+                            "size": 6,
+                            "text": "072",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -50,
+                                -10
+                            ],
+                            "direction": "right",
+                            "length": 20,
+                            "pin": "inp"
+                        },
+                        {
+                            "at": [
+                                -50,
+                                10
+                            ],
+                            "direction": "right",
+                            "length": 20,
+                            "pin": "inn"
+                        },
+                        {
+                            "at": [
+                                50,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 20,
+                            "pin": "out"
+                        },
+                        {
+                            "at": [
+                                0,
+                                -40
+                            ],
+                            "direction": "down",
+                            "length": 25,
+                            "pin": "vcc"
+                        },
+                        {
+                            "at": [
+                                0,
+                                40
+                            ],
+                            "direction": "up",
+                            "length": 25,
+                            "pin": "vee"
+                        }
+                    ],
+                    "referenceAt": [
+                        25,
+                        -25
+                    ],
+                    "valueAt": [
+                        45,
+                        28
+                    ]
+                }
+            },
+            "spice-instruments:bode_plotter": {
+                "category": "Instruments",
+                "description": "Gain (dB) and phase of V(out)/V(in), both against the reference pin, from an AC result. Adds no circuit element; the circuit needs a source with an AC magnitude.",
+                "id": "bode_plotter",
+                "models": [
+                    {
+                        "instrument": "bode-plotter",
+                        "kind": "spice",
+                        "template": ""
+                    }
+                ],
+                "name": "Bode plotter",
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    },
+                    {
+                        "name": "ref"
+                    }
+                ],
+                "referencePrefix": "BP",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "fill": "background",
+                            "from": [
+                                -40,
+                                -30
+                            ],
+                            "to": [
+                                40,
+                                30
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -30,
+                                    -14
+                                ],
+                                [
+                                    -4,
+                                    -14
+                                ],
+                                [
+                                    24,
+                                    16
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -30,
+                                    20
+                                ],
+                                [
+                                    30,
+                                    20
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "anchor": "left",
+                            "at": [
+                                -36,
+                                -6
+                            ],
+                            "size": 7,
+                            "text": "in",
+                            "type": "text"
+                        },
+                        {
+                            "anchor": "right",
+                            "at": [
+                                36,
+                                -6
+                            ],
+                            "size": 7,
+                            "text": "out",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -60,
+                                -10
+                            ],
+                            "direction": "right",
+                            "length": 20,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                60,
+                                -10
+                            ],
+                            "direction": "left",
+                            "length": 20,
+                            "pin": "out"
+                        },
+                        {
+                            "at": [
+                                0,
+                                50
+                            ],
+                            "direction": "up",
+                            "length": 20,
+                            "pin": "ref"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -40
+                    ],
+                    "valueAt": [
+                        50,
+                        40
+                    ]
+                }
+            },
+            "spice-instruments:function_generator": {
+                "category": "Instruments",
+                "description": "Sine, square, triangle or sawtooth voltage (V(p) - V(n) = offset + amplitude * shape) with an AC magnitude for AC analyses. Square and edges are slightly rounded so the simulator can follow them.",
+                "id": "function_generator",
+                "models": [
+                    {
+                        "instrument": "function-generator",
+                        "kind": "spice",
+                        "subcircuit": ".func lvd_fg_sine(x) {sin(6.283185307179586*x)}\n.func lvd_fg_square(x) {tanh(40*sin(6.283185307179586*x))}\n.func lvd_fg_triangle(x) {0.6366197723675814*asin(0.9999*sin(6.283185307179586*x))}\n.func lvd_fg_sawtooth(x) {2*(x-floor(x+0.5))}",
+                        "template": "V{ref}_ac {pin:p} fg_{ref} DC 0 AC {ac}\nB{ref} fg_{ref} {pin:n} V={offset}+({amplitude})*lvd_fg_{shape}(({freq})*time+({phase})/360)"
+                    }
+                ],
+                "name": "Function generator",
+                "parameters": [
+                    {
+                        "choices": [
+                            "sine",
+                            "square",
+                            "triangle",
+                            "sawtooth"
+                        ],
+                        "default": "sine",
+                        "label": "Waveform",
+                        "name": "shape",
+                        "shown": true
+                    },
+                    {
+                        "default": "1kHz",
+                        "label": "Frequency",
+                        "name": "freq",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Amplitude (peak)",
+                        "name": "amplitude",
+                        "shown": true,
+                        "unit": "V"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Offset",
+                        "name": "offset",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Phase",
+                        "name": "phase",
+                        "unit": "deg"
+                    },
+                    {
+                        "default": "1",
+                        "label": "AC magnitude",
+                        "name": "ac",
+                        "unit": "V"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    },
+                    {
+                        "name": "n"
+                    }
+                ],
+                "referencePrefix": "FG",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "fill": "background",
+                            "from": [
+                                -24,
+                                -24
+                            ],
+                            "to": [
+                                24,
+                                24
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -18,
+                                    0
+                                ],
+                                [
+                                    -14,
+                                    -8
+                                ],
+                                [
+                                    -9,
+                                    -10
+                                ],
+                                [
+                                    -4,
+                                    -8
+                                ],
+                                [
+                                    0,
+                                    0
+                                ],
+                                [
+                                    4,
+                                    8
+                                ],
+                                [
+                                    9,
+                                    10
+                                ],
+                                [
+                                    14,
+                                    8
+                                ],
+                                [
+                                    18,
+                                    0
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "anchor": "left",
+                            "at": [
+                                8,
+                                -27
+                            ],
+                            "size": 9,
+                            "text": "+",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                -40
+                            ],
+                            "direction": "down",
+                            "length": 16,
+                            "pin": "p"
+                        },
+                        {
+                            "at": [
+                                0,
+                                40
+                            ],
+                            "direction": "up",
+                            "length": 16,
+                            "pin": "n"
+                        }
+                    ],
+                    "referenceAt": [
+                        32,
+                        -14
+                    ],
+                    "valueAt": [
+                        32,
+                        0
+                    ]
+                }
+            },
+            "spice-instruments:oscilloscope": {
+                "category": "Instruments",
+                "description": "Two-channel oscilloscope on a transient result: channel voltages against the reference pin, time and volts per division with an offset per channel, and a rising-edge trigger. Like a real scope it shows the latest triggered sweep (ten divisions). Adds no circuit element.",
+                "id": "oscilloscope",
+                "models": [
+                    {
+                        "instrument": "oscilloscope",
+                        "kind": "spice",
+                        "template": ""
+                    }
+                ],
+                "name": "Oscilloscope",
+                "parameters": [
+                    {
+                        "default": "100us",
+                        "label": "Time per division",
+                        "name": "tdiv",
+                        "shown": true,
+                        "unit": "s"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Channel 1 volts per division",
+                        "name": "vdiv1",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Channel 2 volts per division",
+                        "name": "vdiv2",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Channel 1 voltage at the centre line",
+                        "name": "offset1",
+                        "unit": "V"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Channel 2 voltage at the centre line",
+                        "name": "offset2",
+                        "unit": "V"
+                    },
+                    {
+                        "choices": [
+                            "ch1",
+                            "ch2",
+                            "none"
+                        ],
+                        "default": "ch1",
+                        "label": "Trigger source",
+                        "name": "trigger"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Trigger level",
+                        "name": "level",
+                        "unit": "V"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "ch1"
+                    },
+                    {
+                        "name": "ch2"
+                    },
+                    {
+                        "name": "ref"
+                    }
+                ],
+                "referencePrefix": "SC",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "fill": "background",
+                            "from": [
+                                -40,
+                                -30
+                            ],
+                            "to": [
+                                40,
+                                30
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "from": [
+                                -32,
+                                -24
+                            ],
+                            "to": [
+                                20,
+                                18
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -30,
+                                    -3
+                                ],
+                                [
+                                    -24,
+                                    -14
+                                ],
+                                [
+                                    -18,
+                                    -3
+                                ],
+                                [
+                                    -12,
+                                    8
+                                ],
+                                [
+                                    -6,
+                                    -3
+                                ],
+                                [
+                                    0,
+                                    -14
+                                ],
+                                [
+                                    6,
+                                    -3
+                                ],
+                                [
+                                    12,
+                                    8
+                                ],
+                                [
+                                    18,
+                                    -3
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "center": [
+                                30,
+                                -14
+                            ],
+                            "radius": 3,
+                            "type": "circle"
+                        },
+                        {
+                            "center": [
+                                30,
+                                4
+                            ],
+                            "radius": 3,
+                            "type": "circle"
+                        },
+                        {
+                            "anchor": "left",
+                            "at": [
+                                -36,
+                                -14
+                            ],
+                            "size": 7,
+                            "text": "1",
+                            "type": "text"
+                        },
+                        {
+                            "anchor": "left",
+                            "at": [
+                                -36,
+                                13
+                            ],
+                            "size": 7,
+                            "text": "2",
+                            "type": "text"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -60,
+                                -10
+                            ],
+                            "direction": "right",
+                            "length": 20,
+                            "pin": "ch1"
+                        },
+                        {
+                            "at": [
+                                -60,
+                                10
+                            ],
+                            "direction": "right",
+                            "length": 20,
+                            "pin": "ch2"
+                        },
+                        {
+                            "at": [
+                                0,
+                                50
+                            ],
+                            "direction": "up",
+                            "length": 20,
+                            "pin": "ref"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -40
+                    ],
+                    "valueAt": [
+                        50,
+                        40
+                    ]
+                }
+            },
+            "spice-sources:vdc": {
+                "category": "Sources/Voltage",
+                "description": "DC voltage source with optional AC magnitude for AC analysis",
+                "id": "vdc",
+                "models": [
+                    {
+                        "kind": "spice",
+                        "template": "V{ref} {pin:p} {pin:n} DC {dc} AC {ac}"
+                    }
+                ],
+                "name": "DC voltage source",
+                "parameters": [
+                    {
+                        "default": "5",
+                        "label": "DC voltage",
+                        "name": "dc",
+                        "shown": true,
+                        "unit": "V"
+                    },
+                    {
+                        "default": "0",
+                        "label": "AC magnitude",
+                        "name": "ac",
+                        "unit": "V"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    },
+                    {
+                        "name": "n"
+                    }
+                ],
+                "referencePrefix": "V",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "center": [
+                                0,
+                                0
+                            ],
+                            "radius": 15,
+                            "type": "circle"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -5,
+                                    -6
+                                ],
+                                [
+                                    5,
+                                    -6
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    0,
+                                    -11
+                                ],
+                                [
+                                    0,
+                                    -1
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    -5,
+                                    7
+                                ],
+                                [
+                                    5,
+                                    7
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    8,
+                                    -24
+                                ],
+                                [
+                                    14,
+                                    -24
+                                ]
+                            ],
+                            "type": "line"
+                        },
+                        {
+                            "points": [
+                                [
+                                    11,
+                                    -27
+                                ],
+                                [
+                                    11,
+                                    -21
+                                ]
+                            ],
+                            "type": "line"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                0,
+                                -30
+                            ],
+                            "direction": "down",
+                            "length": 15,
+                            "pin": "p"
+                        },
+                        {
+                            "at": [
+                                0,
+                                30
+                            ],
+                            "direction": "up",
+                            "length": 15,
+                            "pin": "n"
+                        }
+                    ],
+                    "referenceAt": [
+                        35,
+                        -8
+                    ],
+                    "valueAt": [
+                        35,
+                        8
+                    ]
+                }
+            }
+        },
+        "junctions": [
+        ],
+        "labels": [
+            {
+                "at": [
+                    250,
+                    -60
+                ],
+                "id": "l21",
+                "net": "in"
+            },
+            {
+                "at": [
+                    350,
+                    -50
+                ],
+                "id": "l22",
+                "net": "out"
+            },
+            {
+                "at": [
+                    300,
+                    -90
+                ],
+                "id": "l23",
+                "net": "vcc"
+            },
+            {
+                "at": [
+                    300,
+                    -10
+                ],
+                "id": "l24",
+                "net": "vee"
+            },
+            {
+                "at": [
+                    -260,
+                    -30
+                ],
+                "id": "l25",
+                "net": "vcc"
+            },
+            {
+                "at": [
+                    -160,
+                    30
+                ],
+                "id": "l30",
+                "net": "vee"
+            },
+            {
+                "at": [
+                    580,
+                    130
+                ],
+                "id": "l31",
+                "net": "in"
+            },
+            {
+                "at": [
+                    580,
+                    150
+                ],
+                "id": "l32",
+                "net": "out"
+            },
+            {
+                "at": [
+                    800,
+                    130
+                ],
+                "id": "l35",
+                "net": "in"
+            },
+            {
+                "at": [
+                    920,
+                    130
+                ],
+                "id": "l36",
+                "net": "out"
+            }
+        ],
+        "nextId": 40,
+        "simulation": {
+            "analyses": [
+                {
+                    "id": "a1",
+                    "name": "Bias",
+                    "type": "spice-op"
+                },
+                {
+                    "id": "a2",
+                    "maxStep": "2us",
+                    "name": "Waveforms",
+                    "step": "2us",
+                    "stop": "5ms",
+                    "type": "spice-tran"
+                },
+                {
+                    "id": "a3",
+                    "monteCarlo": {
+                        "measures": [
+                            {
+                                "expression": "db(v(out)/v(in))",
+                                "function": "max",
+                                "name": "Gain"
+                            }
+                        ],
+                        "runs": 100,
+                        "seed": 1,
+                        "tolerances": [
+                            {
+                                "distribution": "gaussian",
+                                "target": "R*.r",
+                                "tolerance": 0.01
+                            }
+                        ]
+                    },
+                    "name": "Frequency response",
+                    "points": "20",
+                    "start": "10Hz",
+                    "stop": "10MHz",
+                    "sweep": "dec",
+                    "type": "spice-ac"
+                },
+                {
+                    "fundamental": "1kHz",
+                    "harmonics": "9",
+                    "id": "a4",
+                    "maxStep": "2us",
+                    "name": "Distortion",
+                    "signals": [
+                        "v(out)"
+                    ],
+                    "step": "2us",
+                    "stop": "5ms",
+                    "type": "spice-fourier"
+                }
+            ]
+        },
+        "texts": [
+            {
+                "at": [
+                    -260,
+                    -130
+                ],
+                "id": "t39",
+                "size": 14,
+                "text": "Non-inverting amplifier, gain 1 + RF/RG = 11"
+            }
+        ],
+        "variables": [
+        ],
+        "wires": [
+            {
+                "id": "w10",
+                "points": [
+                    [
+                        0,
+                        -40
+                    ],
+                    [
+                        0,
+                        -60
+                    ],
+                    [
+                        250,
+                        -60
+                    ]
+                ]
+            },
+            {
+                "id": "w12",
+                "points": [
+                    [
+                        0,
+                        40
+                    ],
+                    [
+                        0,
+                        80
+                    ]
+                ]
+            },
+            {
+                "id": "w13",
+                "points": [
+                    [
+                        200,
+                        60
+                    ],
+                    [
+                        270,
+                        60
+                    ]
+                ]
+            },
+            {
+                "id": "w14",
+                "points": [
+                    [
+                        220,
+                        60
+                    ],
+                    [
+                        220,
+                        -40
+                    ],
+                    [
+                        250,
+                        -40
+                    ]
+                ]
+            },
+            {
+                "id": "w16",
+                "points": [
+                    [
+                        140,
+                        60
+                    ],
+                    [
+                        140,
+                        100
+                    ]
+                ]
+            },
+            {
+                "id": "w17",
+                "points": [
+                    [
+                        330,
+                        60
+                    ],
+                    [
+                        370,
+                        60
+                    ],
+                    [
+                        370,
+                        -50
+                    ]
+                ]
+            },
+            {
+                "id": "w18",
+                "points": [
+                    [
+                        350,
+                        -50
+                    ],
+                    [
+                        420,
+                        -50
+                    ]
+                ]
+            },
+            {
+                "id": "w20",
+                "points": [
+                    [
+                        480,
+                        -50
+                    ],
+                    [
+                        480,
+                        -10
+                    ]
+                ]
+            },
+            {
+                "id": "w27",
+                "points": [
+                    [
+                        -260,
+                        30
+                    ],
+                    [
+                        -260,
+                        70
+                    ]
+                ]
+            },
+            {
+                "id": "w29",
+                "points": [
+                    [
+                        -160,
+                        -30
+                    ],
+                    [
+                        -160,
+                        -70
+                    ]
+                ]
+            },
+            {
+                "id": "w34",
+                "points": [
+                    [
+                        640,
+                        190
+                    ],
+                    [
+                        640,
+                        230
+                    ]
+                ]
+            },
+            {
+                "id": "w38",
+                "points": [
+                    [
+                        860,
+                        190
+                    ],
+                    [
+                        860,
+                        230
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "spice",
+    "version": 1
+}

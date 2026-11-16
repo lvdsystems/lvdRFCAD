@@ -1,0 +1,331 @@
+{
+    "format": "lvdrfcad-library",
+    "version": 1,
+    "name": "rf-circuit",
+    "description": "Linear RF circuit elements: transmission lines, stubs, coupled lines and transformers",
+    "components": [
+        {
+            "id": "tline",
+            "name": "Transmission line",
+            "category": "Transmission lines/Ideal",
+            "description": "Ideal lossless TEM transmission line",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "z0", "label": "Characteristic impedance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "elen", "label": "Electrical length at freq", "unit": "deg", "default": "90", "shown": true },
+                { "name": "freq", "label": "Frequency of elen", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -6], "to": [20, 6], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "tline" }
+            ]
+        },
+        {
+            "id": "open_stub",
+            "name": "Open stub",
+            "category": "Transmission lines/Ideal",
+            "description": "Ideal open-circuited stub to ground",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "z0", "label": "Characteristic impedance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "elen", "label": "Electrical length at freq", "unit": "deg", "default": "90", "shown": true },
+                { "name": "freq", "label": "Frequency of elen", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-5, -20], "to": [5, 20], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [30, -10],
+                "valueAt": [30, 5]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "stub_open" }
+            ]
+        },
+        {
+            "id": "short_stub",
+            "name": "Short stub",
+            "category": "Transmission lines/Ideal",
+            "description": "Ideal short-circuited stub to ground",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "z0", "label": "Characteristic impedance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "elen", "label": "Electrical length at freq", "unit": "deg", "default": "90", "shown": true },
+                { "name": "freq", "label": "Frequency of elen", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-5, -20], "to": [5, 16], "fill": "none" },
+                    { "type": "line", "points": [[0, 16], [0, 20]] },
+                    { "type": "line", "points": [[-8, 20], [8, 20]] },
+                    { "type": "line", "points": [[-5, 24], [5, 24]] },
+                    { "type": "line", "points": [[-2, 28], [2, 28]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [30, -10],
+                "valueAt": [30, 5]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "stub_short" }
+            ]
+        },
+        {
+            "id": "coupled_lines",
+            "name": "Coupled lines",
+            "category": "Transmission lines/Ideal",
+            "description": "Ideal symmetric coupled TEM lines: p1-p2 and p3-p4, p1 and p3 at the same end",
+            "referencePrefix": "CL",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" },
+                { "name": "p4" }
+            ],
+            "parameters": [
+                { "name": "z0e", "label": "Even-mode impedance", "unit": "ohm", "default": "70", "shown": true },
+                { "name": "z0o", "label": "Odd-mode impedance", "unit": "ohm", "default": "35", "shown": true },
+                { "name": "elen", "label": "Electrical length at freq", "unit": "deg", "default": "90" },
+                { "name": "freq", "label": "Frequency of elen", "unit": "Hz", "default": "1GHz" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -13], "to": [20, -7], "fill": "none" },
+                    { "type": "rect", "from": [-20, 7], "to": [20, 13], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "p4", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "coupled_lines" }
+            ]
+        },
+        {
+            "id": "microstrip",
+            "name": "Microstrip line",
+            "category": "Transmission lines/Physical",
+            "description": "Microstrip line on a substrate",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "1.5mm", "shown": true },
+                { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.8mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "4.4" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -4], "to": [20, 4], "fill": "outline" },
+                    { "type": "line", "points": [[-20, 10], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip" }
+            ]
+        },
+        {
+            "id": "stripline",
+            "name": "Stripline",
+            "category": "Transmission lines/Physical",
+            "description": "Symmetric stripline centred between two ground planes",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.5mm", "shown": true },
+                { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
+                { "name": "b", "label": "Ground plane spacing", "unit": "m", "default": "1.6mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "4.4" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -3], "to": [20, 3], "fill": "outline" },
+                    { "type": "line", "points": [[-20, -10], [20, -10]] },
+                    { "type": "line", "points": [[-20, 10], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -24],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "stripline" }
+            ]
+        },
+        {
+            "id": "coax",
+            "name": "Coaxial line",
+            "category": "Transmission lines/Physical",
+            "description": "Coaxial line from its dimensions",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "din", "label": "Inner conductor diameter", "unit": "m", "default": "0.51mm" },
+                { "name": "dout", "label": "Outer conductor inner diameter", "unit": "m", "default": "1.68mm" },
+                { "name": "l", "label": "Length", "unit": "m", "default": "100mm", "shown": true },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "2.1" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.0002" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, -8], [20, -8]] },
+                    { "type": "line", "points": [[-20, 8], [20, 8]] },
+                    { "type": "rect", "from": [-20, -2], "to": [20, 2], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "coax" }
+            ]
+        },
+        {
+            "id": "cpw",
+            "name": "Coplanar waveguide",
+            "category": "Transmission lines/Physical",
+            "description": "Coplanar waveguide, optionally with a backside ground plane",
+            "referencePrefix": "TL",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "w", "label": "Centre strip width", "unit": "m", "default": "1mm", "shown": true },
+                { "name": "s", "label": "Gap to side grounds", "unit": "m", "default": "0.2mm" },
+                { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.8mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "4.4" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                {
+                    "name": "backed",
+                    "label": "Backside ground plane",
+                    "unit": "",
+                    "default": "no",
+                    "choices": ["no", "yes"]
+                }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -3], "to": [20, 3], "fill": "outline" },
+                    { "type": "rect", "from": [-20, -12], "to": [20, -7], "fill": "none" },
+                    { "type": "rect", "from": [-20, 7], "to": [20, 12], "fill": "none" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -24],
+                "valueAt": [0, 24]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "cpw" }
+            ]
+        },
+        {
+            "id": "transformer",
+            "name": "Ideal transformer",
+            "category": "Transformers",
+            "description": "Ideal transformer, both windings referenced to ground",
+            "referencePrefix": "TR",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "n", "label": "Turns ratio secondary/primary", "unit": "", "default": "1", "shown": true }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, -20], [-8, -20]] },
+                    { "type": "arc", "center": [-8, -15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-8, -5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-8, 5], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-8, 15], "radius": 5, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "line", "points": [[20, -20], [8, -20]] },
+                    { "type": "arc", "center": [8, -15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [8, -5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [8, 5], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [8, 15], "radius": 5, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "line", "points": [[-2, -20], [-2, 20]] },
+                    { "type": "line", "points": [[2, -20], [2, 20]] },
+                    { "type": "line", "points": [[-8, 20], [-8, 24]] },
+                    { "type": "line", "points": [[8, 20], [8, 24]] },
+                    { "type": "line", "points": [[-13, 24], [-3, 24]] },
+                    { "type": "line", "points": [[-10, 28], [-6, 28]] },
+                    { "type": "line", "points": [[-10, 32], [-6, 32]] },
+                    { "type": "line", "points": [[3, 24], [13, 24]] },
+                    { "type": "line", "points": [[6, 28], [10, 28]] },
+                    { "type": "line", "points": [[6, 32], [10, 32]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, -20], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, -20], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 44]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "transformer" }
+            ]
+        }
+    ]
+}

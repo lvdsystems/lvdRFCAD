@@ -1,0 +1,517 @@
+{
+    "content": {
+        "components": [
+            {
+                "at": [
+                    -350,
+                    0
+                ],
+                "definition": "basic:sheet_port",
+                "id": "c1",
+                "mirror": false,
+                "parameters": {
+                    "name": "in"
+                },
+                "reference": "P1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    -150,
+                    0
+                ],
+                "definition": "rf-system:filter",
+                "id": "c2",
+                "mirror": false,
+                "parameters": {
+                    "bw": "20MHz",
+                    "fc": "f_if",
+                    "il": "2",
+                    "order": "4",
+                    "type": "bandpass"
+                },
+                "reference": "F1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    100,
+                    0
+                ],
+                "definition": "rf-system:amplifier",
+                "id": "c3",
+                "mirror": false,
+                "parameters": {
+                    "gain": "gain",
+                    "nf": "4",
+                    "oip3": "32",
+                    "op1db": "20"
+                },
+                "reference": "A1",
+                "rotation": 0
+            },
+            {
+                "at": [
+                    300,
+                    0
+                ],
+                "definition": "basic:sheet_port",
+                "id": "c4",
+                "mirror": false,
+                "parameters": {
+                    "name": "out"
+                },
+                "reference": "P2",
+                "rotation": 0
+            }
+        ],
+        "definitions": {
+            "basic:sheet_port": {
+                "category": "Hierarchy",
+                "description": "Hierarchical port: becomes a pin of this schematic's sheet symbol",
+                "id": "sheet_port",
+                "name": "Sheet port",
+                "parameters": [
+                    {
+                        "default": "P1",
+                        "label": "Port name",
+                        "name": "name",
+                        "shown": true,
+                        "text": true
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "p"
+                    }
+                ],
+                "referencePrefix": "P",
+                "role": "sheet-port",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -10,
+                                    -8
+                                ],
+                                [
+                                    12,
+                                    -8
+                                ],
+                                [
+                                    20,
+                                    0
+                                ],
+                                [
+                                    12,
+                                    8
+                                ],
+                                [
+                                    -10,
+                                    8
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -20,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "p"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -20
+                    ],
+                    "valueAt": [
+                        0,
+                        20
+                    ]
+                }
+            },
+            "rf-system:amplifier": {
+                "category": "RF/Amplifiers",
+                "description": "Behavioural amplifier",
+                "id": "amplifier",
+                "models": [
+                    {
+                        "block": "amplifier",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Amplifier",
+                "parameters": [
+                    {
+                        "default": "15",
+                        "label": "Gain",
+                        "name": "gain",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "2",
+                        "label": "Noise figure",
+                        "name": "nf",
+                        "shown": true,
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "30",
+                        "label": "Output IP3",
+                        "name": "oip3",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "45",
+                        "label": "Output IP2",
+                        "name": "oip2",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "18",
+                        "label": "Output P1dB",
+                        "name": "op1db",
+                        "unit": "dBm"
+                    },
+                    {
+                        "default": "40",
+                        "label": "Reverse isolation",
+                        "name": "isolation",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "A",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "points": [
+                                [
+                                    -20,
+                                    -20
+                                ],
+                                [
+                                    20,
+                                    0
+                                ],
+                                [
+                                    -20,
+                                    20
+                                ]
+                            ],
+                            "type": "polygon"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            },
+            "rf-system:filter": {
+                "category": "RF/Filters",
+                "description": "Behavioural lowpass, highpass, bandpass or bandstop filter",
+                "id": "filter",
+                "models": [
+                    {
+                        "block": "filter",
+                        "kind": "rf-behavioural"
+                    }
+                ],
+                "name": "Filter",
+                "parameters": [
+                    {
+                        "choices": [
+                            "lowpass",
+                            "highpass",
+                            "bandpass",
+                            "bandstop"
+                        ],
+                        "default": "bandpass",
+                        "label": "Type",
+                        "name": "type",
+                        "shown": true
+                    },
+                    {
+                        "choices": [
+                            "ideal",
+                            "butterworth",
+                            "chebyshev"
+                        ],
+                        "default": "butterworth",
+                        "label": "Response",
+                        "name": "response"
+                    },
+                    {
+                        "default": "5",
+                        "label": "Order",
+                        "name": "order"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Cutoff (LP/HP) or centre frequency (BP/BS)",
+                        "name": "fc",
+                        "shown": true,
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "100MHz",
+                        "label": "Bandwidth (BP/BS)",
+                        "name": "bw",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "1",
+                        "label": "Passband insertion loss",
+                        "name": "il",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0.1",
+                        "label": "Passband ripple (Chebyshev)",
+                        "name": "ripple",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "80",
+                        "label": "Maximum stopband attenuation",
+                        "name": "rejection",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "50",
+                        "label": "Port impedance",
+                        "name": "z0",
+                        "unit": "ohm"
+                    }
+                ],
+                "pins": [
+                    {
+                        "name": "in"
+                    },
+                    {
+                        "name": "out"
+                    }
+                ],
+                "referencePrefix": "F",
+                "symbol": {
+                    "graphics": [
+                        {
+                            "from": [
+                                -20,
+                                -20
+                            ],
+                            "to": [
+                                20,
+                                20
+                            ],
+                            "type": "rect"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                -8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                -8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                0
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                0
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                -4,
+                                8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 0,
+                            "type": "arc"
+                        },
+                        {
+                            "center": [
+                                4,
+                                8
+                            ],
+                            "radius": 4,
+                            "spanAngle": 180,
+                            "startAngle": 180,
+                            "type": "arc"
+                        }
+                    ],
+                    "pins": [
+                        {
+                            "at": [
+                                -30,
+                                0
+                            ],
+                            "direction": "right",
+                            "length": 10,
+                            "pin": "in"
+                        },
+                        {
+                            "at": [
+                                30,
+                                0
+                            ],
+                            "direction": "left",
+                            "length": 10,
+                            "pin": "out"
+                        }
+                    ],
+                    "referenceAt": [
+                        0,
+                        -30
+                    ],
+                    "valueAt": [
+                        0,
+                        30
+                    ]
+                }
+            }
+        },
+        "junctions": [
+        ],
+        "labels": [
+        ],
+        "nextId": 9,
+        "texts": [
+            {
+                "at": [
+                    -350,
+                    -100
+                ],
+                "id": "t8",
+                "size": 14,
+                "text": "IF strip: 70 MHz band-pass and IF amplifier"
+            }
+        ],
+        "variables": [
+            {
+                "name": "f_if",
+                "value": "70MHz"
+            },
+            {
+                "name": "gain",
+                "value": "30"
+            }
+        ],
+        "wires": [
+            {
+                "id": "w5",
+                "points": [
+                    [
+                        -370,
+                        0
+                    ],
+                    [
+                        -180,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w6",
+                "points": [
+                    [
+                        -120,
+                        0
+                    ],
+                    [
+                        70,
+                        0
+                    ]
+                ]
+            },
+            {
+                "id": "w7",
+                "points": [
+                    [
+                        130,
+                        0
+                    ],
+                    [
+                        280,
+                        0
+                    ]
+                ]
+            }
+        ]
+    },
+    "format": "lvdrfcad-document",
+    "type": "rf",
+    "version": 1
+}

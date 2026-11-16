@@ -1,0 +1,15 @@
+{
+    "documents": [
+        {
+            "path": "horn.lvdelem"
+        },
+        {
+            "path": "linear_fan.lvdant"
+        },
+        {
+            "path": "arc_fan.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

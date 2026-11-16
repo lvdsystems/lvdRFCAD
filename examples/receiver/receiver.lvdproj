@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "path": "if_strip.lvdrf"
+        },
+        {
+            "path": "receiver.lvdrf"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

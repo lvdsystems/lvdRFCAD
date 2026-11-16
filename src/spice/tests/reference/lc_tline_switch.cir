@@ -1,0 +1,13 @@
+LC tank with initial condition, transmission line and a switch
+L1 a 0 10u IC=0
+C1 a 0 1n IC=1
+R1 a 0 10k
+V2 s 0 PULSE(0 1 0 1n 1n 50n 100n)
+T1 s 0 t 0 Z0=50 TD=10n
+R2 t 0 150
+V3 ctl 0 PWL(0 0 2u 0 2.001u 5)
+S1 a sw ctl 0 SWM
+R3 sw 0 100
+.model SWM SW(VT=2.5 VH=0.1 RON=1 ROFF=1meg)
+.tran 5n 5u uic
+.end

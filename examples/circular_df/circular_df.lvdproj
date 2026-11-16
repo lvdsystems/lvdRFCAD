@@ -1,0 +1,21 @@
+{
+    "documents": [
+        {
+            "path": "monopole.lvdelem"
+        },
+        {
+            "path": "adcock_sum.lvdant"
+        },
+        {
+            "path": "adcock_ew.lvdant"
+        },
+        {
+            "path": "adcock_ns.lvdant"
+        },
+        {
+            "path": "uca8_beam.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

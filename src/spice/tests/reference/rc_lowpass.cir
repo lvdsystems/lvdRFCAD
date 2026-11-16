@@ -1,0 +1,8 @@
+RC low-pass: AC, noise and transient
+V1 in 0 DC 0 AC 1 PULSE(0 1 0 1u 1u 0.5m 1m)
+R1 in out 1k
+C1 out 0 100n
+.ac dec 20 10 1meg
+.noise v(out) V1 dec 10 10 1meg
+.tran 2u 3m
+.end
