@@ -95,6 +95,9 @@ public:
     // Analysis setups and plot definitions (docs/file-format.md, section 5.1).
     // Stored as JSON; the simulators interpret it.
     const QJsonObject &simulation() const { return m_simulation; }
+    // Title-block fields for printing and PDF export: "title", "revision",
+    // "author", "company" (free text; empty fields are left out).
+    const QJsonObject &titleBlock() const { return m_titleBlock; }
     const PlacedComponent *component(const QString &id) const;
     const PlacedComponent *componentByReference(const QString &reference) const;
     bool contains(const QString &id) const;
@@ -149,6 +152,7 @@ public:
     void removeItems(const QStringList &ids);
     void setVariables(const QList<Variable> &variables);
     void setSimulation(const QJsonObject &simulation);
+    void setTitleBlock(const QJsonObject &titleBlock); // undoable
 
     // Moves items. With dragWires, wire end points that touch a moved
     // component pin or a moved wire end follow the move, keeping the attached
@@ -172,6 +176,7 @@ Q_SIGNALS:
     void itemRemoved(const QString &id);
     void variablesChanged();
     void simulationChanged();
+    void titleBlockChanged();
     // After every completed edit, undo and redo.
     void changed();
 
@@ -190,6 +195,7 @@ private:
     QMap<QString, TextNote> m_texts;
     QList<Variable> m_variables;
     QJsonObject m_simulation;
+    QJsonObject m_titleBlock;
     QMap<QString, DefinitionPtr> m_cache;
     int m_nextId = 1;
 

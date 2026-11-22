@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(lvdRFcad VERSION 0.3.0 DESCRIPTION "RF, SPICE and antenna design CAD" LANGUAGES CXX)
+project(lvdRFcad VERSION 0.5.0 DESCRIPTION "RF, SPICE and antenna design CAD" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -54,7 +54,9 @@ endif()
 
 if(WIN32)
     include(cmake/Ngspice.cmake)
+    include(cmake/OpenEMS.cmake)
 endif()
+include(cmake/Hdf5.cmake)
 
 # Development builds use the Python installation found at configure time.
 # An installed application looks for a bundled "python" folder first.
@@ -89,6 +91,9 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/plot3d/CMakeLists.txt)
 endif()
 if(EXISTS ${CMAKE_SOURCE_DIR}/src/antenna/CMakeLists.txt)
     add_subdirectory(src/antenna)
+endif()
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/fullwave/CMakeLists.txt)
+    add_subdirectory(src/fullwave)
 endif()
 if(EXISTS ${CMAKE_SOURCE_DIR}/src/simulation_ui/CMakeLists.txt)
     add_subdirectory(src/simulation_ui)

@@ -175,7 +175,7 @@ An analysis uses the first model it understands and reports the component as uns
 | `rf-behavioural` | Budget, spur and linear RF analyses | `block`: built-in system block type; parameters are read by name |
 | `rf-element` | Linear RF analysis | `element`: built-in circuit element type (resistor, transmission line, ...) |
 | `sparameters` | Linear RF analysis; budget when available | `file`: Touchstone path, usually `"{file}"` taken from a parameter |
-| `spice` | SPICE | `template`: netlist lines with `{ref}`, `{pin:<name>}` and `{<parameter>}` placeholders; optional `subcircuit`, `include`, `section`, `probe`, `instrument` (below) |
+| `spice` | SPICE | `template`: netlist lines with `{ref}`, `{pin:<name>}` and `{<parameter>}` placeholders; optional `subcircuit`, `include`, `section`, `probe`, `instrument`, `parasitics` (below) |
 | `subschematic` | All | `document`: schematic whose sheet ports match the pin names |
 | `python` | SPICE | `source` (code) or `file` (path relative to the project folder) defining `spice(ref, nodes, params)` |
 
@@ -188,6 +188,9 @@ An analysis uses the first model it understands and reports the component as uns
 - `subcircuit`: text added once per netlist, verbatim: braces in it are ngspice parameter expressions, not placeholders.
 - `include`: a model file, relative to the project folder or absolute, added as `.include "<file>"`, or as `.lib "<file>" <section>` with `section`.
 - `probe`: `voltage`, `differential` or `current` marks a probe for the waveform viewer; `instrument`: `oscilloscope`, `voltmeter`, `ammeter`, `function-generator`, `spectrum-analyzer` or `bode-plotter` marks a virtual instrument. Both may have an empty `template`.
+- `parasitics`: `resistor`, `capacitor` or `inductor` (the `basic` R, C, L). When one of the part's parasitic parameters is non-zero (`esl`, `cp` of a resistor; `esr`, `esl` or a finite `q` of a capacitor; `cp` or a finite `q` of an inductor) the netlister writes the equivalent network instead of the template: the main element first (`R{ref}`, `C{ref}`, `L{ref}`), then `R{ref}_esr`, `R{ref}_q`, `L{ref}_esl`, `C{ref}_cp` as needed, with internal nodes `<ref>_int1`, `<ref>_int2`. The network is the one of the linear RF model ([libraries.md](libraries.md), basic). With all parasitics zero the template is used unchanged.
+
+The Substrate part of `rf-circuit` uses `{"kind": "rf-element", "element": "substrate"}` as a marker: it has no circuit model, and the netlist resolves it as described in [libraries.md](libraries.md) (section Substrates). Such a component may have an empty `pins` list.
 
 **`python` models** (SPICE): the code defines `spice(ref, nodes, params)` and returns netlist lines as a string, following the same rules as rendered template lines. `nodes` maps pin names to nodes, `params` maps parameter names to numbers (expression parameters) or strings.
 
@@ -246,6 +249,7 @@ The `content` of `rf` and `spice` documents.
 - Ports, grounds and sources are ordinary components from a built-in library, not special item types.
 - Items are written sorted by identifier.
 - `simulation` (optional) holds analysis setups and plot definitions, section 5.1.
+- `titleBlock` (optional) holds the title-block fields printed on pages and PDF exports: `title`, `revision`, `author`, `company` (strings; empty fields are not written).
 
 ### 5.1 Simulation setup
 
@@ -291,11 +295,13 @@ The `content` of `rf` and `spice` documents.
       "bandwidth": "1MHz",
       "mismatch": "actual",
       "sweep": { "start": "2.3GHz", "stop": "2.6GHz", "points": "31" },
-      "spurs": { "enabled": true, "maxOrder": "5" }
+      "spurs": { "enabled": true, "maxOrder": "5" },
+      "phaseNoise": { "start": "1kHz", "stop": "500kHz" },
+      "blocker": { "offset": "3MHz", "power": "-30" }
   }
   ```
 
-  `path` is optional (the chain is traced automatically from `start`, else a source, port 1 or an antenna); an entry `REF.pin` chooses the exit pin at a branch. `frequency` and `power` override the start component's values. `mismatch` is `actual` (cascade with the real S-parameters, RF-7) or `ideal` (matched cascade of |S21|). `sweep` is optional.
+  `path` is optional (the chain is traced automatically from `start`, else a source or DAC, port 1 or an antenna); an entry `REF.pin` chooses the exit pin at a branch. `frequency` and `power` override the start component's values. `mismatch` is `actual` (cascade with the real S-parameters, RF-7) or `ideal` (matched cascade of |S21|). `sweep` is optional. `phaseNoise` (optional) is the range over which LO phase noise is integrated; an empty or missing `start` is bandwidth/1000 and `stop` bandwidth/2. `blocker` (optional) is an interferer at the chain input, `offset` Hz above the wanted frequency, with `power` in dBm; without `power` there is no blocker, and `offset` is required with it. Both are written only when set.
 - SPICE analyses (`.lvdspice` documents) have the types `spice-op`, `spice-dc`, `spice-ac`, `spice-tran`, `spice-noise`, `spice-fourier`, `spice-tf`, `spice-pz` and `spice-sens`. Their fields are expression text (except names, choices and flags):
 
   | Type | Fields |
@@ -349,7 +355,7 @@ Units: frequencies in Hz, lengths in metres (except geometry values in wavelengt
 
 | Key | Meaning |
 |---|---|
-| `model` | `isotropic`, `cosn`, `dipole`, `dipole-ground`, `monopole`, `patch`, `aperture`, `imported` |
+| `model` | `isotropic`, `cosn`, `dipole`, `dipole-ground`, `monopole`, `patch`, `aperture`, `imported`, `fullwave` |
 | `polarisation` | `x`, `y`, `slant45`, `slant-45`, `rhcp`, `lhcp` (ignored by `monopole` and `imported`) |
 | `frequency` | Design frequency; zero lengths below are derived from it |
 | `efficiency` | Radiation efficiency, dB (≤ 0) |
@@ -358,7 +364,35 @@ Units: frequencies in Hz, lengths in metres (except geometry values in wavelengt
 | `height` | `dipole-ground`: height over the ground plane. 0: λ/4 |
 | `patchWidth`, `patchLength`, `substrateHeight`, `permittivity` | `patch`, cavity model. Width and length 0: designed for the frequency |
 | `apertureA`, `apertureB`, `distribution` | `aperture`: size along y (broad wall) and x; `cosine` (TE10) or `uniform` |
-| `patternFile` | `imported`: pattern file, relative to the project folder (or to the library file for library entries), or absolute |
+| `patternFile` | `imported`: pattern file, relative to the project folder (or to the library file for library entries), or absolute. `fullwave`: the simulated pattern, `simulations/<element name>/pattern.csv` |
+| `fullWave` | `fullwave`: the simulation setup, below |
+
+The full-wave setup (`element.fullWave`):
+
+```json
+{
+    "template": "patch-inset",
+    "values": {"patchX": 28.0, "insetDepth": 9},
+    "settings": {
+        "fStart": 1.5e9, "fStop": 3.5e9,
+        "cellsPerWavelength": 20, "maxRatio": 1.4,
+        "endCriteria": -40, "maxTimesteps": 30000,
+        "boundary": "mur", "farFieldStep": 3, "frequencyPoints": 401
+    },
+    "bodies": [{"file": "cad/horn.stl", "scale": 1, "metal": true, "epsR": 1, "tanD": 0, "name": ""}],
+    "array": {"nx": 3, "ny": 3, "dx": 60, "dy": 60}
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `template` | `patch-probe`, `patch-inset`, `patch-aperture`, `dipole`, `monopole`, `ifa`, `slot`, `horn`, `vivaldi`, `helix`, `stl` |
+| `values` | Template parameters that differ from their defaults; lengths in millimetres (`fullwave_templates()` in Python lists them) |
+| `settings` | Band (Hz), mesh density at the highest frequency, largest ratio of adjacent cells, energy end criterion (dB), time-step limit, boundary `mur` or `pml` (8 cells), far-field step (degrees), points of the S11 sweep |
+| `bodies` | Template `stl`: STL files (relative to the project), scale from file units to millimetres, metal or dielectric with εr and tan δ |
+| `array` | Embedded element pattern: the element repeated nx × ny times at dx, dy (mm); the centre copy is excited, the others end in the port resistance |
+
+A run writes `simulations/<element name>/`: `simulation.xml` (the openEMS input), the port probes, `farfield.h5`, `pattern.csv` and `results.json` (S11, input impedance, accepted and radiated power, efficiency and directivity at the far-field frequencies). The field dumps are deleted after the far-field transform.
 
 ### 7.2 Antenna array: `.lvdant`, type `antenna`
 
@@ -453,3 +487,38 @@ It reads that format, CST "ASCII farfield" exports, FEKO `.ffe` files, and any t
 - a total `gain`, `directivity` or `dBi` column (dB unless a unit says otherwise), taken as x-polarised without phase.
 
 Separators are commas, semicolons, tabs or spaces; lines starting with `#`, `*`, `%` or `//` are comments, except `#Frequency: <Hz>` lines, which start a new frequency block. Negative θ is folded to (|θ|, φ + 180°). Patterns are normalised to directivity when used, so absolute levels do not matter.
+
+## 8. Substrate catalog: `libraries/substrates.json`
+
+The dielectric materials offered by the `rf-circuit:substrate` part and by the substrate picker of the full-wave templates. The application reads the file of the built-in libraries folder once, at first use; it is not searched in the project or user folders.
+
+```json
+{
+    "format": "lvdrfcad-substrates",
+    "version": 1,
+    "description": "...",
+    "materials": [
+        {
+            "id": "RO4003C",
+            "name": "Rogers RO4003C",
+            "er": 3.55,
+            "tand": 0.0027,
+            "frequency": 10e9,
+            "thicknesses": [0.203e-3, 0.305e-3, 0.406e-3, 0.508e-3, 0.813e-3, 1.524e-3],
+            "note": "Design Dk; the process (clamped stripline) Dk is 3.38 +/- 0.05.",
+            "source": "Rogers Corporation, RO4000 Series High Frequency Circuit Materials data sheet"
+        }
+    ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `id` | The value of the Substrate part's `material` parameter; unique; `custom` is reserved |
+| `name` | Display name |
+| `er`, `tand` | Relative permittivity (at least 1) and loss tangent (not negative) |
+| `frequency` | Hz at which `er` and `tand` are quoted (for information) |
+| `thicknesses` | Standard thicknesses in metres; the full-wave picker snaps a template's height to the nearest |
+| `note`, `source` | Free text shown as a tool tip: what the value is and where it comes from |
+
+The Substrate part's `material` parameter is an enumeration whose choices are `custom` plus the catalog ids; a new material therefore needs both a catalog entry and a new choice in `libraries/rf-circuit.lvdlib`. An id that the part offers but the catalog lacks is a netlist error.

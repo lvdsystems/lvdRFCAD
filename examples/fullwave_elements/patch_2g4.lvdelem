@@ -1,0 +1,44 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.33531570355706203,
+            "frequency": 2445000000,
+            "fullWave": {
+                "settings": {
+                    "airMargin": 0.25,
+                    "boundary": "mur",
+                    "cellsPerWavelength": 20,
+                    "endCriteria": -40,
+                    "fStart": 1000000000,
+                    "fStop": 3000000000,
+                    "farFieldFrequencies": [
+                    ],
+                    "farFieldStep": 3,
+                    "frequencyPoints": 401,
+                    "maxRatio": 1.4,
+                    "maxTimesteps": 30000
+                },
+                "template": "patch-probe",
+                "values": {
+                    "epsR": 3.38,
+                    "feedX": -6,
+                    "height": 1.524,
+                    "patchX": 32,
+                    "patchY": 40,
+                    "resistance": 50,
+                    "substrateCells": 4,
+                    "substrateX": 60,
+                    "substrateY": 60,
+                    "tanD": 0.001
+                }
+            },
+            "model": "fullwave",
+            "patternFile": "simulations/patch_2g4/pattern.csv",
+            "polarisation": "x"
+        },
+        "notes": "The openEMS simple-patch tutorial (32 x 40 mm on 1.524 mm, er 3.38). Simulated: open the element and press Run to repeat it."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

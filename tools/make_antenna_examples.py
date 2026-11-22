@@ -21,6 +21,13 @@ Creates, replacing earlier copies:
   circular_df       UHF direction finding with monopoles: a four-element
                     Adcock (Watson-Watt) and an eight-element circular array
                     scanned in azimuth (with a script)
+  fullwave_elements an openEMS-simulated probe-fed patch (the openEMS
+                    tutorial) and dipole, and a 4 x 4 array of the simulated
+                    patch (skipped when openEMS is not installed)
+  fullwave_horn     the openEMS tutorial pyramidal horn simulated from 10 to
+                    20 GHz, beside the analytic aperture model of the same
+                    mouth (skipped when openEMS is not installed; about
+                    7 minutes)
 """
 import math
 import pathlib
@@ -286,11 +293,82 @@ def circular_df():
     project.save()
 
 
+# ---------------------------------------------------------------------------
+# 7. Full-wave elements (openEMS)
+
+def fullwave_elements():
+    if not lvdrfcad.openems_available():
+        print("fullwave_elements: skipped, openEMS is not installed")
+        return
+    project = fresh("fullwave_elements")
+    patch = project.new_document("antenna-element", "patch_2g4").element
+    patch.use_template("patch-probe")
+    patch.update({"notes": "The openEMS simple-patch tutorial (32 x 40 mm on 1.524 mm, er 3.38). "
+                           "Simulated: open the element and press Run to repeat it."})
+    r = patch.simulate(verbose=False)
+    s11 = min(20 * math.log10(abs(s)) for s in r["s11"])
+    print("fullwave_elements/patch_2g4: resonance %.3f GHz, S11 %.1f dB, %.2f dBi, %.0f k cells, %.0f s"
+          % (r["resonance"] / 1e9, s11, patch.directivity(), r["cells"] / 1e3, r["seconds"]))
+    dipole = project.new_document("antenna-element", "dipole_1g").element
+    dipole.use_template("dipole")
+    r = dipole.simulate(verbose=False)
+    print("fullwave_elements/dipole_1g: resonance %.3f GHz, %.2f dBi" % (r["resonance"] / 1e9, dipole.directivity()))
+    array = project.new_document("antenna", "patch_array_4x4").array
+    f = patch.design["element"]["frequency"]
+    array.update({"element": "element:patch_2g4", "frequency": f, "designFrequency": f,
+                  "geometry": {"kind": "rectangular", "unit": "lambda", "nx": 4, "ny": 4, "dx": 0.6, "dy": 0.6},
+                  "excitation": {"steerTheta": 20, "steerPhi": 0}})
+    m = array.metrics()
+    print("fullwave_elements/patch_array_4x4: %.1f dBi at %.1f deg" % (m["peak_gain"], m["peak_theta"]))
+    project.save()
+
+
+# ---------------------------------------------------------------------------
+# 8. Full-wave horn (openEMS)
+
+HORN_MOUTH_X = 20 + 2 * 50 * math.sin(math.radians(20))   # mm: waveguide a plus the two flared walls
+HORN_MOUTH_Y = 10 + 2 * 50 * math.sin(math.radians(20))   # mm: waveguide b plus the two flared walls
+
+
+def fullwave_horn():
+    if not lvdrfcad.openems_available():
+        print("fullwave_horn: skipped, openEMS is not installed")
+        return
+    project = fresh("fullwave_horn")
+    horn = project.new_document("antenna-element", "horn_ku").element
+    horn.use_template("horn")
+    r = horn.simulate(verbose=False)
+    # A horn has no resonance: show it at the 15 GHz design frequency, with the efficiency there.
+    k = min(range(len(r["far_field_frequencies"])), key=lambda i: abs(r["far_field_frequencies"][i] - 15e9))
+    horn.update({"element": {"frequency": 15e9, "efficiency": 10 * math.log10(min(1.0, r["efficiency"][k]))},
+                 "notes": "The openEMS Horn Antenna tutorial: a 20 x 10 mm waveguide fed by a pin, flaring at 20 deg over "
+                          "50 mm to a %.1f x %.1f mm mouth. Simulated from 10 to 20 GHz with a PML boundary (2.3 million "
+                          "cells, about 7 minutes); E-plane along y (phi = 90)." % (HORN_MOUTH_X, HORN_MOUTH_Y)})
+    s11 = [20 * math.log10(abs(v)) for v in r["s11"]]
+    worst = max(s for f, s in zip(r["frequency"], s11) if 10.5e9 <= f <= 19.5e9)
+    print("fullwave_horn/horn_ku: D %s dBi at %s GHz, S11 below %.1f dB from 10.5 to 19.5 GHz, %.0f k cells, %.0f s"
+          % ("/".join("%.1f" % d for d in r["directivity"]), "/".join("%.1f" % (f / 1e9) for f in r["far_field_frequencies"]),
+             worst, r["cells"] / 1e3, r["seconds"]))
+    # The analytic aperture model of the same mouth, for comparison. It has the
+    # broad wall along y and the E-plane along x, so its cuts are swapped with
+    # the simulated horn's; it leaves out the phase error of the flare.
+    model = project.new_document("antenna-element", "horn_aperture_model").element
+    model.update({"element": {"model": "aperture", "frequency": 15e9, "apertureA": HORN_MOUTH_X / 1e3,
+                              "apertureB": HORN_MOUTH_Y / 1e3, "distribution": "cosine"},
+                  "notes": "Analytic cosine (TE10) aperture of the horn_ku mouth. Compare its directivity and beamwidths "
+                           "with the simulated horn: the aperture model ignores the flare's phase error."})
+    print("fullwave_horn/horn_aperture_model: %.2f dBi at 15 GHz (simulated horn: %.2f dBi)"
+          % (model.directivity(), horn.directivity()))
+    project.save()
+
+
 aesa_radar()
 satcom_panel()
 beamforming()
 element_patterns()
 horn_amplitude_steering()
 circular_df()
+fullwave_elements()
+fullwave_horn()
 lvdrfcad.close_project()
 print("antenna examples written to", root)

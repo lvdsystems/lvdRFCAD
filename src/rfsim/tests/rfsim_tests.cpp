@@ -2,8 +2,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/Connectivity.h"
+#include "core/RuleCheck.h"
 #include "core/Schematic.h"
 #include "core/Session.h"
+#include "rfdata/Discontinuities.h"
 #include "rfdata/LineModels.h"
 #include "rfdata/NetworkMath.h"
 #include "rfdata/NetworkOps.h"
@@ -500,4 +502,332 @@ TEST_CASE("analysis setups are stored in the schematic and evaluate their sweep"
 
     setup.points = QStringLiteral("0");
     CHECK_FALSE(sweepFrequencies(setup, sheetScope(*b.document), &error));
+}
+
+TEST_CASE("passive parts with parasitics follow their equivalent circuits")
+{
+    const auto seriesS11 = [](Complex z) { return z / (z + 100.0); };
+    const auto twoPort = [](Bench &b, const char *key, const QMap<QString, QString> &parameters) {
+        const QString p1 = b.port(1, {-200, 0}), p2 = b.port(2, {200, 0});
+        const QString part = b.place(key, {0, 0}, parameters);
+        b.connect(p1, "p", part, "p");
+        b.connect(part, "n", p2, "p");
+    };
+    const double resonance = 1 / (2 * Pi * std::sqrt(0.5e-9 * 10e-12));
+    const std::vector<double> f{0.3e9, 1e9, resonance, 4e9};
+    SECTION("capacitor: esr + esl in series, resonant at 1/(2 pi sqrt(esl c))")
+    {
+        Bench b;
+        twoPort(b, "basic:capacitor", {{QStringLiteral("c"), QStringLiteral("10pF")}, {QStringLiteral("esr"), QStringLiteral("0.15")},
+                                       {QStringLiteral("esl"), QStringLiteral("0.5nH")}});
+        const LinearResult result = b.run(f);
+        REQUIRE(result.ok());
+        for (size_t i = 0; i < f.size(); ++i) {
+            const double w = 2 * Pi * f[i];
+            const Complex z(0.15, w * 0.5e-9 - 1 / (w * 10e-12));
+            CHECK(std::abs(result.network.s[i](0, 0) - seriesS11(z)) < 1e-12);
+            // Passive at T0: NF = 1/GA with a matched source.
+            const CMatrix &s = result.network.s[i];
+            CHECK(nf(result, i) == Approx(-10 * std::log10(std::norm(s(1, 0)) / (1 - std::norm(s(1, 1))))).margin(1e-9));
+        }
+        // At the self-resonance only esr remains.
+        CHECK(std::abs(result.network.s[2](0, 0) - seriesS11(0.15)) < 1e-9);
+    }
+    SECTION("inductor: (rs + j w l) || cp, a parallel resonance")
+    {
+        Bench b;
+        twoPort(b, "basic:inductor", {{QStringLiteral("l"), QStringLiteral("10nH")}, {QStringLiteral("q"), QStringLiteral("20")},
+                                      {QStringLiteral("freq"), QStringLiteral("500MHz")}, {QStringLiteral("cp"), QStringLiteral("0.25pF")}});
+        const LinearResult result = b.run(f);
+        REQUIRE(result.ok());
+        const double rs = 2 * Pi * 500e6 * 10e-9 / 20;
+        for (size_t i = 0; i < f.size(); ++i) {
+            const double w = 2 * Pi * f[i];
+            const Complex zs(rs, w * 10e-9);
+            const Complex z = zs / (1.0 + Complex(0, w * 0.25e-12) * zs);
+            CHECK(std::abs(result.network.s[i](0, 0) - seriesS11(z)) < 1e-12);
+        }
+    }
+    SECTION("resistor package: (r + j w esl) || cp")
+    {
+        Bench b;
+        twoPort(b, "basic:resistor_0402", {});
+        const LinearResult result = b.run(f);
+        REQUIRE(result.ok());
+        for (size_t i = 0; i < f.size(); ++i) {
+            const double w = 2 * Pi * f[i];
+            const Complex zs(50, w * 0.4e-9);
+            const Complex z = zs / (1.0 + Complex(0, w * 0.05e-12) * zs);
+            CHECK(std::abs(result.network.s[i](0, 0) - seriesS11(z)) < 1e-12);
+        }
+    }
+    SECTION("zero parasitics are the ideal parts")
+    {
+        Bench b;
+        twoPort(b, "basic:capacitor", {{QStringLiteral("c"), QStringLiteral("10pF")}});
+        const LinearResult result = b.run(f);
+        REQUIRE(result.ok());
+        CHECK(std::abs(result.network.s[1](0, 0) - seriesS11(Complex(0, -1 / (2 * Pi * 1e9 * 10e-12)))) < 1e-12);
+    }
+}
+
+TEST_CASE("microstrip lines take their substrate from a Substrate part")
+{
+    const auto line = [](Bench &b, const QString &substrate, QPoint at = {0, 0}) {
+        const QString p1 = b.port(1, at + QPoint(-300, 0)), p2 = b.port(2, at + QPoint(300, 0));
+        const QString ms = b.place("rf-circuit:microstrip", at,
+                                   {{QStringLiteral("w"), QStringLiteral("1.1mm")}, {QStringLiteral("l"), QStringLiteral("20mm")},
+                                    {QStringLiteral("substrate"), substrate}});
+        b.connect(p1, "p", ms, "in");
+        b.connect(ms, "out", p2, "p");
+        return ms;
+    };
+    const auto expected = [](const MicrostripGeometry &g, double f) {
+        const auto p = microstrip(g, f);
+        REQUIRE(p);
+        return abcdToS(lineAbcd(p->zc, p->gamma, 20e-3), 50, 50);
+    };
+
+    SECTION("catalog material: er and tand from the catalog, the rest from the part")
+    {
+        Bench b;
+        line(b, QStringLiteral("SUB1"));
+        const QString sub = b.place("rf-circuit:substrate", {0, 200},
+                                    {{QStringLiteral("material"), QStringLiteral("RO4003C")}, {QStringLiteral("h"), QStringLiteral("0.508mm")},
+                                     {QStringLiteral("er"), QStringLiteral("9.9")}, {QStringLiteral("rough"), QStringLiteral("1um")}});
+        REQUIRE(b.sheet->component(sub)->reference == QStringLiteral("SUB1"));
+        const Netlist netlist = buildNetlist(*b.project, *b.document);
+        CHECK(netlist.errors.isEmpty());
+        REQUIRE(netlist.substrates.size() == 1);
+        CHECK(netlist.substrates.first().parameterValues.value(QStringLiteral("er")) == 3.55);
+        for (const FlatComponent &component : netlist.components)
+            CHECK(component.definitionKey != QStringLiteral("rf-circuit:substrate"));
+        const LinearResult result = b.run({1e9, 10e9});
+        REQUIRE(result.ok());
+        const MicrostripGeometry g{1.1e-3, 0.508e-3, 35e-6, 3.55, 0.0027, 58e6, 1e-6};
+        for (size_t i = 0; i < 2; ++i)
+            CHECK((result.network.s[i] - expected(g, result.network.frequencies[i])).norm() < 1e-12);
+        // ERC has nothing to say about a pinless substrate.
+        for (const RuleViolation &violation : checkSchematic(*b.project, *b.document)) {
+            INFO(violation.message.toStdString());
+            CHECK(violation.severity != RuleViolation::Severity::Error);
+        }
+    }
+    SECTION("custom material: the part's er and tand; stripline gets b = 2 h + t")
+    {
+        Bench b;
+        line(b, QStringLiteral("SUB1"));
+        b.place("rf-circuit:substrate", {0, 200},
+                {{QStringLiteral("material"), QStringLiteral("custom")}, {QStringLiteral("h"), QStringLiteral("0.8mm")},
+                 {QStringLiteral("er"), QStringLiteral("4.2")}, {QStringLiteral("tand"), QStringLiteral("0.015")}});
+        const QString sl = b.place("rf-circuit:stripline", {0, 400}, {{QStringLiteral("substrate"), QStringLiteral("SUB1")}});
+        const Netlist netlist = buildNetlist(*b.project, *b.document);
+        CHECK(netlist.errors.isEmpty());
+        const FlatComponent *strip = netlist.component(b.sheet->component(sl)->reference);
+        REQUIRE(strip);
+        CHECK(strip->parameterValues.value(QStringLiteral("b")) == Approx(2 * 0.8e-3 + 35e-6));
+        CHECK(strip->parameterValues.value(QStringLiteral("er")) == 4.2);
+        const FlatComponent *ms = nullptr;
+        for (const FlatComponent &component : netlist.components) {
+            if (component.definitionKey == QStringLiteral("rf-circuit:microstrip"))
+                ms = &component;
+        }
+        REQUIRE(ms);
+        CHECK(ms->parameterValues.value(QStringLiteral("h")) == Approx(0.8e-3));
+        CHECK(ms->parameterValues.value(QStringLiteral("tand")) == 0.015);
+    }
+    SECTION("empty substrate: the line's own values (old designs unchanged)")
+    {
+        Bench b;
+        line(b, QString());
+        const LinearResult result = b.run({1e9});
+        REQUIRE(result.ok());
+        CHECK((result.network.s[0] - expected({1.1e-3, 0.8e-3, 35e-6, 4.4, 0.02, 58e6, 0}, 1e9)).norm() < 1e-12);
+    }
+    SECTION("unknown and ambiguous names are errors")
+    {
+        Bench b;
+        line(b, QStringLiteral("SUB7"));
+        LinearResult result = b.run({1e9});
+        REQUIRE_FALSE(result.ok());
+        CHECK(result.errors.join(QString()).contains(QStringLiteral("substrate \"SUB7\" not found")));
+
+        Bench c;
+        line(c, QStringLiteral("SUB1"));
+        const QString s1 = c.place("rf-circuit:substrate", {0, 200});
+        const QString s2 = c.place("rf-circuit:substrate", {200, 200});
+        c.sheet->setReference(s2, c.sheet->component(s1)->reference);
+        result = c.run({1e9});
+        REQUIRE_FALSE(result.ok());
+        CHECK(result.errors.join(QString()).contains(QStringLiteral("ambiguous")));
+    }
+    SECTION("hierarchy: the sheet's own substrate first, then the enclosing sheets")
+    {
+        Bench b;
+        QString error;
+        Document *stageDoc = b.project->createDocument(DocumentType::RfSchematic, QStringLiteral("stage"), &error);
+        REQUIRE(stageDoc);
+        Schematic &stage = *stageDoc->schematic();
+        const auto placeIn = [&](const char *key, QPoint at) {
+            const DefinitionPtr d = b.project->resolve(stage, QString::fromLatin1(key)).definition;
+            return stage.addComponent(QString::fromLatin1(key), d.get(), at);
+        };
+        const QString in = placeIn("basic:sheet_port", {-150, 0});
+        stage.setParameter(in, QStringLiteral("name"), QStringLiteral("in"));
+        const QString out = placeIn("basic:sheet_port", {150, 0});
+        stage.setParameter(out, QStringLiteral("name"), QStringLiteral("out"));
+        const QString ms = placeIn("rf-circuit:microstrip", {0, 0});
+        stage.setParameter(ms, QStringLiteral("substrate"), QStringLiteral("SUB1"));
+        stage.setParameter(ms, QStringLiteral("w"), QStringLiteral("1.1mm"));
+        stage.setParameter(ms, QStringLiteral("l"), QStringLiteral("20mm"));
+        const auto pinOf = [&](const QString &id, const char *pin) {
+            const PlacedComponent *c = stage.component(id);
+            return pinPosition(*c, *b.project->resolve(stage, c->definition).definition->symbol.pin(QString::fromLatin1(pin)));
+        };
+        stage.addWire({pinOf(in, "p"), pinOf(ms, "in")});
+        stage.addWire({pinOf(ms, "out"), pinOf(out, "p")});
+        const QString p1 = b.port(1, {-400, 0}), p2 = b.port(2, {400, 0});
+        const QString x1 = b.place("sheet:stage", {0, 0});
+        b.connect(p1, "p", x1, "in");
+        b.connect(x1, "out", p2, "p");
+        b.place("rf-circuit:substrate", {0, 300},
+                {{QStringLiteral("material"), QStringLiteral("RT/duroid 5880")}, {QStringLiteral("h"), QStringLiteral("0.787mm")}});
+        LinearResult result = b.run({3e9});
+        REQUIRE(result.ok());
+        CHECK((result.network.s[0] - expected({1.1e-3, 0.787e-3, 35e-6, 2.2, 0.0009, 58e6, 0}, 3e9)).norm() < 1e-12);
+
+        // A substrate of the same name inside the sheet wins.
+        const QString local = placeIn("rf-circuit:substrate", {0, 300});
+        stage.setParameter(local, QStringLiteral("material"), QStringLiteral("RO3010"));
+        stage.setParameter(local, QStringLiteral("h"), QStringLiteral("0.64mm"));
+        stage.setReference(local, QStringLiteral("SUB1"));
+        result = b.run({3e9});
+        REQUIRE(result.ok());
+        CHECK((result.network.s[0] - expected({1.1e-3, 0.64e-3, 35e-6, 11.2, 0.0022, 58e6, 0}, 3e9)).norm() < 1e-12);
+    }
+}
+
+TEST_CASE("microstrip discontinuities and coupled microstrip in a circuit")
+{
+    const MicrostripSubstrate alumina{0.635e-3, 5e-6, 9.8, 0.0005, 58e6, 0};
+    SECTION("open end")
+    {
+        Bench b;
+        const QString p = b.port(1, {-200, 0});
+        const QString open = b.place("rf-circuit:microstrip_open", {0, 0});
+        b.connect(p, "p", open, "p");
+        const LinearResult result = b.run({5e9});
+        REQUIRE(result.ok());
+        const double c = *openEndCapacitance(alumina, 0.6e-3, 5e9);
+        const Complex y(0, 2 * Pi * 5e9 * c);
+        CHECK(std::abs(result.network.s[0](0, 0) - (1.0 - 50.0 * y) / (1.0 + 50.0 * y)) < 1e-12);
+    }
+    SECTION("T-junction")
+    {
+        Bench b;
+        const QString tee = b.place("rf-circuit:microstrip_tee", {0, 0}, {{QStringLiteral("w3"), QStringLiteral("0.3mm")}});
+        const char *pins[] = {"p1", "p2", "p3"};
+        const QPoint offsets[] = {{-100, 0}, {100, 0}, {0, 100}};
+        for (int k = 0; k < 3; ++k) {
+            const QString port = b.port(k + 1, b.pin(tee, pins[k]) + offsets[k]);
+            b.connect(port, "p", tee, pins[k]);
+        }
+        const LinearResult result = b.run({0, 4e9});
+        REQUIRE(result.ok());
+        const auto expected = microstripTee(alumina, 0.6e-3, 0.6e-3, 0.3e-3, 4e9, 50.0);
+        REQUIRE(expected);
+        CHECK((result.network.s[1] - *expected).norm() < 1e-12);
+        CHECK(std::abs(result.network.s[0](1, 0) - 2.0 / 3.0) < 1e-12); // DC: an ideal node
+    }
+    SECTION("gap, step and bend are reciprocal and lossless; the via has the Goldfarb-Pucel impedance")
+    {
+        for (const char *key : {"rf-circuit:microstrip_gap", "rf-circuit:microstrip_step", "rf-circuit:microstrip_bend"}) {
+            Bench b;
+            const QString p1 = b.port(1, {-200, 0}), p2 = b.port(2, {200, 100});
+            const QString part = b.place(key, {0, 0});
+            b.connect(p1, "p", part, "in");
+            b.connect(part, "out", p2, "p");
+            const LinearResult result = b.run({1e9, 8e9});
+            INFO(key);
+            REQUIRE(result.ok());
+            for (const CMatrix &s : result.network.s) {
+                CHECK((s - s.transpose()).norm() < 1e-12);
+                CHECK((s * s.adjoint() - CMatrix::Identity(2, 2)).norm() < 1e-9);
+            }
+        }
+        Bench b;
+        const QString p = b.port(1, {-200, 0});
+        const QString via = b.place("rf-circuit:microstrip_via", {0, 0});
+        b.connect(p, "p", via, "p");
+        const LinearResult result = b.run({2e9});
+        REQUIRE(result.ok());
+        const auto z = viaImpedance(0.4e-3, 0.635e-3, 20e-6, 58e6, 2e9);
+        CHECK(std::abs(result.network.s[0](0, 0) - reflectionFromImpedance(*z, 50)) < 1e-12);
+    }
+    SECTION("coupled microstrip: a quarter-wave coupler couples about (Z0e - Z0o)/(Z0e + Z0o) to p3")
+    {
+        CoupledMicrostripGeometry g{0.5e-3, 0.15e-3, 0.635e-3, 0, 9.8, 0, 0, 0};
+        const auto modes = coupledMicrostrip(g, 5e9);
+        REQUIRE(modes);
+        const double eAverage = (std::sqrt(modes->even.epsilonEffective) + std::sqrt(modes->odd.epsilonEffective)) / 2;
+        const double quarter = SpeedOfLight / 5e9 / eAverage / 4;
+        Bench b;
+        const QString cl = b.place("rf-circuit:coupled_microstrip", {0, 0},
+                                   {{QStringLiteral("w"), QStringLiteral("0.5mm")}, {QStringLiteral("s"), QStringLiteral("0.15mm")},
+                                    {QStringLiteral("l"), QString::number(quarter * 1e3, 'g', 12) + QStringLiteral("mm")},
+                                    {QStringLiteral("t"), QStringLiteral("0")}, {QStringLiteral("tand"), QStringLiteral("0")},
+                                    {QStringLiteral("sigma"), QStringLiteral("0")}});
+        const char *pins[] = {"p1", "p2", "p3", "p4"};
+        for (int k = 0; k < 4; ++k) {
+            const QString port = b.port(k + 1, b.pin(cl, pins[k]) + QPoint(k % 2 ? 100 : -100, 0));
+            b.connect(port, "p", cl, pins[k]);
+        }
+        const LinearResult result = b.run({5e9});
+        REQUIRE(result.ok());
+        const CMatrix &s = result.network.s[0];
+        CHECK((s * s.adjoint() - CMatrix::Identity(4, 4)).norm() < 1e-9);
+        CHECK((s - s.transpose()).norm() < 1e-12);
+        const double ze = modes->even.zc.real(), zo = modes->odd.zc.real();
+        const double coupling = (ze - zo) / (ze + zo);
+        WARN("coupled microstrip: Z0e " << ze << ", Z0o " << zo << ", |S31| " << std::abs(s(2, 0))
+                                        << ", (Z0e-Z0o)/(Z0e+Z0o) " << coupling << ", sqrt(Z0e Z0o) " << std::sqrt(ze * zo));
+        // Not exact: the modes have different phase velocities and sqrt(Z0e Z0o) is not 50 ohm.
+        CHECK(std::abs(s(2, 0)) == Approx(coupling).margin(0.1 * coupling + 0.02));
+    }
+}
+
+TEST_CASE("gain measurements: GUmax, U and the simultaneous conjugate match")
+{
+    Bench b;
+    const QString source = QStringLiteral(LVD_RF_TEST_DATA "/amp_noise.s2p");
+    REQUIRE(QFile::copy(source, QDir(b.project->directory()).filePath(QStringLiteral("amp.s2p"))));
+    const QString p1 = b.port(1, {-300, 0}), p2 = b.port(2, {300, 0});
+    const QString dut = b.place("rf-system:nport2", {0, 0}, {{QStringLiteral("file"), QStringLiteral("amp.s2p")}});
+    b.connect(p1, "p", dut, "p1");
+    b.connect(dut, "p2", p2, "p");
+    const LinearResult result = b.run({1e9, 2e9, 5e9});
+    REQUIRE(result.ok());
+    const Measurement gu = evaluateMeasurement(result, QStringLiteral("GUmax"));
+    const Measurement u = evaluateMeasurement(result, QStringLiteral("U"));
+    const Measurement gms = evaluateMeasurement(result, QStringLiteral("GammaMS"));
+    const Measurement gml = evaluateMeasurement(result, QStringLiteral("GammaML"));
+    REQUIRE(gu.ok());
+    REQUIRE(u.ok());
+    REQUIRE(gms.ok());
+    REQUIRE(gml.ok());
+    CHECK(gu.unit == QStringLiteral("dB"));
+    CHECK(gms.isComplex);
+    for (size_t i = 0; i < 3; ++i) {
+        const CMatrix &s = result.network.s[i];
+        CHECK(gu.values[i].real() == Approx(maximumUnilateralGainDb(s)).margin(1e-12));
+        CHECK(u.values[i].real() == Approx(masonUnilateralGainDb(s)).margin(1e-12));
+        const auto match = simultaneousConjugateMatch(s);
+        if (match) {
+            CHECK(std::abs(gms.values[i] - match->gammaS) < 1e-12);
+            CHECK(std::abs(gml.values[i] - match->gammaL) < 1e-12);
+        } else {
+            CHECK(std::isnan(gms.values[i].real()));
+        }
+    }
+    CHECK_FALSE(evaluateMeasurement(result, QStringLiteral("U(1)")).ok());
 }

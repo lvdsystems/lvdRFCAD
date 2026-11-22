@@ -13,10 +13,12 @@
 #include "antenna_ui/PositionEditor.h"
 #include "core/Library.h"
 #include "core/Project.h"
+#include "fullwave/FwElement.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QDir>
+#include <QFile>
 #include <QTabWidget>
 #include <QTemporaryDir>
 #include <QTableWidget>
@@ -260,6 +262,87 @@ TEST_CASE("The position editor edits elements in the table and on the canvas")
     REQUIRE(other.importCsv(path, &error));
     REQUIRE(other.elements().size() == editor.elements().size());
     CHECK(other.elements().back().x == Approx(editor.elements().back().x));
+}
+TEST_CASE("STL bodies and the embedded array are part of the full-wave setup")
+{
+    Fixture fx;
+    QString error;
+    Document *doc = fx.project->createDocument(DocumentType::AntennaElement, QStringLiteral("cad_part"), &error);
+    REQUIRE(doc);
+    antui::ElementWorkspace workspace(fx.project.get(), doc, fx.antennas.get());
+    // A one-triangle ASCII STL outside the project, in metres.
+    QTemporaryDir outside;
+    const QString stl = outside.filePath(QStringLiteral("plate.stl"));
+    {
+        QFile f(stl);
+        REQUIRE(f.open(QIODevice::WriteOnly));
+        f.write("solid p\n facet normal 0 0 1\n outer loop\n vertex 0 0 0\n vertex 0.02 0 0\n vertex 0 0.02 0\n endloop\n"
+                " endfacet\nendsolid p\n");
+    }
+    REQUIRE(workspace.addStlBody(stl, 1000, true, &error));
+    CHECK(QFile::exists(fx.project->directory() + QStringLiteral("/cad/plate.stl")));
+    ElementDesign d = workspace.design();
+    CHECK(d.element.model == ElementModelKind::FullWave);
+    fw::FwElementSetup setup = fw::FwElementSetup::fromJson(d.element.fullWave);
+    CHECK(setup.templateId == QStringLiteral("stl"));
+    REQUIRE(setup.bodies.size() == 1);
+    CHECK(setup.bodies[0].file == QStringLiteral("cad/plate.stl"));
+    CHECK(setup.bodies[0].scale == 1000);
+    CHECK_FALSE(workspace.addStlBody(outside.filePath(QStringLiteral("missing.stl")), 1, true, &error));
+
+    // The embedded-array fields survive a round trip through the document.
+    setup.arrayNx = 3;
+    setup.arrayNy = 3;
+    setup.arrayDx = setup.arrayDy = 50;
+    d.element.fullWave = setup.toJson();
+    doc->setContent(d.toJson());
+    workspace.recompute();
+    const fw::FwElementSetup back = fw::FwElementSetup::fromJson(workspace.design().element.fullWave);
+    CHECK(back.arrayNx == 3);
+    CHECK(back.arrayDy == 50);
+    CHECK(back.bodies.size() == 1);
+}
+
+TEST_CASE("A full-wave element is simulated and used by an array", "[openems]")
+{
+    Fixture fx;
+    QString error;
+    Document *doc = fx.project->createDocument(DocumentType::AntennaElement, QStringLiteral("fw_patch"), &error);
+    REQUIRE(doc);
+    antui::ElementWorkspace workspace(fx.project.get(), doc, fx.antennas.get());
+    // Switch to the full-wave model (the default template is the openEMS tutorial patch).
+    ElementDesign d = workspace.design();
+    d.element.model = ElementModelKind::FullWave;
+    doc->setContent(d.toJson());
+    workspace.recompute();
+    CHECK_FALSE(workspace.results().error.isEmpty()); // not simulated yet
+    REQUIRE(workspace.startSimulation(&error));
+    REQUIRE(workspace.waitForSimulation(600000));
+    REQUIRE(workspace.simulationResults());
+    INFO(workspace.simulationResults()->error.toStdString());
+    REQUIRE(workspace.simulationResults()->ok);
+    CHECK(workspace.simulationResults()->resonance() == Approx(2.435e9).epsilon(0.01));
+    CHECK(workspace.design().element.patternFile == QStringLiteral("simulations/fw_patch/pattern.csv"));
+    CHECK(workspace.design().element.efficiencyDb < 0);
+    CHECK(workspace.results().directivityDbi == Approx(6.8).margin(0.7));
+
+    // An array of the simulated element.
+    Document *arrayDoc = fx.project->createDocument(DocumentType::AntennaArray, QStringLiteral("fw_array"), &error);
+    ArrayDesign a;
+    a.elementRef = QStringLiteral("element:fw_patch");
+    a.frequency = a.designFrequency = 2.435e9;
+    a.geometry.nx = a.geometry.ny = 4;
+    arrayDoc->setContent(a.toJson());
+    antui::ArrayWorkspace array(fx.project.get(), arrayDoc, fx.antennas.get());
+    REQUIRE(array.waitForResults());
+    CHECK(array.results()->error.isEmpty());
+    CHECK(array.results()->metrics.peakGainDbi > 6.8 + 10);
+
+    // Undo restores the unsimulated element; redo brings the results back.
+    workspace.editActions().front()->trigger();
+    CHECK(workspace.design().element.patternFile.isEmpty());
+    workspace.editActions().back()->trigger();
+    CHECK_FALSE(workspace.design().element.patternFile.isEmpty());
 }
 
 int main(int argc, char *argv[])

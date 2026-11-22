@@ -14,6 +14,8 @@ namespace lvd::spice {
 
 namespace {
 
+constexpr double Pi = 3.14159265358979323846;
+
 // Letters, digits and underscores only, lower case unless keepCase; never empty.
 QString sanitize(const QString &text, bool keepCase = false)
 {
@@ -307,9 +309,77 @@ SpiceDeck buildSpiceDeck(const Netlist &netlist, const QString &projectDirectory
             return out;
         };
 
+        // Parasitics of the basic R, L and C (model field "parasitics",
+        // docs/file-format.md section 4.4): when one is non-zero the part
+        // becomes a small network with internal nodes, the same circuit as
+        // its linear RF model. Without parasitics the template is used.
+        const auto parasiticLines = [&]() -> std::optional<QStringList> {
+            const QString kind = model->data.value(QStringLiteral("parasitics")).toString();
+            if (kind.isEmpty())
+                return std::nullopt;
+            const auto value = [&](const char *name) {
+                return component.parameterValues.value(QString::fromLatin1(name), 0.0);
+            };
+            const QString p = element.pinNodes.value(QStringLiteral("p")), n = element.pinNodes.value(QStringLiteral("n"));
+            int internal = 0;
+            const auto node = [&]() {
+                const QString name = uniqueName(QStringLiteral("%1_int%2").arg(ref.toLower()).arg(++internal), takenNodes);
+                deck.netOfNode.insert(name, QString());
+                return name;
+            };
+            const auto number = [](double v) { return formatSpiceNumber(v); };
+            QStringList lines;
+            if (kind == QLatin1String("resistor")) {
+                const double r = value("r"), esl = value("esl"), cp = value("cp");
+                if (esl <= 0 && cp <= 0)
+                    return std::nullopt;
+                const QString mid = esl > 0 ? node() : n;
+                lines << QStringLiteral("R%1 %2 %3 %4").arg(ref, p, mid, number(r));
+                if (esl > 0)
+                    lines << QStringLiteral("L%1_esl %2 %3 %4").arg(ref, mid, n, number(esl));
+                if (cp > 0)
+                    lines << QStringLiteral("C%1_cp %2 %3 %4").arg(ref, p, n, number(cp));
+                return lines;
+            }
+            if (kind == QLatin1String("capacitor")) {
+                const double c = value("c"), q = value("q"), fq = value("freq");
+                const double rs = (q > 0 && fq > 0 && c > 0 ? 1.0 / (2 * Pi * fq * c * q) : 0.0) + value("esr");
+                const double esl = value("esl");
+                if (rs <= 0 && esl <= 0)
+                    return std::nullopt;
+                const QString a = rs > 0 ? node() : p;
+                const QString b = esl > 0 ? node() : a;
+                lines << QStringLiteral("C%1 %2 %3 %4").arg(ref, b, n, number(c));
+                if (rs > 0)
+                    lines << QStringLiteral("R%1_esr %2 %3 %4").arg(ref, p, a, number(rs));
+                if (esl > 0)
+                    lines << QStringLiteral("L%1_esl %2 %3 %4").arg(ref, a, b, number(esl));
+                return lines;
+            }
+            if (kind == QLatin1String("inductor")) {
+                const double l = value("l"), q = value("q"), fq = value("freq"), cp = value("cp");
+                const double rs = q > 0 && fq > 0 ? 2 * Pi * fq * l / q : 0.0;
+                if (rs <= 0 && cp <= 0)
+                    return std::nullopt;
+                const QString a = rs > 0 ? node() : n;
+                lines << QStringLiteral("L%1 %2 %3 %4").arg(ref, p, a, number(l));
+                if (rs > 0)
+                    lines << QStringLiteral("R%1_q %2 %3 %4").arg(ref, a, n, number(rs));
+                if (cp > 0)
+                    lines << QStringLiteral("C%1_cp %2 %3 %4").arg(ref, p, n, number(cp));
+                return lines;
+            }
+            deck.errors << QStringLiteral("%1: unknown parasitics expansion \"%2\"").arg(component.path, kind);
+            failed = true;
+            return QStringList();
+        };
+
         // Text from a Python model is final: its braces are SPICE expressions.
         const bool verbatim = model->data.value(QStringLiteral("verbatim")).toBool();
-        const QStringList rendered = (verbatim ? templateText : render(templateText)).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+        const std::optional<QStringList> parasitic = parasiticLines();
+        const QStringList rendered = parasitic ? *parasitic
+                                               : (verbatim ? templateText : render(templateText))
+                                                     .split(QLatin1Char('\n'), Qt::SkipEmptyParts);
         QStringList lines;
         for (const QString &raw : rendered) {
             const QString line = raw.trimmed();

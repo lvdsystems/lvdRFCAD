@@ -1,7 +1,12 @@
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/Autosave.h"
+#include "core/Document.h"
+#include "core/Project.h"
+#include "core/Schematic.h"
 #include "core/Session.h"
+#include "gui/AboutDialog.h"
 #include "gui/MainWindow.h"
 #include "gui/PythonConsole.h"
 #include "gui/SchematicWorkspace.h"
@@ -14,8 +19,11 @@
 #include "schematic_editor/SchematicEditor.h"
 
 #include <QApplication>
+#include <QJsonDocument>
+#include <QLabel>
 #include <QPixmap>
 #include <QSignalSpy>
+#include <QTableWidget>
 
 #include <cmath>
 #include <QTemporaryDir>
@@ -163,6 +171,58 @@ TEST_CASE("the main window follows the project, from the GUI and from Python")
     REQUIRE(session.project() == nullptr);
     REQUIRE(window.openDocumentCount() == 1); // the saved S-parameter tab stays
     REQUIRE(window.projectTreeDocumentCount() == 0);
+
+    // Crash recovery: another session leaves an autosaved copy behind ...
+    Autosave::setBaseDirectory(dir.filePath(QStringLiteral("autosave")));
+    QString crashedProject;
+    {
+        Session crashed;
+        Autosave autosave(&crashed);
+        Project *p = crashed.newProject(dir.filePath(QStringLiteral("crashed")), QStringLiteral("crashed"), &error);
+        REQUIRE(p);
+        crashedProject = p->filePath();
+        Document *doc = p->createDocument(DocumentType::RfSchematic, QStringLiteral("sheet"), &error);
+        REQUIRE(doc);
+        REQUIRE(p->saveAll(&error));
+        doc->schematic()->addText(QStringLiteral("work in progress"), QPoint(0, 0));
+        REQUIRE(autosave.saveNow(&error));
+    } // no clean close: the copy stays
+    REQUIRE(Autosave::pendingRecovery(crashedProject));
+    // ... which opening the project restores.
+    window.setRecoveryAnswerForTests(1);
+    REQUIRE(window.openProjectFile(crashedProject));
+    Document *sheet = session.project()->document(QStringLiteral("sheet"));
+    REQUIRE(sheet);
+    CHECK(sheet->isModified());
+    CHECK(QJsonDocument(sheet->content()).toJson().contains("work in progress"));
+    CHECK_FALSE(Autosave::pendingRecovery(crashedProject));
+    // The window's own autosave writes a copy; destroying the window (an orderly end) removes it.
+    REQUIRE(window.autosave()->saveNow(&error));
+    CHECK(Autosave::pendingRecovery(crashedProject));
+    session.closeProject();
+    CHECK_FALSE(Autosave::pendingRecovery(crashedProject));
+    Autosave::setBaseDirectory(QString());
+
+    // Help > About lists the bundled components and finds the notices.
+    AboutDialog about(QStringLiteral("3.14"), [](const QString &relative) { return MainWindow::documentationPath(relative); });
+    auto *components = about.findChild<QTableWidget *>(QStringLiteral("components"));
+    REQUIRE(components);
+    CHECK(components->rowCount() == AboutDialog::components(QStringLiteral("3.14")).size());
+    // The logo and the icon are compiled into the program; the website is shown as a link.
+    auto *logo = about.findChild<QLabel *>(QStringLiteral("logo"));
+    REQUIRE(logo);
+    CHECK_FALSE(logo->pixmap().isNull());
+    auto *title = about.findChild<QLabel *>(QStringLiteral("title"));
+    REQUIRE(title);
+    CHECK(title->text().contains(AboutDialog::website()));
+    CHECK(MainWindow::applicationIcon().availableSizes().size() == 7);
+    CHECK_FALSE(MainWindow::documentationPath(QStringLiteral("THIRD-PARTY-NOTICES.md")).isEmpty());
+    CHECK_FALSE(MainWindow::documentationPath(QStringLiteral("LICENSE")).isEmpty());
+    if (const QByteArray shot = qgetenv("LVD_SCREENSHOT_ABOUT"); !shot.isEmpty()) {
+        about.show();
+        QApplication::processEvents();
+        REQUIRE(about.grab().save(QString::fromLocal8Bit(shot)));
+    }
 }
 
 int main(int argc, char *argv[])

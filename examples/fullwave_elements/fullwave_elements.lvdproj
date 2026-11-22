@@ -1,0 +1,15 @@
+{
+    "documents": [
+        {
+            "path": "patch_2g4.lvdelem"
+        },
+        {
+            "path": "dipole_1g.lvdelem"
+        },
+        {
+            "path": "patch_array_4x4.lvdant"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

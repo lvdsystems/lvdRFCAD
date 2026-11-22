@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "path": "horn_ku.lvdelem"
+        },
+        {
+            "path": "horn_aperture_model.lvdelem"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

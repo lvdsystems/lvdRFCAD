@@ -270,3 +270,18 @@ TEST_CASE("Line ABCD matrix", "[rfdata][lines]")
     CHECK(std::abs(s(0, 0)) < 1e-12);
     CHECK(std::abs(s(1, 0) - std::exp(-gamma * 0.3)) < 1e-12);
 }
+
+// The defaults of the line components in libraries/rf-circuit.lvdlib.
+TEST_CASE("The library's default line geometries are close to 50 ohm", "[rfdata][lines]")
+{
+    const double f = 1e9;
+    const auto ms = microstrip({1.5e-3, 0.8e-3, 35e-6, 4.4, 0.02, 58e6}, f);
+    const auto co = coax({0.51e-3, 1.68e-3, 2.1, 0.0002, 58e6}, f);
+    REQUIRE(ms);
+    REQUIRE(co);
+    const auto sl = stripline({0.65e-3, 1.6e-3, 35e-6, 4.4, 0.02, 58e6}, f);
+    REQUIRE(sl);
+    CHECK_THAT(ms->zc.real(), WithinAbs(50, 2));
+    CHECK_THAT(sl->zc.real(), WithinAbs(50, 2));
+    CHECK_THAT(co->zc.real(), WithinAbs(50, 2));
+}

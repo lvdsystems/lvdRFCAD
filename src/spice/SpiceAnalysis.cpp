@@ -551,7 +551,7 @@ SpiceSimulation prepareSpiceAnalysis(const Project &project, const Document &doc
     // An imported netlist (requirement SP-10) replaces the drawing.
     const QString importedNetlist = document.schematic()->simulation().value(QStringLiteral("netlist")).toString();
     if (!importedNetlist.trimmed().isEmpty())
-        simulation.deck = deckFromNetlist(importedNetlist, netlistOptions.title);
+        simulation.deck = deckFromNetlist(importedNetlist, netlistOptions.title, project.directory());
     else
         simulation.deck = buildSpiceDeck(project, document, netlistOptions);
     simulation.errors = simulation.deck.errors;

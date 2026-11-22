@@ -2,20 +2,22 @@
     "format": "lvdrfcad-library",
     "version": 1,
     "name": "basic",
-    "description": "Basic parts shared by RF and SPICE schematics: R, L, C, ground and hierarchical ports",
+    "description": "Basic parts shared by RF and SPICE schematics: R, L, C (ideal, with parasitics, and SMD packages), ground and hierarchical ports",
     "components": [
         {
             "id": "resistor",
             "name": "Resistor",
             "category": "Passive",
-            "description": "Ideal resistor (ANSI symbol)",
+            "description": "Resistor; optional parasitics: series inductance esl, parallel capacitance cp (0 = ideal)",
             "referencePrefix": "R",
             "pins": [
                 { "name": "p" },
                 { "name": "n" }
             ],
             "parameters": [
-                { "name": "r", "label": "Resistance", "unit": "ohm", "default": "1k", "shown": true }
+                { "name": "r", "label": "Resistance", "unit": "ohm", "default": "1k", "shown": true },
+                { "name": "esl", "label": "Series inductance (0 = ideal)", "unit": "H", "default": "0" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0" }
             ],
             "symbol": {
                 "graphics": [
@@ -33,14 +35,14 @@
             },
             "models": [
                 { "kind": "rf-element", "element": "resistor" },
-                { "kind": "spice", "template": "R{ref} {pin:p} {pin:n} {r}" }
+                { "kind": "spice", "template": "R{ref} {pin:p} {pin:n} {r}", "parasitics": "resistor" }
             ]
         },
         {
             "id": "capacitor",
             "name": "Capacitor",
             "category": "Passive",
-            "description": "Capacitor with optional finite Q (q = 0 is ideal)",
+            "description": "Capacitor with optional finite Q (q = 0 is ideal) and series parasitics esr, esl",
             "referencePrefix": "C",
             "pins": [
                 { "name": "p" },
@@ -49,7 +51,9 @@
             "parameters": [
                 { "name": "c", "label": "Capacitance", "unit": "F", "default": "1pF", "shown": true },
                 { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
-                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" }
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "esr", "label": "Equivalent series resistance (0 = ideal)", "unit": "ohm", "default": "0" },
+                { "name": "esl", "label": "Equivalent series inductance (0 = ideal)", "unit": "H", "default": "0" }
             ],
             "symbol": {
                 "graphics": [
@@ -67,14 +71,14 @@
             },
             "models": [
                 { "kind": "rf-element", "element": "capacitor" },
-                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}" }
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}", "parasitics": "capacitor" }
             ]
         },
         {
             "id": "inductor",
             "name": "Inductor",
             "category": "Passive",
-            "description": "Inductor with optional finite Q (q = 0 is ideal)",
+            "description": "Inductor with optional finite Q (q = 0 is ideal) and parallel capacitance cp (self-resonance)",
             "referencePrefix": "L",
             "pins": [
                 { "name": "p" },
@@ -83,7 +87,8 @@
             "parameters": [
                 { "name": "l", "label": "Inductance", "unit": "H", "default": "1nH", "shown": true },
                 { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
-                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" }
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0" }
             ],
             "symbol": {
                 "graphics": [
@@ -101,7 +106,289 @@
             },
             "models": [
                 { "kind": "rf-element", "element": "inductor" },
-                { "kind": "spice", "template": "L{ref} {pin:p} {pin:n} {l}" }
+                { "kind": "spice", "template": "L{ref} {pin:p} {pin:n} {l}", "parasitics": "inductor" }
+            ]
+        },
+        {
+            "id": "resistor_0402",
+            "name": "Resistor 0402",
+            "category": "Passive/SMD packages",
+            "description": "0402 thin-film resistor with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "R",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "r", "label": "Resistance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "esl", "label": "Series inductance (0 = ideal)", "unit": "H", "default": "0.4nH" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0.05pF" }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "line",
+                        "points": [[-20, 0], [-18, -6], [-12, 6], [-6, -6], [0, 6], [6, -6], [12, 6], [18, -6], [20, 0]]
+                    }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "resistor" },
+                { "kind": "spice", "template": "R{ref} {pin:p} {pin:n} {r}", "parasitics": "resistor" }
+            ]
+        },
+        {
+            "id": "resistor_0603",
+            "name": "Resistor 0603",
+            "category": "Passive/SMD packages",
+            "description": "0603 thin-film resistor with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "R",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "r", "label": "Resistance", "unit": "ohm", "default": "50", "shown": true },
+                { "name": "esl", "label": "Series inductance (0 = ideal)", "unit": "H", "default": "0.6nH" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0.08pF" }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "line",
+                        "points": [[-20, 0], [-18, -6], [-12, 6], [-6, -6], [0, 6], [6, -6], [12, 6], [18, -6], [20, 0]]
+                    }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "resistor" },
+                { "kind": "spice", "template": "R{ref} {pin:p} {pin:n} {r}", "parasitics": "resistor" }
+            ]
+        },
+        {
+            "id": "capacitor_0201",
+            "name": "Capacitor 0201",
+            "category": "Passive/SMD packages",
+            "description": "0201 C0G MLCC with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "C",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "c", "label": "Capacitance", "unit": "F", "default": "10pF", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "esr", "label": "Equivalent series resistance (0 = ideal)", "unit": "ohm", "default": "0.2" },
+                { "name": "esl", "label": "Equivalent series inductance (0 = ideal)", "unit": "H", "default": "0.3nH" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[4, -12], [4, 12]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "capacitor" },
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}", "parasitics": "capacitor" }
+            ]
+        },
+        {
+            "id": "capacitor_0402",
+            "name": "Capacitor 0402",
+            "category": "Passive/SMD packages",
+            "description": "0402 C0G MLCC with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "C",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "c", "label": "Capacitance", "unit": "F", "default": "10pF", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "esr", "label": "Equivalent series resistance (0 = ideal)", "unit": "ohm", "default": "0.15" },
+                { "name": "esl", "label": "Equivalent series inductance (0 = ideal)", "unit": "H", "default": "0.5nH" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[4, -12], [4, 12]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "capacitor" },
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}", "parasitics": "capacitor" }
+            ]
+        },
+        {
+            "id": "capacitor_0603",
+            "name": "Capacitor 0603",
+            "category": "Passive/SMD packages",
+            "description": "0603 C0G MLCC with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "C",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "c", "label": "Capacitance", "unit": "F", "default": "10pF", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "esr", "label": "Equivalent series resistance (0 = ideal)", "unit": "ohm", "default": "0.1" },
+                { "name": "esl", "label": "Equivalent series inductance (0 = ideal)", "unit": "H", "default": "0.7nH" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[4, -12], [4, 12]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "capacitor" },
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}", "parasitics": "capacitor" }
+            ]
+        },
+        {
+            "id": "capacitor_0805",
+            "name": "Capacitor 0805",
+            "category": "Passive/SMD packages",
+            "description": "0805 C0G MLCC with generic typical parasitics (+/- 30 %, not a vendor part)",
+            "referencePrefix": "C",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "c", "label": "Capacitance", "unit": "F", "default": "10pF", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "0" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "1GHz" },
+                { "name": "esr", "label": "Equivalent series resistance (0 = ideal)", "unit": "ohm", "default": "0.08" },
+                { "name": "esl", "label": "Equivalent series inductance (0 = ideal)", "unit": "H", "default": "0.9nH" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-4, 0]] },
+                    { "type": "line", "points": [[4, 0], [20, 0]] },
+                    { "type": "line", "points": [[-4, -12], [-4, 12]] },
+                    { "type": "line", "points": [[4, -12], [4, 12]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "capacitor" },
+                { "kind": "spice", "template": "C{ref} {pin:p} {pin:n} {c}", "parasitics": "capacitor" }
+            ]
+        },
+        {
+            "id": "inductor_0402",
+            "name": "Inductor 0402",
+            "category": "Passive/SMD packages",
+            "description": "0402 multilayer inductor with generic typical Q and self-resonance (+/- 30 %, not a vendor part)",
+            "referencePrefix": "L",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "l", "label": "Inductance", "unit": "H", "default": "10nH", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "12" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "500MHz" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0.17pF" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [-5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "inductor" },
+                { "kind": "spice", "template": "L{ref} {pin:p} {pin:n} {l}", "parasitics": "inductor" }
+            ]
+        },
+        {
+            "id": "inductor_0603",
+            "name": "Inductor 0603",
+            "category": "Passive/SMD packages",
+            "description": "0603 multilayer inductor with generic typical Q and self-resonance (+/- 30 %, not a vendor part)",
+            "referencePrefix": "L",
+            "pins": [
+                { "name": "p" },
+                { "name": "n" }
+            ],
+            "parameters": [
+                { "name": "l", "label": "Inductance", "unit": "H", "default": "10nH", "shown": true },
+                { "name": "q", "label": "Unloaded Q (0 = ideal)", "unit": "", "default": "20" },
+                { "name": "freq", "label": "Frequency at which Q applies", "unit": "Hz", "default": "500MHz" },
+                { "name": "cp", "label": "Parallel capacitance (0 = ideal)", "unit": "F", "default": "0.25pF" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "arc", "center": [-15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [-5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [5, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 },
+                    { "type": "arc", "center": [15, 0], "radius": 5, "startAngle": 0, "spanAngle": 180 }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "n", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "inductor" },
+                { "kind": "spice", "template": "L{ref} {pin:p} {pin:n} {l}", "parasitics": "inductor" }
             ]
         },
         {

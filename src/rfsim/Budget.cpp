@@ -6,6 +6,8 @@
 #include "rfdata/NetworkMath.h"
 #include "rfdata/NetworkOps.h"
 #include "rfsim/Analysis.h"
+#include "rfsim/BlockModels.h"
+#include "rfsim/PhaseNoise.h"
 
 #include <QFileInfo>
 #include <QJsonArray>
@@ -73,11 +75,45 @@ BudgetResult computeBudget(ChainEvaluator &evaluator, const BudgetOptions &optio
         return result;
     }
 
+    // A DAC at the start: signal and noise density at this frequency.
+    if (chain.dac) {
+        const DacStart &dac = *chain.dac;
+        const DacFigures figures = dacFigures(result.inputFrequency, dac.sampleRate, dac.bits, dac.fullScaleDbm,
+                                              dac.backoffDb, dac.nsdDbmHz);
+        if (!chain.powerOverridden)
+            result.inputPowerDbm = figures.signalDbm;
+        result.hasDac = true;
+        result.dacSincDb = figures.sincDb;
+        result.dacNsdDbmHz = figures.nsdDbmHz;
+        result.dacNsdFromQuantisation = figures.nsdFromQuantisation;
+        result.dacImageFrequency = figures.imageFrequency;
+        result.dacImageDbm = figures.imageDbm + (result.inputPowerDbm - figures.signalDbm); // follows a power override
+    }
+
+    // Phase-noise integration range and blocker.
+    result.phaseNoiseStart = std::isfinite(options.phaseNoiseStart) ? options.phaseNoiseStart : options.bandwidth / 1000;
+    result.phaseNoiseStop = std::isfinite(options.phaseNoiseStop) ? options.phaseNoiseStop : options.bandwidth / 2;
+    if (!(result.phaseNoiseStart > 0) || !(result.phaseNoiseStop > result.phaseNoiseStart)) {
+        result.errors.append(QStringLiteral("the phase-noise integration range needs 0 < start < stop"));
+        return result;
+    }
+    if (std::isfinite(options.blockerPowerDbm)) {
+        if (!(options.blockerOffset > 0)) {
+            result.errors.append(QStringLiteral("the blocker offset must be positive"));
+            return result;
+        }
+        result.hasBlocker = true;
+        result.blockerOffset = options.blockerOffset;
+        result.blockerPowerDbm = options.blockerPowerDbm;
+    }
+
     std::optional<NetworkData> cumulative;
     double gainBefore = 1.0;          // linear cumulative gain at the input of the current stage
     double inverseIip3 = 0, inverseIp1 = 0, inverseRootIip2 = 0; // 1/mW and 1/sqrt(mW)
     double f = result.inputFrequency;
     double previousGainDb = 0;
+    double phaseNoiseRatio = 0;       // phase-noise power over signal power, linear
+    double reciprocalMixingInput = 0; // mW, referred to the chain input with the wanted signal's gain
 
     const auto addStage = [&](BudgetStage &row, const CMatrix &s, const CMatrix &noise) -> bool {
         CMatrix used = s, usedNoise = noise;
@@ -133,7 +169,17 @@ BudgetResult computeBudget(ChainEvaluator &evaluator, const BudgetOptions &optio
         const double effectiveTemperature = result.sourceTemperature + T0 * (cumulativeF - 1.0);
         row.signalDbm = result.inputPowerDbm + row.cumulativeGainDb;
         row.noiseDbm = noiseDbm(effectiveTemperature, options.bandwidth) + row.cumulativeGainDb;
-        row.snrDb = row.signalDbm - row.noiseDbm;
+        row.thermalSnrDb = row.signalDbm - row.noiseDbm;
+        row.phaseNoiseDbm = phaseNoiseRatio > 0 ? row.signalDbm + 10.0 * std::log10(phaseNoiseRatio) : -INFINITY;
+        row.reciprocalMixingDbm = reciprocalMixingInput > 0 ? toDbm(reciprocalMixingInput) + row.cumulativeGainDb : -INFINITY;
+        row.phaseNoiseSnrDb = row.signalDbm - row.phaseNoiseDbm;
+        row.reciprocalMixingSnrDb = row.signalDbm - row.reciprocalMixingDbm;
+        // Without phase noise and blocker the total is the thermal noise, bit for bit.
+        row.totalNoiseDbm = phaseNoiseRatio > 0 || reciprocalMixingInput > 0
+                                ? toDbm(toMilliwatt(row.noiseDbm) + toMilliwatt(row.phaseNoiseDbm)
+                                        + toMilliwatt(row.reciprocalMixingDbm))
+                                : row.noiseDbm;
+        row.snrDb = row.signalDbm - row.totalNoiseDbm;
         const double inputFloor = noiseDbm(effectiveTemperature, options.bandwidth);
         row.sfdrDb = std::isfinite(row.iip3Dbm) ? 2.0 / 3.0 * (row.iip3Dbm - inputFloor) : INFINITY;
         row.headroomDb = row.op1dbCumulativeDbm - row.signalDbm;
@@ -166,6 +212,10 @@ BudgetResult computeBudget(ChainEvaluator &evaluator, const BudgetOptions &optio
             row.oip3Dbm = stageParameter(stage, "oip3");
             row.op1dbDbm = stageParameter(stage, "op1db");
             row.oip2Dbm = stageParameter(stage, "oip2");
+        } else if (stage.kind == QLatin1String("limiter")) {
+            // The output clamp acts as a hard compression point.
+            row.op1dbDbm = stageParameter(stage, "limit");
+            row.notes.append(QStringLiteral("output limited to %1 dBm (used as OP1dB)").arg(row.op1dbDbm, 0, 'g', 4));
         } else if (stage.kind == QLatin1String("mixer")) {
             const double iip3 = stageParameter(stage, "iip3");
             const double gain = stageParameter(stage, "gain");
@@ -181,53 +231,123 @@ BudgetResult computeBudget(ChainEvaluator &evaluator, const BudgetOptions &optio
                                                .arg(stage.loPowerDbm, 0, 'f', 1)
                                                .arg(nominal, 0, 'f', 1));
             }
+
+            // LO phase noise on the signal, and reciprocal mixing of the blocker.
+            QString noiseError;
+            const PhaseNoiseProfile *profile = evaluator.loPhaseNoise(i, &noiseError);
+            if (!noiseError.isEmpty())
+                result.warnings.append(QStringLiteral("%1: the LO phase noise is not used (%2)").arg(stage.path, noiseError));
+            if (profile) {
+                result.hasPhaseNoise = true;
+                const IntegratedPhaseNoise integrated =
+                    integratePhaseNoise(*profile, result.phaseNoiseStart, result.phaseNoiseStop, stage.loFrequency);
+                row.loPhaseNoiseDbc = integrated.dbc;
+                row.loRmsPhaseDeg = integrated.rmsPhaseDegrees;
+                row.loJitterS = integrated.rmsJitterSeconds;
+                phaseNoiseRatio += toMilliwatt(integrated.dbc);
+                row.notes.append(QStringLiteral("LO phase noise %1 dBc from %2 to %3 (%4 deg rms, %5 rms jitter)%6")
+                                     .arg(integrated.dbc, 0, 'f', 1)
+                                     .arg(formatEngineering(result.phaseNoiseStart, QStringLiteral("Hz")),
+                                          formatEngineering(result.phaseNoiseStop, QStringLiteral("Hz")))
+                                     .arg(integrated.rmsPhaseDegrees, 0, 'g', 3)
+                                     .arg(formatEngineering(integrated.rmsJitterSeconds, QStringLiteral("s")))
+                                     .arg(stage.loMultiplication > 1
+                                              ? QStringLiteral(", LO multiplied by %1").arg(stage.loMultiplication)
+                                              : QString()));
+            }
+            if (result.hasBlocker) {
+                QString blockerError;
+                double blockerFrequency = NotSet;
+                const double gainToMixer = evaluator.forwardGainDb(0, i, result.inputFrequency + result.blockerOffset,
+                                                                   &blockerFrequency, &blockerError);
+                if (!std::isfinite(gainToMixer)) {
+                    result.warnings.append(QStringLiteral("%1: the blocker level is not known (%2)").arg(stage.path, blockerError));
+                } else {
+                    row.blockerDbm = result.blockerPowerDbm + gainToMixer;
+                    const double offset = std::abs(blockerFrequency - f);
+                    if (profile && offset > 0) {
+                        row.loPhaseNoiseAtOffsetDbcHz = profile->level(offset);
+                        const double inChannel = row.blockerDbm + row.loPhaseNoiseAtOffsetDbcHz + 10.0 * std::log10(options.bandwidth);
+                        reciprocalMixingInput += toMilliwatt(inChannel - previousGainDb);
+                        row.notes.append(QStringLiteral("blocker %1 dBm at the mixer, L(%2) = %3 dBc/Hz: reciprocal mixing "
+                                                        "%4 dBm in the channel")
+                                             .arg(row.blockerDbm, 0, 'f', 1)
+                                             .arg(formatEngineering(offset, QStringLiteral("Hz")))
+                                             .arg(row.loPhaseNoiseAtOffsetDbcHz, 0, 'f', 1)
+                                             .arg(inChannel, 0, 'f', 1));
+                    }
+                }
+            }
+        } else if (stage.translation == ChainStage::Translation::Multiplier) {
+            // Phase deviations are multiplied by N: the phase-noise ratio rises by N^2.
+            phaseNoiseRatio *= static_cast<double>(stage.factor) * stage.factor;
+        }
+        if (result.hasDac) {
+            QString imageError;
+            const double imageGain = evaluator.forwardGainDb(0, i + 1, result.dacImageFrequency, nullptr, &imageError);
+            row.dacImageDbm = std::isfinite(imageGain) ? result.dacImageDbm + imageGain : NotSet;
         }
         if (!addStage(row, *s, *noise))
             return result;
         f = row.outputFrequency;
     }
 
+    // The component at the end of the chain.
+    const FlatComponent *endComponent = chain.end.isEmpty() ? nullptr : chain.netlist.component(chain.end);
+    const auto endValue = [&](const char *name) {
+        return endComponent ? endComponent->parameterValues.value(QString::fromLatin1(name), NotSet) : NotSet;
+    };
+
     // An ADC at the end adds its noise figure and a full-scale clip.
-    if (chain.endKind == QLatin1String("adc")) {
-        const int adc = [&] {
-            for (int c = 0; c < static_cast<int>(chain.netlist.components.size()); ++c) {
-                if (chain.netlist.components[static_cast<size_t>(c)].path == chain.end)
-                    return c;
-            }
-            return -1;
-        }();
-        if (adc >= 0) {
-            const FlatComponent &component = chain.netlist.components[static_cast<size_t>(adc)];
-            const auto value = [&](const char *name) { return component.parameterValues.value(QString::fromLatin1(name), NotSet); };
-            BudgetStage row;
-            row.path = component.path;
-            row.name = component.definition->name;
-            row.kind = QStringLiteral("adc");
-            row.inputFrequency = row.outputFrequency = f;
-            row.op1dbDbm = value("full_scale");
-            CMatrix s = CMatrix::Zero(2, 2);
-            s(1, 0) = 1.0;
-            CMatrix noise = CMatrix::Zero(2, 2);
-            noise(1, 1) = T0 * (std::pow(10.0, std::max(0.0, value("nf")) / 10.0) - 1.0);
-            if (!addStage(row, s, noise))
-                return result;
-            result.hasAdc = true;
-            result.adcFullScaleDbm = value("full_scale");
-            result.adcHeadroomDb = result.adcFullScaleDbm - row.signalDbm;
-            const double bits = value("bits");
-            result.adcQuantisationSnrDb = 6.02 * bits + 1.76;
-            result.adcSampleRate = value("fs");
-            if (result.adcSampleRate > 0) {
-                double alias = std::fmod(f, result.adcSampleRate);
-                if (alias > result.adcSampleRate / 2)
-                    alias = result.adcSampleRate - alias;
-                result.adcAliasFrequency = alias;
-            }
-            if (result.adcHeadroomDb < 0)
-                result.warnings.append(QStringLiteral("%1: the signal exceeds the ADC full scale by %2 dB")
-                                           .arg(row.path)
-                                           .arg(-result.adcHeadroomDb, 0, 'f', 1));
+    if (chain.endKind == QLatin1String("adc") && endComponent) {
+        BudgetStage row;
+        row.path = endComponent->path;
+        row.name = endComponent->definition->name;
+        row.kind = QStringLiteral("adc");
+        row.inputFrequency = row.outputFrequency = f;
+        row.op1dbDbm = endValue("full_scale");
+        if (!result.stages.empty())
+            row.dacImageDbm = result.stages.back().dacImageDbm;
+        CMatrix s = CMatrix::Zero(2, 2);
+        s(1, 0) = 1.0;
+        CMatrix noise = CMatrix::Zero(2, 2);
+        noise(1, 1) = T0 * (std::pow(10.0, std::max(0.0, endValue("nf")) / 10.0) - 1.0);
+        if (!addStage(row, s, noise))
+            return result;
+        result.hasAdc = true;
+        result.adcFullScaleDbm = endValue("full_scale");
+        result.adcHeadroomDb = result.adcFullScaleDbm - row.signalDbm;
+        const double bits = endValue("bits");
+        result.adcQuantisationSnrDb = 6.02 * bits + 1.76;
+        result.adcSampleRate = endValue("fs");
+        if (result.adcSampleRate > 0) {
+            double alias = std::fmod(f, result.adcSampleRate);
+            if (alias > result.adcSampleRate / 2)
+                alias = result.adcSampleRate - alias;
+            result.adcAliasFrequency = alias;
         }
+        if (result.adcHeadroomDb < 0)
+            result.warnings.append(QStringLiteral("%1: the signal exceeds the ADC full scale by %2 dB")
+                                       .arg(row.path)
+                                       .arg(-result.adcHeadroomDb, 0, 'f', 1));
+    }
+
+    // A detector at the end: margin over its sensitivity and room to the top of its range.
+    if (chain.endKind == QLatin1String("detector") && endComponent && !result.stages.empty()) {
+        const double signal = result.stages.back().signalDbm;
+        result.hasDetector = true;
+        result.detectorSensitivityDbm = endValue("sensitivity");
+        result.detectorMaxDbm = result.detectorSensitivityDbm + endValue("dynamic_range");
+        result.detectorMarginDb = signal - result.detectorSensitivityDbm;
+        result.detectorHeadroomDb = result.detectorMaxDbm - signal;
+        if (result.detectorMarginDb < 0)
+            result.warnings.append(QStringLiteral("%1: the signal is %2 dB below the detector's sensitivity")
+                                       .arg(endComponent->path)
+                                       .arg(-result.detectorMarginDb, 0, 'f', 1));
+        if (result.detectorHeadroomDb < 0)
+            result.warnings.append(QStringLiteral("%1: the signal is %2 dB above the detector's dynamic range")
+                                       .arg(endComponent->path)
+                                       .arg(-result.detectorHeadroomDb, 0, 'f', 1));
     }
     return result;
 }
@@ -253,6 +373,12 @@ BudgetAnalysisSetup BudgetAnalysisSetup::fromJson(const QJsonObject &object)
     const QJsonObject spurs = object.value(QStringLiteral("spurs")).toObject();
     setup.spurs = spurs.value(QStringLiteral("enabled")).toBool(true);
     setup.spurOrder = spurs.value(QStringLiteral("maxOrder")).toString(setup.spurOrder);
+    const QJsonObject phaseNoise = object.value(QStringLiteral("phaseNoise")).toObject();
+    setup.phaseNoiseStart = phaseNoise.value(QStringLiteral("start")).toString();
+    setup.phaseNoiseStop = phaseNoise.value(QStringLiteral("stop")).toString();
+    const QJsonObject blocker = object.value(QStringLiteral("blocker")).toObject();
+    setup.blockerOffset = blocker.value(QStringLiteral("offset")).toString();
+    setup.blockerPower = blocker.value(QStringLiteral("power")).toString();
     return setup;
 }
 
@@ -277,6 +403,12 @@ QJsonObject BudgetAnalysisSetup::toJson() const
                                                            {QStringLiteral("points"), sweepPoints}});
     object.insert(QStringLiteral("spurs"),
                   QJsonObject{{QStringLiteral("enabled"), spurs}, {QStringLiteral("maxOrder"), spurOrder}});
+    if (!phaseNoiseStart.isEmpty() || !phaseNoiseStop.isEmpty())
+        object.insert(QStringLiteral("phaseNoise"),
+                      QJsonObject{{QStringLiteral("start"), phaseNoiseStart}, {QStringLiteral("stop"), phaseNoiseStop}});
+    if (!blockerOffset.isEmpty() || !blockerPower.isEmpty())
+        object.insert(QStringLiteral("blocker"),
+                      QJsonObject{{QStringLiteral("offset"), blockerOffset}, {QStringLiteral("power"), blockerPower}});
     return object;
 }
 
@@ -310,7 +442,8 @@ QJsonObject withBudgetAnalysis(const QJsonObject &simulation, BudgetAnalysisSetu
     static const QStringList known = {QStringLiteral("id"),        QStringLiteral("type"),  QStringLiteral("name"),
                                       QStringLiteral("path"),      QStringLiteral("start"), QStringLiteral("frequency"),
                                       QStringLiteral("power"),     QStringLiteral("bandwidth"),
-                                      QStringLiteral("mismatch"),  QStringLiteral("sweep"), QStringLiteral("spurs")};
+                                      QStringLiteral("mismatch"),  QStringLiteral("sweep"), QStringLiteral("spurs"),
+                                      QStringLiteral("phaseNoise"), QStringLiteral("blocker")};
     bool replaced = false;
     for (qsizetype i = 0; i < analyses.size(); ++i) {
         QJsonObject existing = analyses.at(i).toObject();
@@ -402,6 +535,12 @@ BudgetRun runBudget(const Netlist &netlist, const BudgetAnalysisSetup &setup, co
     BudgetOptions options;
     options.bandwidth = evaluate(setup.bandwidth, QStringLiteral("bandwidth"));
     options.mismatch = setup.mismatch;
+    options.phaseNoiseStart = evaluate(setup.phaseNoiseStart, QStringLiteral("phase-noise integration start"));
+    options.phaseNoiseStop = evaluate(setup.phaseNoiseStop, QStringLiteral("phase-noise integration stop"));
+    options.blockerPowerDbm = evaluate(setup.blockerPower, QStringLiteral("blocker power"));
+    options.blockerOffset = evaluate(setup.blockerOffset, QStringLiteral("blocker offset"));
+    if (std::isfinite(options.blockerPowerDbm) && !std::isfinite(options.blockerOffset))
+        run.errors.append(QStringLiteral("give the blocker offset"));
     const double sweepStart = evaluate(setup.sweepStart, QStringLiteral("sweep start"));
     const double sweepStop = evaluate(setup.sweepStop, QStringLiteral("sweep stop"));
     const double sweepPoints = std::isfinite(sweepStart) ? evaluate(setup.sweepPoints, QStringLiteral("sweep points")) : NotSet;

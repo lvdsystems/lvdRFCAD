@@ -231,7 +231,8 @@ QStringList measurementCompletions(const std::vector<int> &portList, bool noise)
     }
     if (ports.size() == 2) {
         list << QStringLiteral("K") << QStringLiteral("mu") << QStringLiteral("mup") << QStringLiteral("Delta")
-             << QStringLiteral("mag(Delta)") << QStringLiteral("MAG");
+             << QStringLiteral("mag(Delta)") << QStringLiteral("MAG") << QStringLiteral("GUmax") << QStringLiteral("U")
+             << QStringLiteral("GammaMS") << QStringLiteral("GammaML");
         if (noise) {
             list << QStringLiteral("NF") << QStringLiteral("NFmin") << QStringLiteral("Rn") << QStringLiteral("GammaOpt");
         }

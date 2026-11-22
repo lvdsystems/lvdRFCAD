@@ -15,6 +15,10 @@ namespace lvd::rf {
 //   Zin(1)  Yin(1)  VSWR(1)  RL(1)        port quantities (Zin with the other ports matched)
 //   NF  NF(2,1)  NFmin  Rn  GammaOpt      noise (two-ports for NFmin, Rn, GammaOpt); NF in dB
 //   K  Delta  mu  mup  MAG                two-port stability and gain
+//   GUmax  U                              maximum unilateral transducer gain, Mason's
+//                                         unilateral gain (both in dB)
+//   GammaMS  GammaML                      simultaneous conjugate match source and load
+//                                         reflections (complex; NaN where K <= 1)
 //   dB(x) dB10(x) mag(x) phase(x) uphase(x) re(x) im(x) conj(x) GD(x)
 //   + - * / and numbers
 //

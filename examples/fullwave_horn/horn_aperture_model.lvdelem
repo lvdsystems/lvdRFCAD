@@ -1,0 +1,17 @@
+{
+    "content": {
+        "element": {
+            "apertureA": 0.05420201433256687,
+            "apertureB": 0.04420201433256687,
+            "distribution": "cosine",
+            "efficiency": 0,
+            "frequency": 15000000000,
+            "model": "aperture",
+            "polarisation": "x"
+        },
+        "notes": "Analytic cosine (TE10) aperture of the horn_ku mouth. Compare its directivity and beamwidths with the simulated horn: the aperture model ignores the flare's phase error."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

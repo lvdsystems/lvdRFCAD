@@ -1,6 +1,8 @@
 # RF data: network types and conversions, Touchstone files, network
 # operations and physical line models. Depends on QtCore and Eigen only.
 add_library(lvdrfdata STATIC
+    Discontinuities.cpp
+    Discontinuities.h
     LineModels.cpp
     LineModels.h
     NetworkMath.cpp
@@ -22,6 +24,7 @@ if(LVD_BUILD_TESTS)
     # Reference data in tests/data is generated with scikit-rf by
     # tools/generate_rf_reference.py.
     add_executable(rfdata_tests
+        tests/DiscontinuitiesTests.cpp
         tests/LineModelsTests.cpp
         tests/NetworkMathTests.cpp
         tests/NetworkOpsTests.cpp

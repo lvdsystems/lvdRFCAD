@@ -1,4 +1,6 @@
 add_library(lvdcore STATIC
+    Autosave.cpp
+    Autosave.h
     ComponentDefinition.cpp
     ComponentDefinition.h
     Connectivity.cpp
@@ -25,6 +27,8 @@ add_library(lvdcore STATIC
     Session.h
     StandardValues.cpp
     StandardValues.h
+    Substrates.cpp
+    Substrates.h
     UndoStack.cpp
     UndoStack.h
 )

@@ -6,6 +6,10 @@
 #include "core/Session.h"
 #include "rfsim/Analysis.h"
 #include "rfsim/Budget.h"
+#include "rfsim/Measurement.h"
+
+#include <QDir>
+#include <algorithm>
 
 #include <QJsonArray>
 #include <QTemporaryDir>
@@ -377,4 +381,50 @@ TEST_CASE("a swept budget follows the filter response and the setup round-trips"
     REQUIRE(run.sweep.size() == 41);
     CHECK(run.sweep[20].stages.back().cumulativeGainDb == Approx(0).margin(1e-6)); // centre
     CHECK(run.sweep[0].stages.back().cumulativeGainDb < -20);                     // far outside the band
+}
+
+TEST_CASE("every example's S-parameter analyses run and every plot trace has values")
+{
+    // LVD_RF_TEST_DATA is <source>/src/rfdata/tests/data.
+    QDir examples(QStringLiteral(LVD_RF_TEST_DATA));
+    REQUIRE(examples.cd(QStringLiteral("../../../../examples")));
+    int analysesRun = 0;
+    for (const QString &folder : examples.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        const QDir dir(examples.filePath(folder));
+        const QStringList projects = dir.entryList({QStringLiteral("*.lvdproj")}, QDir::Files);
+        if (projects.isEmpty() || dir.entryList({QStringLiteral("*.lvdrf")}, QDir::Files).isEmpty())
+            continue;
+        Session session;
+        QString error;
+        Project *project = session.openProject(dir.filePath(projects.first()), &error);
+        INFO(folder.toStdString() << ": " << error.toStdString());
+        REQUIRE(project);
+        for (Document *document : project->documents()) {
+            if (document->type() != DocumentType::RfSchematic || !document->schematic())
+                continue;
+            const QJsonObject simulation = document->schematic()->simulation();
+            for (const LinearAnalysisSetup &setup : linearAnalyses(simulation)) {
+                INFO(folder.toStdString() << "/" << document->name().toStdString() << " analysis "
+                                          << setup.name.toStdString());
+                const LinearResult result = runLinearAnalysis(*project, *document, setup);
+                INFO(result.errors.join(QLatin1Char('\n')).toStdString());
+                REQUIRE(result.ok());
+                ++analysesRun;
+                for (const QJsonValue &plotValue : simulation.value(QStringLiteral("plots")).toArray()) {
+                    const QJsonObject plot = plotValue.toObject();
+                    if (plot.value(QStringLiteral("analysis")).toString() != setup.id)
+                        continue;
+                    for (const QJsonValue &trace : plot.value(QStringLiteral("traces")).toArray()) {
+                        INFO("trace " << trace.toString().toStdString());
+                        const Measurement m = evaluateMeasurement(result, trace.toString());
+                        INFO(m.error.toStdString());
+                        REQUIRE(m.ok());
+                        const std::vector<double> values = m.real();
+                        CHECK(std::any_of(values.begin(), values.end(), [](double v) { return std::isfinite(v); }));
+                    }
+                }
+            }
+        }
+    }
+    CHECK(analysesRun >= 4); // lowpass_filter, lna_match, upconverter, pll_receiver/front_end
 }

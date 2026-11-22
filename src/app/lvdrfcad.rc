@@ -1,0 +1,2 @@
+// Windows resources: the program icon shown by Explorer, the taskbar and shortcuts.
+IDI_ICON1 ICON "../gui/resources/lvdrfcad.ico"

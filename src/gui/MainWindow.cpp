@@ -6,6 +6,9 @@
 #include "antenna_ui/ElementWorkspace.h"
 #include "core/Schematic.h"
 #include "core/Session.h"
+#include "core/Autosave.h"
+#include "gui/AboutDialog.h"
+#include "schematic_editor/SchematicExport.h"
 #include "gui/DocumentView.h"
 #include "gui/NewProjectDialog.h"
 #include "gui/PythonConsole.h"
@@ -38,6 +41,14 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPlainTextEdit>
+#include <QLocale>
+#include <QJsonObject>
+#include <QLineEdit>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QPrintDialog>
+#include <QPrinter>
+#include <QPushButton>
 #include <QSettings>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -76,6 +87,12 @@ QWidget *placeholder(const QString &text, QWidget *parent)
 MainWindow::MainWindow(Session *session, PythonInterpreter *python, QWidget *parent)
     : QMainWindow(parent), m_session(session), m_python(python)
 {
+    // Copies of unsaved documents every two minutes (setting "autosave/intervalSeconds"; 0: off).
+    m_autosave = new Autosave(session, this);
+    m_autosave->setIntervalSeconds(QSettings().value(QStringLiteral("autosave/intervalSeconds"), 120).toInt());
+    connect(m_autosave, &Autosave::failed, this, [this](const QString &error) {
+        logMessage(tr("Autosave failed: %1").arg(error));
+    });
     resize(1400, 900);
 
     m_tabs = new QTabWidget(this);
@@ -109,6 +126,10 @@ MainWindow::MainWindow(Session *session, PythonInterpreter *python, QWidget *par
 
 MainWindow::~MainWindow()
 {
+    // An orderly end (a crash never gets here): the copies are not needed.
+    if (Project *project = m_session->project(); project && !project->isSnapshot())
+        Autosave::discard(project->filePath());
+    m_autosave->setIntervalSeconds(0);
     // Editors own their panels; close them before the docks go away.
     while (m_tabs->count() > 0)
         closeTab(0, false);
@@ -293,6 +314,11 @@ void MainWindow::createActions()
     m_saveAllAction =
         fileMenu->addAction(tr("Save &All"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S), this, &MainWindow::saveAll);
     fileMenu->addSeparator();
+    m_printAction = fileMenu->addAction(tr("&Print..."), QKeySequence::Print, this, &MainWindow::printSchematic);
+    m_exportSchematicAction =
+        fileMenu->addAction(tr("&Export Schematic (PDF, SVG, PNG)..."), this, &MainWindow::exportSchematic);
+    m_titleBlockAction = fileMenu->addAction(tr("&Title Block..."), this, &MainWindow::editTitleBlock);
+    fileMenu->addSeparator();
     fileMenu->addAction(tr("E&xit"), QKeySequence::Quit, this, &QWidget::close);
 
     // Filled with the current editor's actions.
@@ -470,7 +496,148 @@ bool MainWindow::openProjectFile(const QString &path)
     }
     for (const QString &warning : project->loadWarnings())
         logMessage(tr("Warning: %1").arg(warning));
+
+    // Unsaved work left by a crash: restore it before any editor opens.
+    if (const auto recovery = Autosave::pendingRecovery(project->filePath())) {
+        QStringList names;
+        for (const Autosave::RecoveredDocument &d : recovery->documents)
+            names << d.name;
+        bool restore = m_recoveryAnswer == 1;
+        if (m_recoveryAnswer < 0) {
+            QMessageBox box(QMessageBox::Question, tr("Recover Unsaved Work"),
+                            tr("Project \"%1\" has unsaved changes from %2 that were not saved when the program ended "
+                               "(%3).")
+                                .arg(project->name(), QLocale().toString(recovery->savedAt, QLocale::ShortFormat),
+                                     names.join(QStringLiteral(", "))),
+                            QMessageBox::NoButton, this);
+            box.setInformativeText(tr("Restore puts the unsaved versions into the documents; save them to keep them. "
+                                      "Discard keeps the files as they were last saved."));
+            QPushButton *restoreButton = box.addButton(tr("Restore"), QMessageBox::AcceptRole);
+            box.addButton(tr("Discard"), QMessageBox::DestructiveRole);
+            box.setDefaultButton(restoreButton);
+            box.exec();
+            restore = box.clickedButton() == restoreButton;
+        }
+        if (restore) {
+            QStringList errors;
+            const QStringList restored = Autosave::restore(*project, *recovery, &errors);
+            for (const QString &e : std::as_const(errors))
+                logMessage(tr("Recovery: %1").arg(e));
+            logMessage(tr("Restored unsaved changes of %1.").arg(restored.join(QStringLiteral(", "))));
+            rebuildProjectTree();
+            updateWindowState();
+        } else {
+            Autosave::discard(project->filePath());
+            logMessage(tr("Discarded the unsaved changes of %1.").arg(names.join(QStringLiteral(", "))));
+        }
+    }
     return true;
+}
+
+Document *MainWindow::currentSchematicDocument() const
+{
+    const Document *current = currentDocument();
+    Project *project = m_session->project();
+    if (!current || !project || !current->isSchematic())
+        return nullptr;
+    return project->document(current->name());
+}
+
+void MainWindow::printSchematic()
+{
+    Document *document = currentSchematicDocument();
+    if (!document)
+        return;
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setDocName(document->name());
+    printer.setPageOrientation(SchematicExport::landscape(m_session->project(), document) ? QPageLayout::Landscape
+                                                                                          : QPageLayout::Portrait);
+    QPrintDialog dialog(&printer, this);
+    dialog.setWindowTitle(tr("Print %1").arg(document->name()));
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    QString error;
+    if (!SchematicExport::print(m_session->project(), document, &printer, &error))
+        reportError(tr("Print"), error);
+    else
+        statusBar()->showMessage(tr("Printed %1.").arg(document->name()), 4000);
+}
+
+void MainWindow::exportSchematic()
+{
+    Document *document = currentSchematicDocument();
+    if (!document)
+        return;
+    QSettings settings;
+    const QString folder = settings.value(QStringLiteral("export/folder"), m_session->project()->directory()).toString();
+    QString filter = settings.value(QStringLiteral("export/filter")).toString();
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export Schematic"), QDir(folder).filePath(document->name() + QStringLiteral(".pdf")),
+        tr("PDF with title block (*.pdf);;SVG image (*.svg);;PNG image (*.png)"), &filter);
+    if (path.isEmpty())
+        return;
+    QString target = path;
+    if (QFileInfo(target).suffix().isEmpty())
+        target += filter.contains(QLatin1String("svg")) ? QStringLiteral(".svg")
+                  : filter.contains(QLatin1String("png")) ? QStringLiteral(".png")
+                                                           : QStringLiteral(".pdf");
+    settings.setValue(QStringLiteral("export/folder"), QFileInfo(target).absolutePath());
+    settings.setValue(QStringLiteral("export/filter"), filter);
+    QString error;
+    if (!SchematicExport::exportFile(m_session->project(), document, target, &error))
+        reportError(tr("Export Schematic"), error);
+    else
+        statusBar()->showMessage(tr("Exported %1.").arg(QDir::toNativeSeparators(target)), 6000);
+}
+
+void MainWindow::editTitleBlock()
+{
+    Document *document = currentSchematicDocument();
+    if (!document)
+        return;
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Title Block of %1").arg(document->name()));
+    auto *form = new QFormLayout(&dialog);
+    form->addRow(new QLabel(tr("Printed and in PDF exports, with the project, document, date and program version.")));
+    const QJsonObject fields = document->schematic()->titleBlock();
+    QList<QPair<QString, QLineEdit *>> edits;
+    for (const auto &[key, label] : {std::pair{QStringLiteral("title"), tr("Title (empty: the document name)")},
+                                     std::pair{QStringLiteral("revision"), tr("Revision")},
+                                     std::pair{QStringLiteral("author"), tr("Drawn by")},
+                                     std::pair{QStringLiteral("company"), tr("Company")}}) {
+        auto *edit = new QLineEdit(fields.value(key).toString());
+        form->addRow(label, edit);
+        edits.append({key, edit});
+    }
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    form->addRow(buttons);
+    dialog.resize(480, dialog.sizeHint().height());
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    QJsonObject updated;
+    for (const auto &[key, edit] : std::as_const(edits))
+        updated.insert(key, edit->text());
+    document->schematic()->setTitleBlock(updated); // undoable
+}
+
+void MainWindow::offerRecoveryOfOtherProjects()
+{
+    const QString current = m_session->project() ? m_session->project()->filePath() : QString();
+    for (const Autosave::Recovery &r : Autosave::allPendingRecoveries()) {
+        if (!current.isEmpty() && QFileInfo(r.projectFile) == QFileInfo(current))
+            continue;
+        const auto answer = QMessageBox::question(
+            this, tr("Recover Unsaved Work"),
+            tr("Project \"%1\" (%2) has unsaved changes from %3 that were not saved when the program ended. "
+               "Open it now to restore them?")
+                .arg(r.projectName, QDir::toNativeSeparators(r.projectFile), QLocale().toString(r.savedAt, QLocale::ShortFormat)),
+            QMessageBox::Open | QMessageBox::Ignore, QMessageBox::Open);
+        if (answer == QMessageBox::Open && confirmDiscardChanges())
+            openProjectFile(r.projectFile);
+        return; // one question per start
+    }
 }
 
 void MainWindow::logMessage(const QString &message)
@@ -658,12 +825,18 @@ void MainWindow::showManual()
     m_manual->activateWindow();
 }
 
+QIcon MainWindow::applicationIcon()
+{
+    QIcon icon;
+    for (int size : {16, 24, 32, 48, 64, 128, 256})
+        icon.addFile(QStringLiteral(":/lvd/lvdrfcad-%1.png").arg(size), QSize(size, size));
+    return icon;
+}
+
 void MainWindow::showAbout()
 {
-    QMessageBox::about(this, tr("About lvd RF cad"),
-                       tr("<b>lvd RF cad %1</b><br>RF, SPICE and antenna design CAD.<br><br>"
-                          "Qt %2, Python %3.<br>Licensed under the GNU General Public License, version 3 or later.")
-                           .arg(QStringLiteral(LVD_VERSION), QString::fromLatin1(qVersion()), m_python->pythonVersion()));
+    AboutDialog dialog(m_python->pythonVersion(), [](const QString &relative) { return documentationPath(relative); }, this);
+    dialog.exec();
 }
 
 void MainWindow::editComponent(const QString &definitionKey)
@@ -962,6 +1135,10 @@ void MainWindow::updateWindowState()
     m_closeProjectAction->setEnabled(project);
     m_saveAllAction->setEnabled(project);
     m_saveAction->setEnabled(current && current->isModified());
+    const bool printable = currentSchematicDocument();
+    m_printAction->setEnabled(printable);
+    m_exportSchematicAction->setEnabled(printable);
+    m_titleBlockAction->setEnabled(printable);
     m_removeDocumentAction->setEnabled(selectedTreeDocument());
     for (QAction *action : std::as_const(m_newDocumentActions))
         action->setEnabled(project);

@@ -3,23 +3,31 @@
 #   <prefix>/lvdrfcad.exe, lvdrfcad-cli.exe   the programs
 #   <prefix>/*.dll, platforms/, styles/ ...   Qt runtime (windeployqt), MSVC runtime, python3xx.dll
 #   <prefix>/python/                         embedded Python: DLLs/ and Lib/ (standard library)
-#   <prefix>/libraries/                      built-in component libraries
-#   <prefix>/docs/, LICENSE, README.md
+#   <prefix>/libraries/                      built-in component and antenna libraries
+#   <prefix>/ngspice/, openems/              the SPICE and full-wave solvers
+#   <prefix>/examples/, docs/, LICENSE, README.md
+#   <prefix>/THIRD-PARTY-NOTICES.md, licenses/   third-party licences
 #
-# Build the package with:
-#   cmake --build --preset windows --target package
-# or:  cpack --config build/CPackConfig.cmake -C RelWithDebInfo
+# Build the packages with:
+#   cmake --build --preset windows --target portable    (ZIP)
+#   cmake --build --preset windows --target installer   (setup.exe, needs Inno Setup)
 
 include(GNUInstallDirs)
 
 install(TARGETS lvdrfcad lvdrfcad-cli RUNTIME DESTINATION .)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/libraries/ DESTINATION libraries
-    FILES_MATCHING PATTERN "*.lvdlib" PATTERN "*.lvdantlib" PATTERN "*.csv")
-install(FILES ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/README.md DESTINATION .)
+    FILES_MATCHING PATTERN "*.lvdlib" PATTERN "*.lvdantlib" PATTERN "*.csv" PATTERN "substrates.json")
+install(FILES ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.md
+        DESTINATION .)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/licenses/ DESTINATION licenses)
 # ngspice shared library, its DLLs, XSPICE code models and start-up script
 # (cmake/Ngspice.cmake); the application finds it in the "ngspice" folder.
 if(LVD_NGSPICE_RUNTIME_DIR)
     install(DIRECTORY "${LVD_NGSPICE_RUNTIME_DIR}/" DESTINATION ngspice)
+endif()
+# openEMS and nf2ff (cmake/OpenEMS.cmake), run as separate processes.
+if(LVD_OPENEMS_RUNTIME_DIR)
+    install(DIRECTORY "${LVD_OPENEMS_RUNTIME_DIR}/" DESTINATION openems)
 endif()
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/manual/ DESTINATION docs/manual
     PATTERN "images/README.md" EXCLUDE)

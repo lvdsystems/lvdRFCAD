@@ -15,7 +15,8 @@ namespace lvd::sim {
 // gives the value as a double (NaN when the cell is empty, +inf when the
 // quantity does not apply), the text exports use full precision. Cells of
 // compressed stages or with negative headroom are highlighted; stage notes
-// are tooltips.
+// are tooltips. Rows for phase noise and reciprocal mixing, a DAC start, an
+// ADC or a detector end appear only when the budget has them.
 class BudgetTableModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -42,6 +43,16 @@ public:
         AdcHeadroom,
         AdcSnr,
         AdcAlias,
+        // Shown only when they apply (phase noise, blocker, DAC start, detector end)
+        ThermalSnr,
+        LoPhaseNoise,     // integrated phase noise of the LO at a mixer
+        PhaseNoiseLevel,  // in-channel noise from LO phase noise
+        BlockerLevel,     // blocker at a mixer input
+        ReciprocalMixing, // in-channel noise from reciprocal mixing
+        DacImageFrequency,
+        DacImage,
+        DetectorMargin,
+        DetectorHeadroom,
     };
 
     explicit BudgetTableModel(QObject *parent = nullptr);
@@ -51,7 +62,7 @@ public:
     const rf::BudgetResult *budget() const { return m_budget; }
     void setDarkTheme(bool dark);
 
-    // Rows shown (the ADC rows only when the chain ends in an ADC).
+    // Rows shown (the ADC rows only when the chain ends in an ADC, and so on).
     QList<Row> rows() const { return m_rows; }
     int rowOf(Row row) const { return static_cast<int>(m_rows.indexOf(row)); }
     static QString rowName(Row row);

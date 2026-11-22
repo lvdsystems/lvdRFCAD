@@ -15,6 +15,9 @@ AppId={{6C1C5E9A-6E4B-4E39-9C34-3B2B0F2D8A71}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=lvd RF cad contributors
+AppPublisherURL=http://www.lvdsystems.eu
+SetupIconFile=@CMAKE_SOURCE_DIR@\src\gui\resources\lvdrfcad.ico
+UninstallDisplayIcon={app}\lvdrfcad.exe
 DefaultDirName={autopf}\lvdRFcad
 DefaultGroupName={#AppName}
 LicenseFile=@CMAKE_SOURCE_DIR@\LICENSE
@@ -42,6 +45,7 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 [Registry]
 Root: HKA; Subkey: "Software\Classes\.lvdproj"; ValueType: string; ValueName: ""; ValueData: "lvdRFcad.Project"; Flags: uninsdeletevalue uninsdeletekeyifempty
 Root: HKA; Subkey: "Software\Classes\lvdRFcad.Project"; ValueType: string; ValueName: ""; ValueData: "lvd RF cad project"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\lvdRFcad.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\lvdrfcad.exe"",0"
 Root: HKA; Subkey: "Software\Classes\lvdRFcad.Project\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\lvdrfcad.exe"" ""%1"""
 
 [Run]

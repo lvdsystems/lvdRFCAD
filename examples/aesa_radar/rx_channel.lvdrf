@@ -159,6 +159,36 @@
                         "unit": "dB"
                     },
                     {
+                        "default": "0",
+                        "label": "Gain slope around freq",
+                        "name": "gain_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Noise figure slope around freq",
+                        "name": "nf_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Reference frequency of the slopes",
+                        "name": "freq",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Input return loss (0 = ideal match)",
+                        "name": "rl_in",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Output return loss (0 = ideal match)",
+                        "name": "rl_out",
+                        "unit": "dB"
+                    },
+                    {
                         "default": "50",
                         "label": "Port impedance",
                         "name": "z0",
@@ -336,6 +366,30 @@
                         "unit": "dB"
                     },
                     {
+                        "default": "0",
+                        "label": "Insertion loss slope around freq",
+                        "name": "il_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Reference frequency of the slopes",
+                        "name": "freq",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Input return loss (0 = ideal match)",
+                        "name": "rl_in",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Output return loss (0 = ideal match)",
+                        "name": "rl_out",
+                        "unit": "dB"
+                    },
+                    {
                         "default": "50",
                         "label": "Port impedance",
                         "name": "z0",
@@ -485,6 +539,30 @@
                         "default": "1",
                         "label": "Insertion loss",
                         "name": "il",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Insertion loss slope around freq",
+                        "name": "il_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Reference frequency of the slopes",
+                        "name": "freq",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Input return loss (0 = ideal match)",
+                        "name": "rl_in",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Output return loss (0 = ideal match)",
+                        "name": "rl_out",
                         "unit": "dB"
                     },
                     {

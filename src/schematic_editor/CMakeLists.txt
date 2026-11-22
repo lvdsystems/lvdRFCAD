@@ -8,6 +8,8 @@ add_library(lvdschedit STATIC
     PropertiesPanel.h
     SchematicEditor.cpp
     SchematicEditor.h
+    SchematicExport.cpp
+    SchematicExport.h
     SchematicItems.cpp
     SchematicItems.h
     SchematicScene.cpp
@@ -17,11 +19,13 @@ add_library(lvdschedit STATIC
     VariablesPanel.cpp
     VariablesPanel.h
 )
-target_link_libraries(lvdschedit PUBLIC lvdwidgets)
+find_package(Qt6 REQUIRED COMPONENTS Svg PrintSupport)
+target_link_libraries(lvdschedit PUBLIC lvdwidgets Qt6::PrintSupport PRIVATE Qt6::Svg)
 
 if(LVD_BUILD_TESTS)
     add_executable(schematic_editor_tests tests/schematic_editor_tests.cpp)
     target_link_libraries(schematic_editor_tests PRIVATE lvdschedit Qt6::Test Catch2::Catch2)
+    target_compile_definitions(schematic_editor_tests PRIVATE LVD_SOURCE_TREE="${CMAKE_SOURCE_DIR}")
     add_test(NAME schematic_editor COMMAND schematic_editor_tests)
     set_tests_properties(schematic_editor PROPERTIES
         ENVIRONMENT "${LVD_TEST_GUI_ENVIRONMENT}"

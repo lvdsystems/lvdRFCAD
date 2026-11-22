@@ -93,10 +93,11 @@ BudgetDialog::BudgetDialog(Project *project, Document *document, const QString &
     // Start and path.
     m_start = new QComboBox(this);
     m_start->setObjectName(QStringLiteral("start"));
-    m_start->addItem(tr("Automatic (source, else port 1, else antenna)"), QString());
+    m_start->addItem(tr("Automatic (source or DAC, else port 1, else antenna)"), QString());
     for (const FlatComponent &component : std::as_const(m_netlist.components)) {
         const QString kind = kindOf(component);
-        if (kind == QLatin1String("source") || kind == QLatin1String("port") || kind == QLatin1String("antenna"))
+        if (kind == QLatin1String("source") || kind == QLatin1String("dac") || kind == QLatin1String("port")
+            || kind == QLatin1String("antenna"))
             m_start->addItem(QStringLiteral("%1 (%2)").arg(component.path, kind), component.path);
     }
 
@@ -204,6 +205,40 @@ BudgetDialog::BudgetDialog(Project *project, Document *document, const QString &
     spurGrid->addWidget(m_spurOrderValue, 0, 2);
     spurGrid->setColumnStretch(1, 1);
 
+    // Phase noise and blocker.
+    auto *noiseGroup = new QGroupBox(tr("LO phase noise and blocker"), this);
+    noiseGroup->setObjectName(QStringLiteral("phaseNoise"));
+    m_phaseNoiseStart = field(QStringLiteral("phaseNoiseStart"), tr("Lower end of the phase-noise integration; %1").arg(expressionTip),
+                              tr("bandwidth / 1000"));
+    m_phaseNoiseStop = field(QStringLiteral("phaseNoiseStop"), tr("Upper end of the phase-noise integration; %1").arg(expressionTip),
+                             tr("bandwidth / 2"));
+    m_blockerOffset = field(QStringLiteral("blockerOffset"),
+                            tr("Offset of the blocker above the wanted input frequency; %1").arg(expressionTip));
+    m_blockerPower = field(QStringLiteral("blockerPower"), tr("Blocker power in dBm at the chain input; %1").arg(expressionTip),
+                           tr("no blocker"));
+    m_phaseNoiseStartValue = valueLabel(QStringLiteral("phaseNoiseStartValue"));
+    m_phaseNoiseStopValue = valueLabel(QStringLiteral("phaseNoiseStopValue"));
+    m_blockerOffsetValue = valueLabel(QStringLiteral("blockerOffsetValue"));
+    m_blockerPowerValue = valueLabel(QStringLiteral("blockerPowerValue"));
+    auto *noiseHint = new QLabel(tr("Used by mixers whose LO (an LO with a phase-noise file, a VCO or a PLL) has phase noise."),
+                                 noiseGroup);
+    noiseHint->setWordWrap(true);
+    auto *noiseGrid = new QGridLayout(noiseGroup);
+    noiseGrid->addWidget(noiseHint, 0, 0, 1, 3);
+    noiseGrid->addWidget(new QLabel(tr("Integrate from:"), noiseGroup), 1, 0);
+    noiseGrid->addWidget(m_phaseNoiseStart, 1, 1);
+    noiseGrid->addWidget(m_phaseNoiseStartValue, 1, 2);
+    noiseGrid->addWidget(new QLabel(tr("to:"), noiseGroup), 2, 0);
+    noiseGrid->addWidget(m_phaseNoiseStop, 2, 1);
+    noiseGrid->addWidget(m_phaseNoiseStopValue, 2, 2);
+    noiseGrid->addWidget(new QLabel(tr("Blocker power:"), noiseGroup), 3, 0);
+    noiseGrid->addWidget(m_blockerPower, 3, 1);
+    noiseGrid->addWidget(m_blockerPowerValue, 3, 2);
+    noiseGrid->addWidget(new QLabel(tr("Blocker offset:"), noiseGroup), 4, 0);
+    noiseGrid->addWidget(m_blockerOffset, 4, 1);
+    noiseGrid->addWidget(m_blockerOffsetValue, 4, 2);
+    noiseGrid->setColumnStretch(1, 1);
+
     m_variablesLabel = new QLabel(this);
     m_variablesLabel->setWordWrap(true);
     m_variablesLabel->setVisible(!variableErrors.isEmpty());
@@ -222,6 +257,7 @@ BudgetDialog::BudgetDialog(Project *project, Document *document, const QString &
     layout->addLayout(form);
     layout->addWidget(pathGroup);
     layout->addWidget(signalGroup);
+    layout->addWidget(noiseGroup);
     layout->addWidget(m_sweepGroup);
     layout->addWidget(m_spurGroup);
     layout->addWidget(m_variablesLabel);
@@ -230,7 +266,8 @@ BudgetDialog::BudgetDialog(Project *project, Document *document, const QString &
 
     setSetup(initial);
 
-    for (QLineEdit *edit : {m_name, m_frequency, m_power, m_bandwidth, m_sweepStart, m_sweepStop, m_sweepPoints, m_spurOrder})
+    for (QLineEdit *edit : {m_name, m_frequency, m_power, m_bandwidth, m_sweepStart, m_sweepStop, m_sweepPoints, m_spurOrder,
+                            m_phaseNoiseStart, m_phaseNoiseStop, m_blockerOffset, m_blockerPower})
         connect(edit, &QLineEdit::textChanged, this, &BudgetDialog::validate);
     connect(m_start, &QComboBox::currentIndexChanged, this, &BudgetDialog::validate);
     connect(m_mismatch, &QComboBox::currentIndexChanged, this, &BudgetDialog::validate);
@@ -273,7 +310,7 @@ BudgetDialog::BudgetDialog(Project *project, Document *document, const QString &
     });
     connect(m_exitPin, &QComboBox::activated, this,
             [this](int index) { setExitPin(m_path->currentRow(), m_exitPin->itemData(index).toString()); });
-    resize(600, 720);
+    resize(600, 820);
 }
 
 QString BudgetDialog::kindOf(const FlatComponent &component) const
@@ -331,6 +368,10 @@ rf::BudgetAnalysisSetup BudgetDialog::setup() const
     setup.sweepPoints = m_sweepPoints->text().trimmed();
     setup.spurs = m_spurGroup->isChecked();
     setup.spurOrder = m_spurOrder->text().trimmed();
+    setup.phaseNoiseStart = m_phaseNoiseStart->text().trimmed();
+    setup.phaseNoiseStop = m_phaseNoiseStop->text().trimmed();
+    setup.blockerOffset = m_blockerOffset->text().trimmed();
+    setup.blockerPower = m_blockerPower->text().trimmed();
     return setup;
 }
 
@@ -362,6 +403,10 @@ void BudgetDialog::setSetup(const rf::BudgetAnalysisSetup &setup)
     m_sweepPoints->setText(setup.sweepPoints);
     m_spurGroup->setChecked(setup.spurs);
     m_spurOrder->setText(setup.spurOrder);
+    m_phaseNoiseStart->setText(setup.phaseNoiseStart);
+    m_phaseNoiseStop->setText(setup.phaseNoiseStop);
+    m_blockerOffset->setText(setup.blockerOffset);
+    m_blockerPower->setText(setup.blockerPower);
     m_updating = false;
     validate();
 }
@@ -564,6 +609,27 @@ void BudgetDialog::validate()
         }
         valid = valid && orderOk;
     }
+
+    double start = NAN, stop = NAN;
+    const bool startOk = showValue(m_phaseNoiseStartValue, current.phaseNoiseStart, QStringLiteral("Hz"), false,
+                                   tr("bandwidth / 1000"), 1e-300, &start);
+    const bool stopOk = showValue(m_phaseNoiseStopValue, current.phaseNoiseStop, QStringLiteral("Hz"), false,
+                                  tr("bandwidth / 2"), 1e-300, &stop);
+    valid = valid && startOk && stopOk;
+    if (startOk && stopOk && std::isfinite(start) && std::isfinite(stop) && stop <= start) {
+        m_phaseNoiseStopValue->setText(tr("above the start"));
+        m_phaseNoiseStopValue->setStyleSheet(errorStyle());
+        valid = false;
+    }
+    const bool powerGiven = !current.blockerPower.isEmpty();
+    valid = showValue(m_blockerPowerValue, current.blockerPower, QStringLiteral("dBm"), false, tr("no blocker")) && valid;
+    valid = showValue(m_blockerOffsetValue, current.blockerOffset, QStringLiteral("Hz"), false,
+                      powerGiven ? QString() : tr("not used"), 1e-300)
+            && valid;
+    if (powerGiven && current.blockerOffset.isEmpty()) {
+        m_blockerOffsetValue->setText(tr("required"));
+        m_blockerOffsetValue->setStyleSheet(errorStyle());
+    }
     m_valid = valid;
     m_ok->setEnabled(m_valid && m_document && m_document->schematic());
 }
@@ -592,7 +658,8 @@ QString BudgetDialog::store()
         static const QStringList known = {QStringLiteral("id"),        QStringLiteral("type"),      QStringLiteral("name"),
                                           QStringLiteral("bandwidth"), QStringLiteral("mismatch"),  QStringLiteral("path"),
                                           QStringLiteral("start"),     QStringLiteral("frequency"), QStringLiteral("power"),
-                                          QStringLiteral("sweep"),     QStringLiteral("spurs")};
+                                          QStringLiteral("sweep"),     QStringLiteral("spurs"),     QStringLiteral("phaseNoise"),
+                                          QStringLiteral("blocker")};
         QJsonArray analyses = simulation.value(AnalysesKey).toArray();
         for (qsizetype i = 0; i < analyses.size(); ++i) {
             QJsonObject object = analyses.at(i).toObject();

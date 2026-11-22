@@ -11,6 +11,9 @@
 #include "core/Document.h"
 #include "core/Project.h"
 #include "core/Session.h"
+#include "fullwave/FwElement.h"
+#include "fullwave/Simulation.h"
+#include "fullwave/Templates.h"
 #include "python/Bindings.h"
 
 #include <pybind11/complex.h>
@@ -206,6 +209,37 @@ void applyEntry(ArrayDesign &d, const QString &key)
         d = ArrayDesign::fromJson(deepMerge(d.toJson(), found.entry->data));
         break;
     }
+}
+
+py::dict resultsDict(const fw::FwResults &r)
+{
+    py::dict d;
+    d["folder"] = toStd(r.folder);
+    d["frequency"] = r.port.frequency;
+    d["s11"] = r.port.s11;
+    d["zin"] = r.port.zin;
+    d["z_ref"] = r.port.zRef;
+    d["resonance"] = r.resonance();
+    d["far_field_frequencies"] = r.farFieldFrequencies;
+    d["directivity"] = r.directivityDbi;
+    d["efficiency"] = r.radiationEfficiency;
+    d["pattern_file"] = toStd(r.patternFile());
+    d["cells"] = r.cells;
+    d["timesteps"] = r.timesteps;
+    d["seconds"] = r.seconds;
+    std::vector<std::string> warnings;
+    for (const QString &w : r.warnings)
+        warnings.push_back(toStd(w));
+    d["warnings"] = warnings;
+    return d;
+}
+
+QString elementSimulationFolder(const ElementHandle &h)
+{
+    Project *project = currentSession().project();
+    if (!project)
+        throw std::runtime_error("the element must belong to a project");
+    return fw::simulationFolder(project->directory(), h.get().name());
 }
 
 } // namespace
@@ -550,6 +584,77 @@ void registerAntennaBindings(py::module_ &m)
              },
              py::arg("phi") = 0.0, py::arg("step") = 0.5, py::arg("frequency") = py::none(), py::arg("component") = "total",
              py::arg("co") = "x", "A constant-phi cut of the gain: {'angle': signed theta, 'gain': dBi}.")
+        .def("use_template",
+             [](const ElementHandle &h, const std::string &id, const py::dict &values) {
+                 const fw::TemplateInfo *info = fw::findTemplate(toQt(id));
+                 if (!info)
+                     throw py::key_error("no full-wave template '" + id + "'; see fullwave_templates()");
+                 fw::FwElementSetup setup = fw::FwElementSetup::forTemplate(info->id);
+                 for (auto item : values) {
+                     const QString key = toQt(py::str(item.first));
+                     bool known = false;
+                     for (const fw::TemplateParameter &p : info->parameters)
+                         known = known || p.id == key;
+                     if (!known)
+                         throw py::key_error("template '" + id + "' has no parameter '" + toStd(key) + "'");
+                     setup.values[key] = item.second.cast<double>();
+                 }
+                 ElementDesign d = h.design();
+                 d.element.model = ElementModelKind::FullWave;
+                 d.element.fullWave = setup.toJson();
+                 h.get().setContent(d.toJson());
+             },
+             py::arg("template"), py::arg("values") = py::dict(),
+             "Switches to the full-wave model with a template (fullwave_templates()) and parameter values in millimetres;\n"
+             "the rest of the setup (band, mesh, bodies, array) is under design['element']['fullWave'].")
+        .def("simulate",
+             [](const ElementHandle &h, bool verbose) {
+                 if (!fw::openEmsAvailable())
+                     throw std::runtime_error("openEMS was not found in " + toStd(fw::openEmsDirectory()));
+                 ElementDesign d = h.design();
+                 if (d.element.model != ElementModelKind::FullWave)
+                     throw std::runtime_error("the element does not use the full-wave model; call use_template() first");
+                 Project *project = currentSession().project();
+                 const fw::FwElementSetup setup = fw::FwElementSetup::fromJson(d.element.fullWave);
+                 QString error;
+                 const fw::FwModel model = fw::buildModel(setup, project ? project->directory() : QString(), &error);
+                 if (!error.isEmpty())
+                     throw std::runtime_error(toStd(error));
+                 for (const QString &w : model.warnings)
+                     writePythonOutput(QStringLiteral("warning: %1\n").arg(w), true);
+                 const QString folder = elementSimulationFolder(h);
+                 int lastTenth = -1;
+                 fw::FwResults r;
+                 {
+                     py::gil_scoped_release release;
+                     r = fw::runFullWave(model, setup.settings, folder, nullptr, [&](double fraction, const QString &message) {
+                         const int tenth = int(fraction * 10);
+                         if (!verbose || tenth == lastTenth)
+                             return;
+                         lastTenth = tenth;
+                         py::gil_scoped_acquire acquire;
+                         writePythonOutput(QStringLiteral("%1%  %2\n").arg(tenth * 10).arg(message.left(100)), false);
+                     });
+                 }
+                 if (!r.ok)
+                     throw std::runtime_error("full-wave simulation failed: " + toStd(r.error));
+                 d = h.design();
+                 fw::applyResults(d.element, r, h.get().name());
+                 h.get().setContent(d.toJson());
+                 return resultsDict(r);
+             },
+             py::arg("verbose") = true,
+             "Runs openEMS on the full-wave setup (blocking) and makes the element use the simulated pattern;\n"
+             "returns the results as results() does.")
+        .def("results",
+             [](const ElementHandle &h) -> py::object {
+                 const auto r = fw::loadResults(elementSimulationFolder(h));
+                 if (!r)
+                     return py::none();
+                 return resultsDict(*r);
+             },
+             "The last full-wave results: {'frequency', 's11', 'zin' (complex lists), 'resonance', 'far_field_frequencies',\n"
+             "'directivity' (dBi), 'efficiency', 'cells', 'seconds', ...}, or None before the first run.")
         .def("__repr__", [](const ElementHandle &h) {
             return h.pointer ? "<AntennaElement '" + toStd(h.pointer->name()) + "'>" : std::string("<AntennaElement (removed)>");
         });
@@ -569,6 +674,24 @@ void registerAntennaBindings(py::module_ &m)
               return out;
           },
           "The antenna libraries and their entries (keys for use_library()).");
+
+    m.def("fullwave_templates",
+          [] {
+              py::list out;
+              for (const fw::TemplateInfo &t : fw::fullWaveTemplates()) {
+                  py::list params;
+                  for (const fw::TemplateParameter &p : t.parameters)
+                      params.append(py::dict(py::arg("id") = toStd(p.id), py::arg("name") = toStd(p.label),
+                                             py::arg("unit") = toStd(p.unit), py::arg("default") = p.value,
+                                             py::arg("min") = p.min, py::arg("max") = p.max));
+                  out.append(py::dict(py::arg("id") = toStd(t.id), py::arg("name") = toStd(t.name),
+                                      py::arg("description") = toStd(t.description), py::arg("f_start") = t.fStart,
+                                      py::arg("f_stop") = t.fStop, py::arg("parameters") = params));
+              }
+              return out;
+          },
+          "The full-wave antenna templates and their parameters (for AntennaElement.use_template()).");
+    m.def("openems_available", [] { return fw::openEmsAvailable(); }, "True when the openEMS solver is installed.");
 
     m.def("read_pattern",
           [](const py::object &path) {

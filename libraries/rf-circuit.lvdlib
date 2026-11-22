@@ -2,7 +2,7 @@
     "format": "lvdrfcad-library",
     "version": 1,
     "name": "rf-circuit",
-    "description": "Linear RF circuit elements: transmission lines, stubs, coupled lines and transformers",
+    "description": "Linear RF circuit elements: transmission lines, stubs, coupled lines, microstrip discontinuities, substrates and transformers",
     "components": [
         {
             "id": "tline",
@@ -141,13 +141,15 @@
                 { "name": "out" }
             ],
             "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
                 { "name": "w", "label": "Strip width", "unit": "m", "default": "1.5mm", "shown": true },
                 { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
                 { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.8mm" },
                 { "name": "er", "label": "Relative permittivity", "unit": "", "default": "4.4" },
                 { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
                 { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
-                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" }
             ],
             "symbol": {
                 "graphics": [
@@ -176,13 +178,15 @@
                 { "name": "out" }
             ],
             "parameters": [
-                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.5mm", "shown": true },
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.65mm", "shown": true },
                 { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
                 { "name": "b", "label": "Ground plane spacing", "unit": "m", "default": "1.6mm" },
                 { "name": "er", "label": "Relative permittivity", "unit": "", "default": "4.4" },
                 { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
                 { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
-                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" }
             ],
             "symbol": {
                 "graphics": [
@@ -247,6 +251,7 @@
                 { "name": "out" }
             ],
             "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
                 { "name": "w", "label": "Centre strip width", "unit": "m", "default": "1mm", "shown": true },
                 { "name": "s", "label": "Gap to side grounds", "unit": "m", "default": "0.2mm" },
                 { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
@@ -255,6 +260,7 @@
                 { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.02" },
                 { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
                 { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" },
                 {
                     "name": "backed",
                     "label": "Backside ground plane",
@@ -325,6 +331,300 @@
             },
             "models": [
                 { "kind": "rf-element", "element": "transformer" }
+            ]
+        },
+        {
+            "id": "substrate",
+            "name": "Substrate",
+            "category": "Transmission lines/Substrate",
+            "description": "Substrate definition for microstrip, stripline, CPW and discontinuity parts that name it in their 'substrate' parameter; no pins and no circuit model",
+            "referencePrefix": "SUB",
+            "pins": [],
+            "parameters": [
+                {
+                    "name": "material",
+                    "label": "Material (custom: er and tand below)",
+                    "unit": "",
+                    "default": "RO4003C",
+                    "shown": true,
+                    "choices": ["custom", "FR-4", "RO4003C", "RO4350B", "RT/duroid 5880", "RO3003", "RO3010", "TLY-5", "I-Tera MT40", "Alumina 99.6%", "Fused silica", "GaAs", "Silicon (HR)"]
+                },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.508mm", "shown": true },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "35um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" },
+                { "name": "er", "label": "Relative permittivity (material = custom)", "unit": "", "default": "3.55" },
+                { "name": "tand", "label": "Loss tangent (material = custom)", "unit": "", "default": "0.0027" },
+                { "name": "b", "label": "Stripline ground plane spacing (0: 2 h + t)", "unit": "m", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-30, -10], "to": [30, 10], "fill": "none" },
+                    { "type": "line", "points": [[-30, 6], [30, 6]] },
+                    { "type": "line", "points": [[-26, 10], [-22, 6]] },
+                    { "type": "line", "points": [[-16, 10], [-12, 6]] },
+                    { "type": "line", "points": [[-6, 10], [-2, 6]] },
+                    { "type": "line", "points": [[4, 10], [8, 6]] },
+                    { "type": "line", "points": [[14, 10], [18, 6]] },
+                    { "type": "line", "points": [[24, 10], [28, 6]] },
+                    { "type": "text", "at": [0, -2], "text": "SUBSTRATE", "size": 7, "anchor": "center" }
+                ],
+                "pins": [],
+                "referenceAt": [0, -20],
+                "valueAt": [0, 20]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "substrate" }
+            ]
+        },
+        {
+            "id": "coupled_microstrip",
+            "name": "Coupled microstrip",
+            "category": "Transmission lines/Physical",
+            "description": "Symmetric coupled microstrip lines (Kirschning-Jansen with dispersion): p1-p2 and p3-p4, p1 and p3 at the same end",
+            "referencePrefix": "CL",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" },
+                { "name": "p4" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.6mm", "shown": true },
+                { "name": "s", "label": "Gap between the strips", "unit": "m", "default": "0.3mm", "shown": true },
+                { "name": "l", "label": "Length", "unit": "m", "default": "10mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.0005" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -13], "to": [20, -7], "fill": "outline" },
+                    { "type": "rect", "from": [-20, 7], "to": [20, 13], "fill": "outline" },
+                    { "type": "line", "points": [[-20, 18], [20, 18]] }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "p4", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 32]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "coupled_microstrip" }
+            ]
+        },
+        {
+            "id": "microstrip_open",
+            "name": "Microstrip open end",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "Open end of a microstrip: the fringing capacitance to ground (Kirschning-Jansen-Koster)",
+            "referencePrefix": "MO",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.6mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -4], "to": [0, 4], "fill": "outline" },
+                    { "type": "line", "points": [[4, -6], [4, 6]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [-30, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [-10, -16],
+                "valueAt": [-10, 16]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_open" }
+            ]
+        },
+        {
+            "id": "microstrip_gap",
+            "name": "Microstrip gap",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "Series gap between two microstrips of widths w1 and w2 (Kirschning-Jansen-Koster)",
+            "referencePrefix": "MG",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w1", "label": "Width at in", "unit": "m", "default": "0.6mm" },
+                { "name": "w2", "label": "Width at out", "unit": "m", "default": "0.6mm" },
+                { "name": "s", "label": "Gap", "unit": "m", "default": "0.1mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -4], "to": [-3, 4], "fill": "outline" },
+                    { "type": "rect", "from": [3, -4], "to": [20, 4], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -16],
+                "valueAt": [0, 16]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_gap" }
+            ]
+        },
+        {
+            "id": "microstrip_step",
+            "name": "Microstrip step",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "Step in width from w1 to w2 (Gupta et al., as in Qucs)",
+            "referencePrefix": "MS",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w1", "label": "Width at in", "unit": "m", "default": "1.2mm", "shown": true },
+                { "name": "w2", "label": "Width at out", "unit": "m", "default": "0.6mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -7], "to": [0, 7], "fill": "outline" },
+                    { "type": "rect", "from": [0, -3], "to": [20, 3], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -18],
+                "valueAt": [0, 18]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_step" }
+            ]
+        },
+        {
+            "id": "microstrip_bend",
+            "name": "Microstrip bend",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "90 degree bend, unmitred or 50 % mitred (Kirschning-Jansen-Koster)",
+            "referencePrefix": "MB",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w", "label": "Strip width", "unit": "m", "default": "0.6mm", "shown": true },
+                { "name": "mitred", "label": "Mitred (50 %)", "unit": "", "default": "no", "choices": ["no", "yes"] },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-20, -4], [4, -4], [4, 20], [-4, 20], [-4, 4], [-20, 4]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [0, 30], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [16, -10],
+                "valueAt": [22, 12]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_bend" }
+            ]
+        },
+        {
+            "id": "microstrip_tee",
+            "name": "Microstrip T-junction",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "T-junction: main arms p1 (width w1) and p2 (w2), side arm p3 (w3) (Hammerstad)",
+            "referencePrefix": "MT",
+            "pins": [
+                { "name": "p1" },
+                { "name": "p2" },
+                { "name": "p3" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "w1", "label": "Width at p1", "unit": "m", "default": "0.6mm" },
+                { "name": "w2", "label": "Width at p2", "unit": "m", "default": "0.6mm" },
+                { "name": "w3", "label": "Width at p3", "unit": "m", "default": "0.6mm" },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "er", "label": "Relative permittivity", "unit": "", "default": "9.8" },
+                { "name": "tand", "label": "Loss tangent", "unit": "", "default": "0.0005" },
+                { "name": "t", "label": "Metal thickness", "unit": "m", "default": "5um" },
+                { "name": "sigma", "label": "Conductor conductivity (0 = lossless)", "unit": "S/m", "default": "58M" },
+                { "name": "rough", "label": "Conductor rms surface roughness", "unit": "m", "default": "0" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "polygon", "points": [[-20, -4], [20, -4], [20, 4], [4, 4], [4, 20], [-4, 20], [-4, 4], [-20, 4]], "fill": "outline" }
+                ],
+                "pins": [
+                    { "pin": "p1", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "p2", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "p3", "at": [0, 30], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [0, -16],
+                "valueAt": [26, 16]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_tee" }
+            ]
+        },
+        {
+            "id": "microstrip_via",
+            "name": "Via hole to ground",
+            "category": "Transmission lines/Microstrip discontinuities",
+            "description": "Plated via from the strip to the ground plane (Goldfarb-Pucel inductance, skin-effect resistance)",
+            "referencePrefix": "V",
+            "pins": [
+                { "name": "p" }
+            ],
+            "parameters": [
+                { "name": "substrate", "label": "Substrate part (empty: the values below)", "unit": "", "default": "", "text": true },
+                { "name": "d", "label": "Via diameter", "unit": "m", "default": "0.4mm", "shown": true },
+                { "name": "h", "label": "Substrate height", "unit": "m", "default": "0.635mm" },
+                { "name": "tp", "label": "Plating thickness (0 = lossless)", "unit": "m", "default": "20um" },
+                { "name": "sigma", "label": "Plating conductivity (0 = lossless)", "unit": "S/m", "default": "58M" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, -14], "radius": 6, "fill": "none" },
+                    { "type": "circle", "center": [0, -14], "radius": 3, "fill": "outline" },
+                    { "type": "line", "points": [[0, -8], [0, 0]] },
+                    { "type": "line", "points": [[-8, 0], [8, 0]] },
+                    { "type": "line", "points": [[-5, 4], [5, 4]] },
+                    { "type": "line", "points": [[-2, 8], [2, 8]] }
+                ],
+                "pins": [
+                    { "pin": "p", "at": [0, -30], "length": 10, "direction": "down" }
+                ],
+                "referenceAt": [24, -18],
+                "valueAt": [24, -4]
+            },
+            "models": [
+                { "kind": "rf-element", "element": "microstrip_via" }
             ]
         }
     ]

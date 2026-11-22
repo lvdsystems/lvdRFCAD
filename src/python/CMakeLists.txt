@@ -6,5 +6,5 @@
     PythonInterpreter.cpp
     PythonInterpreter.h
 )
-target_link_libraries(lvdpy PUBLIC lvdcore lvdspice PRIVATE lvdrfsim lvdantenna pybind11::embed)
+target_link_libraries(lvdpy PUBLIC lvdcore lvdspice PRIVATE lvdrfsim lvdantenna lvdfullwave pybind11::embed)
 target_compile_definitions(lvdpy PRIVATE LVD_PYTHON_HOME="${LVD_PYTHON_HOME}")

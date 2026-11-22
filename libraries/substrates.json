@@ -1,0 +1,127 @@
+{
+    "format": "lvdrfcad-substrates",
+    "version": 1,
+    "description": "Substrate materials for the rf-circuit Substrate part and the full-wave templates. Typical values from the manufacturers' data sheets or the literature named in 'source'; verify them for your lot, thickness and frequency.",
+    "materials": [
+        {
+            "id": "FR-4",
+            "name": "FR-4 (generic)",
+            "er": 4.4,
+            "tand": 0.02,
+            "frequency": 1e9,
+            "thicknesses": [0.2e-3, 0.4e-3, 0.8e-3, 1.0e-3, 1.6e-3],
+            "note": "Generic glass-epoxy textbook value. Real FR-4 laminates range from about 3.8 to 4.8 (tan delta 0.015 to 0.025) depending on glass style, resin content and frequency.",
+            "source": "Generic value, not a data sheet; use the laminate maker's table for a real board"
+        },
+        {
+            "id": "RO4003C",
+            "name": "Rogers RO4003C",
+            "er": 3.55,
+            "tand": 0.0027,
+            "frequency": 10e9,
+            "thicknesses": [0.203e-3, 0.305e-3, 0.406e-3, 0.508e-3, 0.813e-3, 1.524e-3],
+            "note": "Design Dk; the process (clamped stripline) Dk is 3.38 +/- 0.05.",
+            "source": "Rogers Corporation, RO4000 Series High Frequency Circuit Materials data sheet"
+        },
+        {
+            "id": "RO4350B",
+            "name": "Rogers RO4350B",
+            "er": 3.66,
+            "tand": 0.0037,
+            "frequency": 10e9,
+            "thicknesses": [0.101e-3, 0.168e-3, 0.254e-3, 0.338e-3, 0.422e-3, 0.508e-3, 0.762e-3, 1.524e-3],
+            "note": "Design Dk; the process Dk is 3.48 +/- 0.05.",
+            "source": "Rogers Corporation, RO4000 Series High Frequency Circuit Materials data sheet"
+        },
+        {
+            "id": "RT/duroid 5880",
+            "name": "Rogers RT/duroid 5880",
+            "er": 2.2,
+            "tand": 0.0009,
+            "frequency": 10e9,
+            "thicknesses": [0.127e-3, 0.254e-3, 0.381e-3, 0.508e-3, 0.787e-3, 1.575e-3],
+            "note": "PTFE / glass microfibre.",
+            "source": "Rogers Corporation, RT/duroid 5870 and 5880 data sheet"
+        },
+        {
+            "id": "RO3003",
+            "name": "Rogers RO3003",
+            "er": 3.0,
+            "tand": 0.001,
+            "frequency": 10e9,
+            "thicknesses": [0.13e-3, 0.25e-3, 0.5e-3, 0.75e-3, 1.52e-3],
+            "note": "Design Dk; the process Dk is 3.00 +/- 0.04.",
+            "source": "Rogers Corporation, RO3000 Series Circuit Materials data sheet"
+        },
+        {
+            "id": "RO3010",
+            "name": "Rogers RO3010",
+            "er": 11.2,
+            "tand": 0.0022,
+            "frequency": 10e9,
+            "thicknesses": [0.13e-3, 0.25e-3, 0.64e-3, 1.28e-3],
+            "note": "Design Dk; the process Dk is 10.2 +/- 0.30.",
+            "source": "Rogers Corporation, RO3000 Series Circuit Materials data sheet"
+        },
+        {
+            "id": "TLY-5",
+            "name": "Taconic TLY-5",
+            "er": 2.2,
+            "tand": 0.0009,
+            "frequency": 10e9,
+            "thicknesses": [0.127e-3, 0.254e-3, 0.381e-3, 0.508e-3, 0.787e-3, 1.575e-3],
+            "note": "PTFE / woven glass.",
+            "source": "Taconic (AGC Multi Material), TLY data sheet"
+        },
+        {
+            "id": "I-Tera MT40",
+            "name": "Isola I-Tera MT40",
+            "er": 3.45,
+            "tand": 0.0031,
+            "frequency": 10e9,
+            "thicknesses": [0.127e-3, 0.254e-3, 0.508e-3, 0.762e-3],
+            "note": "Dk and Df depend on the resin content of the construction; the values are those Isola quotes for a representative construction.",
+            "source": "Isola Group, I-Tera MT40 data sheet"
+        },
+        {
+            "id": "Alumina 99.6%",
+            "name": "Alumina 99.6 % (thin film)",
+            "er": 9.9,
+            "tand": 0.0001,
+            "frequency": 1e6,
+            "thicknesses": [0.254e-3, 0.381e-3, 0.635e-3],
+            "note": "Data sheets quote 9.9 at 1 MHz; microwave designs commonly use 9.8 to 9.9. Loss tangent 0.0001 or below.",
+            "source": "Typical of 99.6 % thin-film alumina data sheets, for example CoorsTek Superstrate 996"
+        },
+        {
+            "id": "Fused silica",
+            "name": "Fused silica (quartz)",
+            "er": 3.78,
+            "tand": 0.0001,
+            "frequency": 10e9,
+            "thicknesses": [0.127e-3, 0.254e-3],
+            "note": "Amorphous SiO2.",
+            "source": "D. M. Pozar, Microwave Engineering, 4th ed., Wiley 2011, Appendix H (fused quartz)"
+        },
+        {
+            "id": "GaAs",
+            "name": "GaAs (semi-insulating)",
+            "er": 12.9,
+            "tand": 0.0005,
+            "frequency": 10e9,
+            "thicknesses": [0.05e-3, 0.075e-3, 0.1e-3, 0.2e-3],
+            "note": "er is the static dielectric constant. The loss tangent is an order-of-magnitude estimate for semi-insulating wafers and varies from wafer to wafer; use your foundry's value.",
+            "source": "er: Ioffe Institute semiconductor database (GaAs, static dielectric constant 12.9); tan delta: estimate, not a data-sheet value"
+        },
+        {
+            "id": "Silicon (HR)",
+            "name": "Silicon, high resistivity (10 kohm cm)",
+            "er": 11.7,
+            "tand": 0.0015,
+            "frequency": 10e9,
+            "thicknesses": [0.2e-3, 0.3e-3, 0.5e-3, 0.675e-3],
+            "note": "The loss of silicon is conduction loss: tan delta = 1/(2 pi f eps0 er rho), here for rho = 10 kohm cm at 10 GHz. It grows as 1/f (0.015 at 1 GHz), so set tand for your frequency and resistivity.",
+            "source": "er: Ioffe Institute semiconductor database (Si, 11.7); tan delta computed from the resistivity"
+        }
+    ]
+}

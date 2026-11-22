@@ -5,6 +5,8 @@ add_library(lvdrfsim STATIC
     Analysis.h
     Budget.cpp
     Budget.h
+    BlockModels.cpp
+    BlockModels.h
     ElementModels.cpp
     ElementModels.h
     LinearSolver.cpp
@@ -13,6 +15,8 @@ add_library(lvdrfsim STATIC
     Measurement.h
     Optimizer.cpp
     Optimizer.h
+    PhaseNoise.cpp
+    PhaseNoise.h
     SignalChain.cpp
     SignalChain.h
     Spurs.cpp
@@ -25,6 +29,9 @@ if(LVD_BUILD_TESTS)
     set(_rfsim_test_sources tests/rfsim_tests.cpp tests/budget_tests.cpp tests/optimizer_tests.cpp)
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/spur_tests.cpp)
         list(APPEND _rfsim_test_sources tests/spur_tests.cpp)
+    endif()
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/system_tests.cpp)
+        list(APPEND _rfsim_test_sources tests/system_tests.cpp)
     endif()
     add_executable(rfsim_tests ${_rfsim_test_sources})
     target_link_libraries(rfsim_tests PRIVATE lvdrfsim Catch2::Catch2WithMain)

@@ -76,10 +76,23 @@ void BudgetTableModel::setBudget(std::shared_ptr<const rf::BudgetRun> run, const
     m_budget = m_run ? budget : nullptr;
     m_rows.clear();
     if (m_budget && !m_budget->stages.empty()) {
-        for (int r = static_cast<int>(Row::Component); r <= static_cast<int>(Row::Headroom); ++r)
+        for (int r = static_cast<int>(Row::Component); r <= static_cast<int>(Row::Snr); ++r)
             m_rows.append(static_cast<Row>(r));
+        if (m_budget->hasPhaseNoise || m_budget->hasBlocker)
+            m_rows << Row::ThermalSnr;
+        if (m_budget->hasPhaseNoise)
+            m_rows << Row::LoPhaseNoise << Row::PhaseNoiseLevel;
+        if (m_budget->hasBlocker)
+            m_rows << Row::BlockerLevel;
+        if (m_budget->hasBlocker && m_budget->hasPhaseNoise)
+            m_rows << Row::ReciprocalMixing;
+        m_rows << Row::Sfdr << Row::Headroom;
+        if (m_budget->hasDac)
+            m_rows << Row::DacImageFrequency << Row::DacImage;
         if (m_budget->hasAdc)
             m_rows << Row::AdcHeadroom << Row::AdcSnr << Row::AdcAlias;
+        if (m_budget->hasDetector)
+            m_rows << Row::DetectorMargin << Row::DetectorHeadroom;
     }
     endResetModel();
 }
@@ -117,6 +130,15 @@ QString BudgetTableModel::rowName(Row row)
     case Row::AdcHeadroom: return tr("ADC full-scale headroom");
     case Row::AdcSnr: return tr("ADC quantisation SNR");
     case Row::AdcAlias: return tr("ADC alias frequency");
+    case Row::ThermalSnr: return tr("Thermal SNR");
+    case Row::LoPhaseNoise: return tr("LO phase noise (integrated)");
+    case Row::PhaseNoiseLevel: return tr("Phase-noise level");
+    case Row::BlockerLevel: return tr("Blocker at the mixer");
+    case Row::ReciprocalMixing: return tr("Reciprocal mixing level");
+    case Row::DacImageFrequency: return tr("DAC image frequency");
+    case Row::DacImage: return tr("DAC image level");
+    case Row::DetectorMargin: return tr("Detector margin");
+    case Row::DetectorHeadroom: return tr("Detector headroom");
     }
     return {};
 }
@@ -128,6 +150,7 @@ QString BudgetTableModel::rowUnit(Row row)
     case Row::Type:
     case Row::Frequency:
     case Row::AdcAlias:
+    case Row::DacImageFrequency:
         return {};
     case Row::StageOip3:
     case Row::StageOp1db:
@@ -136,7 +159,13 @@ QString BudgetTableModel::rowUnit(Row row)
     case Row::Iip2:
     case Row::Signal:
     case Row::Noise:
+    case Row::PhaseNoiseLevel:
+    case Row::BlockerLevel:
+    case Row::ReciprocalMixing:
+    case Row::DacImage:
         return QStringLiteral("dBm");
+    case Row::LoPhaseNoise:
+        return QStringLiteral("dBc");
     default:
         return QStringLiteral("dB");
     }
@@ -169,10 +198,15 @@ double BudgetTableModel::value(Row row, int column, double *second) const
             return b.inputFrequency;
         case Row::Signal: return b.inputPowerDbm;
         case Row::Noise: return b.inputNoiseDbm;
-        case Row::Snr: return b.inputPowerDbm - b.inputNoiseDbm;
+        case Row::Snr:
+        case Row::ThermalSnr: return b.inputPowerDbm - b.inputNoiseDbm;
+        case Row::DacImageFrequency: return b.hasDac ? b.dacImageFrequency : NAN;
+        case Row::DacImage: return b.hasDac ? b.dacImageDbm : NAN;
         default: return NAN;
         }
     }
+    // Levels of noise that is absent (-inf) are left empty.
+    const auto level = [](double v) { return std::isfinite(v) ? v : NAN; };
     const rf::BudgetStage &s = b.stages[static_cast<size_t>(column - 1)];
     const bool last = column == static_cast<int>(b.stages.size());
     switch (row) {
@@ -207,6 +241,15 @@ double BudgetTableModel::value(Row row, int column, double *second) const
     case Row::AdcHeadroom: return last && b.hasAdc ? b.adcHeadroomDb : NAN;
     case Row::AdcSnr: return last && b.hasAdc ? b.adcQuantisationSnrDb : NAN;
     case Row::AdcAlias: return last && b.hasAdc ? b.adcAliasFrequency : NAN;
+    case Row::ThermalSnr: return s.thermalSnrDb;
+    case Row::LoPhaseNoise: return s.loPhaseNoiseDbc;
+    case Row::PhaseNoiseLevel: return level(s.phaseNoiseDbm);
+    case Row::BlockerLevel: return s.blockerDbm;
+    case Row::ReciprocalMixing: return level(s.reciprocalMixingDbm);
+    case Row::DacImageFrequency: return NAN;
+    case Row::DacImage: return s.dacImageDbm;
+    case Row::DetectorMargin: return last && b.hasDetector ? b.detectorMarginDb : NAN;
+    case Row::DetectorHeadroom: return last && b.hasDetector ? b.detectorHeadroomDb : NAN;
     }
     return NAN;
 }
@@ -248,6 +291,7 @@ QString BudgetTableModel::cellText(Row row, int column, bool exact) const
         }
         return hertz(first);
     case Row::AdcAlias:
+    case Row::DacImageFrequency:
         return exact ? exactNumber(first) : hertz(first);
     case Row::Ip3:
     case Row::P1db:
@@ -272,6 +316,10 @@ bool BudgetTableModel::isBad(Row row, int column) const
         return s.compressed;
     case Row::AdcHeadroom:
         return column == static_cast<int>(b.stages.size()) && b.hasAdc && b.adcHeadroomDb < 0;
+    case Row::DetectorMargin:
+        return column == static_cast<int>(b.stages.size()) && b.hasDetector && b.detectorMarginDb < 0;
+    case Row::DetectorHeadroom:
+        return column == static_cast<int>(b.stages.size()) && b.hasDetector && b.detectorHeadroomDb < 0;
     default:
         return false;
     }
@@ -319,8 +367,10 @@ QVariant BudgetTableModel::data(const QModelIndex &index, int role) const
         if (column >= 1) {
             const rf::BudgetStage &s = m_budget->stages[static_cast<size_t>(column - 1)];
             if (isBad(row, column))
-                lines.append(row == Row::AdcHeadroom ? tr("The signal exceeds the ADC full scale.")
-                                                     : tr("The stage is in compression (headroom below 0 dB)."));
+                lines.append(row == Row::AdcHeadroom        ? tr("The signal exceeds the ADC full scale.")
+                             : row == Row::DetectorMargin   ? tr("The signal is below the detector's sensitivity.")
+                             : row == Row::DetectorHeadroom ? tr("The signal is above the detector's dynamic range.")
+                                                            : tr("The stage is in compression (headroom below 0 dB)."));
             lines.append(s.notes);
         }
         return lines.isEmpty() ? QVariant() : QVariant(lines.join(QLatin1Char('\n')));
@@ -350,6 +400,20 @@ QVariant BudgetTableModel::headerData(int section, Qt::Orientation orientation, 
             case Row::Sfdr: return tr("Input-referred third-order spurious-free dynamic range");
             case Row::Headroom: return tr("Cumulative OP1dB minus the signal level");
             case Row::InputReturnLoss: return tr("Return loss of the stage input alone");
+            case Row::Snr: return tr("Signal over the total noise: thermal, LO phase noise and reciprocal mixing");
+            case Row::ThermalSnr: return tr("Signal over the thermal noise only");
+            case Row::LoPhaseNoise:
+                return tr("Phase noise of the mixer's LO integrated from %1 to %2, both sidebands")
+                    .arg(hertz(m_budget->phaseNoiseStart), hertz(m_budget->phaseNoiseStop));
+            case Row::PhaseNoiseLevel: return tr("In-channel noise from LO phase noise on the wanted signal");
+            case Row::BlockerLevel:
+                return tr("Blocker %1 above the wanted signal, %2 dBm at the chain input")
+                    .arg(hertz(m_budget->blockerOffset))
+                    .arg(m_budget->blockerPowerDbm, 0, 'g', 4);
+            case Row::ReciprocalMixing: return tr("In-channel noise from the blocker mixed with the LO phase noise");
+            case Row::DacImage: return tr("First DAC image (fs − f): at the DAC output and after each stage");
+            case Row::DetectorMargin: return tr("Signal minus the detector's sensitivity");
+            case Row::DetectorHeadroom: return tr("Top of the detector's dynamic range minus the signal");
             default: return {};
             }
         }
@@ -425,6 +489,7 @@ QString BudgetTableModel::text(QChar separator, const QList<int> &rows) const
             });
             break;
         case Row::AdcAlias:
+        case Row::DacImageFrequency:
             line(rowName(row), QStringLiteral("Hz"), [&](int c) { return exactNumber(value(row, c)); });
             break;
         default:

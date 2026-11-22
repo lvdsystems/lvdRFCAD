@@ -10,9 +10,13 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
+#include <QLocale>
+#include <QMenu>
 #include <QMouseEvent>
+#include <QRegularExpression>
 #include <QPainter>
 #include <QSplitter>
 #include <QStringListModel>
@@ -116,7 +120,28 @@ PlotPane::PlotPane(const PlotDefinition &definition, QWidget *parent) : QWidget(
                                    tr("Source and load stability circles at the first marker, or where K is lowest"),
                                    QStringLiteral("stabilityCircles"));
     m_stabilityButton->setCheckable(true);
-    m_editorButton = toolButton(tr("Traces"), tr("Show or hide the trace editor"), QStringLiteral("toggleEditor"));
+    // Design circles at the first marker's frequency (or mid-sweep), with
+    // their levels in the button's menu.
+    const auto circleButton = [&](const QString &text, const QString &tip, const QString &name, bool gain) {
+        QToolButton *button = toolButton(text, tip, name);
+        button->setCheckable(true);
+        button->setPopupMode(QToolButton::MenuButtonPopup);
+        auto *menu = new QMenu(button);
+        QAction *levels = menu->addAction(tr("Levels..."));
+        levels->setObjectName(gain ? QStringLiteral("gainCircleLevels") : QStringLiteral("noiseCircleLevels"));
+        connect(levels, &QAction::triggered, this, [this, gain] { editCircleLevels(gain); });
+        button->setMenu(menu);
+        return button;
+    };
+    m_gainButton = circleButton(tr("Gain circles"),
+                                tr("Available-gain (source plane) and operating-power-gain (load plane) circles at the "
+                                   "first marker, 1, 2 and 3 dB below MAG by default"),
+                                QStringLiteral("gainCircles"), true);
+    m_noiseButton = circleButton(tr("Noise circles"),
+                                 tr("Noise-figure circles (source plane) at the first marker, NFmin + 0.25, 0.5, 1 and "
+                                    "2 dB by default"),
+                                 QStringLiteral("noiseCircles"), false);
+    m_editorButton =toolButton(tr("Traces"), tr("Show or hide the trace editor"), QStringLiteral("toggleEditor"));
     m_editorButton->setCheckable(true);
     m_closeButton = toolButton(QString(), tr("Remove this plot"), QStringLiteral("removePlot"));
     m_closeButton->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
@@ -153,8 +178,14 @@ PlotPane::PlotPane(const PlotDefinition &definition, QWidget *parent) : QWidget(
     auto *bottom = new QHBoxLayout;
     bottom->addWidget(m_removeButton);
     bottom->addStretch();
-    bottom->addWidget(m_stabilityButton);
     form->addLayout(bottom);
+    // The circle switches, under the trace list (Smith charts only).
+    auto *circles = new QHBoxLayout;
+    circles->addStretch();
+    circles->addWidget(m_stabilityButton);
+    circles->addWidget(m_gainButton);
+    circles->addWidget(m_noiseButton);
+    form->addLayout(circles);
 
     auto *splitter = new QSplitter(Qt::Horizontal, this);
     splitter->setChildrenCollapsible(false);
@@ -210,6 +241,8 @@ PlotPane::PlotPane(const PlotDefinition &definition, QWidget *parent) : QWidget(
     });
     connect(m_kind, &QComboBox::activated, this, [this](int index) { setKind(m_kind->itemData(index).toString()); });
     connect(m_stabilityButton, &QToolButton::toggled, this, &PlotPane::setStabilityCirclesEnabled);
+    connect(m_gainButton, &QToolButton::toggled, this, &PlotPane::setGainCirclesEnabled);
+    connect(m_noiseButton, &QToolButton::toggled, this, &PlotPane::setNoiseCirclesEnabled);
     connect(m_traces, &QTreeWidget::itemChanged, this, [this](QTreeWidgetItem *item, int column) {
         if (m_updating || column != NameColumn)
             return;
@@ -390,6 +423,8 @@ void PlotPane::applyKind()
     m_plot->setKind(kind);
     m_kind->setCurrentIndex(std::max(0, m_kind->findData(m_definition.kind)));
     m_stabilityButton->setVisible(kind == PlotKind::Smith);
+    m_gainButton->setVisible(kind == PlotKind::Smith);
+    m_noiseButton->setVisible(kind == PlotKind::Smith);
     // Data depend on the kind (impedances become reflections on a Smith chart).
     // In definition order, so traces are created (and coloured) in that order.
     for (const QString &expression : m_definition.traces) {
@@ -602,6 +637,7 @@ void PlotPane::updateStabilityCircles()
     for (int id : m_circleIds)
         m_plot->removeCircle(id);
     m_circleIds.clear();
+    updateDesignCircles();
     if (!m_stabilityCircles || plotKind(m_definition.kind) != PlotKind::Smith || !m_result || !m_result->ok())
         return;
     const rf::NetworkData &network = m_result->network;
@@ -632,25 +668,179 @@ void PlotPane::updateStabilityCircles()
             --index;
     }
     const rf::CMatrix &s = network.s[static_cast<size_t>(index)];
-    const rf::Complex s11 = s(0, 0), s12 = s(0, 1), s21 = s(1, 0), s22 = s(1, 1);
-    const rf::Complex delta = s11 * s22 - s12 * s21;
-    const double coupling = std::abs(s12 * s21);
     const QString at = formatEngineering(network.frequencies[static_cast<size_t>(index)], QStringLiteral("Hz"));
     const bool dark = m_plot->theme().dark;
 
-    const auto add = [&](rf::Complex sii, rf::Complex sjj, const QString &name, const QColor &color) {
-        const double denominator = std::norm(sii) - std::norm(delta);
-        if (std::abs(denominator) < 1e-12)
+    const auto add = [&](const rf::SmithCircle &stability, const QString &name, const QColor &color) {
+        if (!stability.valid)
             return; // the circle degenerates into a line
         PlotCircle circle;
         circle.name = name;
-        circle.centre = std::conj(sii - delta * std::conj(sjj)) / denominator;
-        circle.radius = coupling / std::abs(denominator);
+        circle.centre = stability.centre;
+        circle.radius = stability.radius;
         circle.color = color;
         m_circleIds.push_back(m_plot->addCircle(circle));
     };
-    add(s11, s22, tr("Source stability, %1").arg(at), dark ? QColor(0xE6, 0x67, 0x67) : QColor(0xC6, 0x2E, 0x2E));
-    add(s22, s11, tr("Load stability, %1").arg(at), dark ? QColor(0xE0, 0xA0, 0x50) : QColor(0xB0, 0x6A, 0x10));
+    add(rf::sourceStabilityCircle(s), tr("Source stability, %1").arg(at),
+        dark ? QColor(0xE6, 0x67, 0x67) : QColor(0xC6, 0x2E, 0x2E));
+    add(rf::loadStabilityCircle(s), tr("Load stability, %1").arg(at),
+        dark ? QColor(0xE0, 0xA0, 0x50) : QColor(0xB0, 0x6A, 0x10));
+}
+
+int PlotPane::circleFrequencyIndex() const
+{
+    const rf::NetworkData &network = m_result->network;
+    const std::vector<PlotMarkerInfo> markers = m_plot->markers();
+    if (markers.empty())
+        return network.frequencyCount() / 2;
+    const double f = markers.front().x;
+    const auto it = std::lower_bound(network.frequencies.begin(), network.frequencies.end(), f);
+    int index = static_cast<int>(
+        std::clamp<std::ptrdiff_t>(it - network.frequencies.begin(), 0, network.frequencyCount() - 1));
+    if (index > 0
+        && std::abs(network.frequencies[static_cast<size_t>(index - 1)] - f)
+               < std::abs(network.frequencies[static_cast<size_t>(index)] - f))
+        --index;
+    return index;
+}
+
+void PlotPane::updateDesignCircles()
+{
+    for (int id : m_designCircleIds)
+        m_plot->removeCircle(id);
+    m_designCircleIds.clear();
+    m_designCircleNames.clear();
+    if ((!m_gainCircles && !m_noiseCircles) || plotKind(m_definition.kind) != PlotKind::Smith || !m_result
+        || !m_result->ok())
+        return;
+    const rf::NetworkData &network = m_result->network;
+    if (network.portCount() != 2 || network.frequencies.empty())
+        return;
+    const int index = circleFrequencyIndex();
+    const rf::CMatrix &s = network.s[static_cast<size_t>(index)];
+    const QString at = formatEngineering(network.frequencies[static_cast<size_t>(index)], QStringLiteral("Hz"));
+    const bool dark = m_plot->theme().dark;
+    const auto add = [&](const rf::SmithCircle &design, const QString &name, const QColor &color, Qt::PenStyle style) {
+        if (!design.valid)
+            return;
+        PlotCircle circle;
+        circle.name = name;
+        circle.centre = design.centre;
+        circle.radius = design.radius;
+        circle.color = color;
+        circle.lineStyle = style;
+        circle.lineWidth = 1.2;
+        m_designCircleIds.push_back(m_plot->addCircle(circle));
+        m_designCircleNames.append(name);
+    };
+    const auto number = [](double value) { return QString::number(value, 'f', 2); };
+
+    if (m_gainCircles) {
+        // Levels below MAG (K > 1) or MSG (K < 1), where the circles may
+        // cross into the unstable region (see the stability circles).
+        const double reference = rf::maximumAvailableGainDb(s);
+        const QString referenceName = rf::stabilityK(s) > 1 ? QStringLiteral("MAG") : QStringLiteral("MSG");
+        if (std::isfinite(reference)) {
+            for (double below : std::as_const(m_gainLevels)) {
+                const double gain = reference - below;
+                add(rf::availableGainCircle(s, gain),
+                    tr("GA = %1 dB (%2 - %3), source plane, %4").arg(number(gain), referenceName, number(below), at),
+                    dark ? QColor(0x6C, 0xC6, 0x7A) : QColor(0x1E, 0x8A, 0x3A), Qt::SolidLine);
+                add(rf::operatingPowerGainCircle(s, gain),
+                    tr("GP = %1 dB (%2 - %3), load plane, %4").arg(number(gain), referenceName, number(below), at),
+                    dark ? QColor(0x6A, 0xA8, 0xE8) : QColor(0x1F, 0x5F, 0xB0), Qt::DashDotLine);
+            }
+        }
+    }
+    if (m_noiseCircles && network.hasNoiseCorrelation()) {
+        const rf::NoiseParameters noise = rf::noiseParametersFromCorrelation(
+            s, network.noiseCorrelation[static_cast<size_t>(index)], network.z0[0]);
+        if (std::isfinite(noise.fminDb)) {
+            for (double above : std::as_const(m_noiseLevels)) {
+                const double nf = noise.fminDb + above;
+                add(rf::noiseFigureCircle(noise, nf, network.z0[0]),
+                    tr("NF = %1 dB (NFmin + %2), source plane, %3").arg(number(nf), number(above), at),
+                    dark ? QColor(0xC0, 0x8C, 0xE8) : QColor(0x7A, 0x3A, 0xB0), Qt::DotLine);
+            }
+        }
+    }
+}
+
+void PlotPane::setGainCirclesEnabled(bool enabled)
+{
+    m_gainCircles = enabled;
+    {
+        const QSignalBlocker blocker(m_gainButton);
+        m_gainButton->setChecked(enabled);
+    }
+    updateDesignCircles();
+}
+
+void PlotPane::setNoiseCirclesEnabled(bool enabled)
+{
+    m_noiseCircles = enabled;
+    {
+        const QSignalBlocker blocker(m_noiseButton);
+        m_noiseButton->setChecked(enabled);
+    }
+    updateDesignCircles();
+}
+
+void PlotPane::setGainCircleLevels(const QList<double> &dbBelowMaximum)
+{
+    m_gainLevels = dbBelowMaximum;
+    updateDesignCircles();
+}
+
+void PlotPane::setNoiseCircleLevels(const QList<double> &dbAboveMinimum)
+{
+    m_noiseLevels = dbAboveMinimum;
+    updateDesignCircles();
+}
+
+std::optional<QList<double>> PlotPane::parseLevels(const QString &text)
+{
+    QList<double> levels;
+    static const QRegularExpression separator(QStringLiteral("[,;\\s]+"));
+    for (const QString &item : text.split(separator, Qt::SkipEmptyParts)) {
+        bool ok = false;
+        const double value = QLocale::c().toDouble(item, &ok);
+        if (!ok || !std::isfinite(value) || value < 0)
+            return std::nullopt;
+        levels.append(value);
+    }
+    if (levels.isEmpty() || levels.size() > 12)
+        return std::nullopt;
+    return levels;
+}
+
+void PlotPane::editCircleLevels(bool gain)
+{
+    const QList<double> &current = gain ? m_gainLevels : m_noiseLevels;
+    QStringList text;
+    for (double value : current)
+        text.append(QLocale::c().toString(value, 'g', 6));
+    const QString prompt = gain ? tr("Gain circle levels, dB below MAG (or MSG), separated by commas:")
+                                : tr("Noise circle levels, dB above NFmin, separated by commas:");
+    bool accepted = false;
+    const QString input = QInputDialog::getText(this, gain ? tr("Gain circles") : tr("Noise circles"), prompt,
+                                                QLineEdit::Normal, text.join(QStringLiteral(", ")), &accepted);
+    if (!accepted)
+        return;
+    const auto levels = parseLevels(input);
+    if (!levels) {
+        setInputError(tr("Circle levels must be 1 to 12 non-negative numbers, such as 1, 2, 3"));
+        setEditorVisible(true);
+        return;
+    }
+    setInputError({});
+    if (gain) {
+        setGainCircleLevels(*levels);
+        setGainCirclesEnabled(true);
+    } else {
+        setNoiseCircleLevels(*levels);
+        setNoiseCirclesEnabled(true);
+    }
 }
 
 void PlotPane::setInputError(const QString &error)

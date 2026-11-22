@@ -60,6 +60,13 @@ void UndoStack::setClean()
     finish(wasClean);
 }
 
+void UndoStack::setCleanUnreachable()
+{
+    const bool wasClean = isClean();
+    m_cleanIndex = -1;
+    finish(wasClean);
+}
+
 void UndoStack::clear()
 {
     const bool wasClean = isClean();

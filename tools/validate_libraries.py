@@ -87,7 +87,7 @@ MODEL_OPTIONAL = {
     "rf-behavioural": set(),
     "rf-element": set(),
     "sparameters": set(),
-    "spice": {"include", "subcircuit", "probe", "section", "instrument"},
+    "spice": {"include", "subcircuit", "probe", "section", "instrument", "parasitics"},
     "subschematic": set(),
     "python": {"source", "file"},
 }
@@ -116,6 +116,19 @@ BLOCKS = {
     "adc": ["fs", "bits", "full_scale", "nf", "z0"],
     "port": ["num", "z0"],
     "termination": ["z0"],
+    "vco": ["freq", "power", "pn", "pn_offset", "pn_floor", "z0"],
+    "pll": ["freq", "power", "ref_freq", "ref_pn", "fom", "loop_bw", "pn", "pn_offset", "pn_floor", "z0"],
+    "dac": ["freq", "fs", "bits", "full_scale", "backoff", "nsd", "z0"],
+    "dc_block": ["il", "fc", "z0"],
+    "bias_tee": ["il", "isolation", "z0"],
+    "balun": ["il", "isolation", "imbalance", "phase_imbalance", "z0"],
+    "hybrid_90": ["il", "isolation", "imbalance", "phase_imbalance", "z0"],
+    "hybrid_180": ["il", "isolation", "imbalance", "phase_imbalance", "z0"],
+    "switch_sp3t": ["state", "il", "isolation", "z0"],
+    "switch_sp4t": ["state", "il", "isolation", "z0"],
+    "limiter": ["limit", "il", "z0"],
+    "detector": ["sensitivity", "dynamic_range", "z0"],
+    "diplexer": ["crossover", "order", "il", "z0"],
 }
 BLOCK_PINS = {
     "amplifier": ["in", "out"], "attenuator": ["in", "out"], "filter": ["in", "out"],
@@ -125,11 +138,24 @@ BLOCK_PINS = {
     "isolator": ["in", "out"], "circulator": ["p1", "p2", "p3"], "cable": ["in", "out"],
     "antenna": ["p"], "multiplier": ["in", "out"], "phase_shifter": ["in", "out"],
     "adc": ["in"], "port": ["p"], "termination": ["p"],
+    "vco": ["out"], "pll": ["out"], "dac": ["out"], "dc_block": ["in", "out"],
+    "bias_tee": ["rf_in", "rf_out", "dc"], "balun": ["unbal", "bal_p", "bal_n"],
+    "hybrid_90": ["in", "out0", "out90", "iso"], "hybrid_180": ["sum", "diff", "p1", "p2"],
+    "switch_sp3t": ["com", "t1", "t2", "t3"], "switch_sp4t": ["com", "t1", "t2", "t3", "t4"],
+    "limiter": ["in", "out"], "detector": ["in"], "diplexer": ["com", "low", "high"],
 }
 ELEMENTS = {
     "resistor": ["r"],
     "capacitor": ["c", "q", "freq"],
     "inductor": ["l", "q", "freq"],
+    "substrate": ["material", "h", "t", "sigma", "rough", "er", "tand", "b"],
+    "coupled_microstrip": ["w", "s", "l", "h", "er", "tand", "t", "sigma"],
+    "microstrip_open": ["w", "h", "er", "t"],
+    "microstrip_gap": ["w1", "w2", "s", "h", "er", "t"],
+    "microstrip_step": ["w1", "w2", "h", "er", "t"],
+    "microstrip_bend": ["w", "mitred", "h", "er", "t"],
+    "microstrip_tee": ["w1", "w2", "w3", "h", "er", "tand", "t", "sigma"],
+    "microstrip_via": ["d", "h", "tp", "sigma"],
     "tline": ["z0", "elen", "freq"],
     "stub_open": ["z0", "elen", "freq"],
     "stub_short": ["z0", "elen", "freq"],
@@ -146,7 +172,14 @@ ELEMENT_PINS = {
     "coupled_lines": ["p1", "p2", "p3", "p4"], "microstrip": ["in", "out"],
     "stripline": ["in", "out"], "coax": ["in", "out"], "cpw": ["in", "out"],
     "transformer": ["in", "out"],
+    "substrate": [], "coupled_microstrip": ["p1", "p2", "p3", "p4"], "microstrip_open": ["p"],
+    "microstrip_gap": ["in", "out"], "microstrip_step": ["in", "out"], "microstrip_bend": ["in", "out"],
+    "microstrip_tee": ["p1", "p2", "p3"], "microstrip_via": ["p"],
 }
+# Spice "parasitics" expansions (docs/file-format.md section 4.4) and the
+# parameters each reads.
+SPICE_PARASITICS = {"resistor": ["r", "esl", "cp"], "capacitor": ["c", "q", "freq", "esr", "esl"],
+                    "inductor": ["l", "q", "freq", "cp"]}
 
 PLACEHOLDER_RE = re.compile(r"\{([^{}]*)\}")
 
@@ -244,8 +277,10 @@ class Checker:
         # pins
         pins = []
         if isinstance(c.get("pins"), list):
-            if not c["pins"]:
-                self.error(where + ": pins", "a component needs at least one pin")
+            pinless_ok = any(isinstance(m, dict) and m.get("kind") == "rf-element" and m.get("element") == "substrate"
+                             for m in c.get("models", []) if isinstance(c.get("models"), list))
+            if not c["pins"] and not pinless_ok:
+                self.error(where + ": pins", "a component needs at least one pin (only a substrate may have none)")
             for j, p in enumerate(c["pins"]):
                 if not isinstance(p, dict) or not isinstance(p.get("name"), str) or not p["name"]:
                     self.error("%s: pins[%d]" % (where, j), "must be an object with a non-empty name")
@@ -516,6 +551,15 @@ class Checker:
                 elif not SPICE_ELEMENT_RE.match(ln):
                     self.error(lw, "an element line must start with the SPICE element letter followed by {ref}")
             self.check_placeholders(tw, t, pins, params)
+        par = m.get("parasitics")
+        if par is not None:
+            if par not in SPICE_PARASITICS:
+                self.error(mw + ": parasitics", "must be one of %s" % ", ".join(sorted(SPICE_PARASITICS)))
+            else:
+                for q in SPICE_PARASITICS[par]:
+                    if q not in params:
+                        self.error(mw + ": parasitics", "%r expansion reads parameter %r, which the component "
+                                   "does not define" % (par, q))
         if probe == "current" and isinstance(t, str) and not t:
             self.error(mw + ": template", "a current probe needs a 0 V source template")
         sc = m.get("subcircuit")

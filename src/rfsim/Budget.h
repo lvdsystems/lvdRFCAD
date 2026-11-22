@@ -22,6 +22,19 @@ namespace lvd::rf {
 // cascade from the chain input to the output of that stage; input-referred
 // figures (IIP3, IP1dB, IIP2) refer to the chain input. Values that do not
 // apply (IP3 of a linear passive stage) are +infinity.
+//
+// Noise in the bandwidth B has three parts, added in power for the SNR:
+// - thermal: k T B of the source through the cascade noise figure;
+// - LO phase noise: every mixer adds the integrated phase noise of its LO
+//   (both sidebands, over the integration range, raised by 20 log10 N for
+//   multipliers between the LO block and the mixer) as noise proportional
+//   to the signal; a multiplier on the signal path raises the accumulated
+//   ratio by 20 log10 N;
+// - reciprocal mixing: a blocker at the chain input (offset above the wanted
+//   frequency) reaches each mixer through the stages before it and mixes
+//   with the LO phase noise at its offset into the channel:
+//   blocker at the mixer input + L(offset) + 10 log10(B), carried to later
+//   stages with the gain of the wanted signal.
 
 struct BudgetStage {
     QString path;
@@ -47,8 +60,23 @@ struct BudgetStage {
     double op1dbCumulativeDbm = INFINITY;
     double iip2Dbm = INFINITY;
     double signalDbm = 0;       // wanted signal power
-    double noiseDbm = 0;        // noise power in the analysis bandwidth
-    double snrDb = 0;
+    double noiseDbm = 0;        // thermal noise power in the analysis bandwidth
+    double snrDb = 0;           // signal over the total noise (thermal, phase noise, reciprocal mixing)
+    double thermalSnrDb = 0;    // signal over thermal noise only
+    double phaseNoiseDbm = -INFINITY;       // in-channel noise from LO phase noise on the signal
+    double reciprocalMixingDbm = -INFINITY; // in-channel noise from the blocker and LO phase noise
+    double totalNoiseDbm = 0;
+    double phaseNoiseSnrDb = INFINITY;
+    double reciprocalMixingSnrDb = INFINITY;
+    double dacImageDbm = NotSet; // chain starting at a DAC: its first image at the stage output
+
+    // Mixers: the LO at the lo pin (NotSet without phase noise or blocker)
+    double loPhaseNoiseDbc = NotSet;  // integrated, both sidebands
+    double loRmsPhaseDeg = NotSet;
+    double loJitterS = NotSet;
+    double loPhaseNoiseAtOffsetDbcHz = NotSet; // L at the blocker's offset
+    double blockerDbm = NotSet;       // blocker power at the mixer input
+
     double sfdrDb = INFINITY;   // input-referred third-order spurious-free dynamic range
     double headroomDb = INFINITY; // cumulative OP1dB minus signal power
     bool compressed = false;      // headroom below 0 dB
@@ -74,6 +102,29 @@ struct BudgetResult {
     double adcSampleRate = NotSet;
     double adcAliasFrequency = NotSet;   // the output frequency folded into 0 .. fs/2
 
+    // Phase noise and blocker (see the top of this file)
+    bool hasPhaseNoise = false;          // some mixer's LO has a phase-noise profile
+    double phaseNoiseStart = NotSet;     // Hz, integration range used
+    double phaseNoiseStop = NotSet;
+    bool hasBlocker = false;
+    double blockerOffset = NotSet;       // Hz above the wanted input frequency
+    double blockerPowerDbm = NotSet;     // at the chain input
+
+    // Digital-to-analogue converter at the start of the chain
+    bool hasDac = false;
+    double dacSincDb = NotSet;           // NRZ roll-off at the output frequency (included in inputPowerDbm)
+    double dacNsdDbmHz = NotSet;         // noise density (inputNoiseDbm = NSD + 10 log10 B)
+    bool dacNsdFromQuantisation = false;
+    double dacImageFrequency = NotSet;   // first image, |fs - f|
+    double dacImageDbm = NotSet;         // at the DAC output
+
+    // Detector at the end of the chain
+    bool hasDetector = false;
+    double detectorSensitivityDbm = NotSet;
+    double detectorMaxDbm = NotSet;      // sensitivity + dynamic range
+    double detectorMarginDb = NotSet;    // signal minus sensitivity
+    double detectorHeadroomDb = NotSet;  // top of the dynamic range minus signal
+
     QStringList warnings;
     QStringList errors;
     bool ok() const { return errors.isEmpty(); }
@@ -82,6 +133,12 @@ struct BudgetResult {
 struct BudgetOptions {
     double bandwidth = 1e6;
     bool mismatch = true;
+    // Phase-noise integration range; NotSet: bandwidth / 1000 to bandwidth / 2.
+    double phaseNoiseStart = NotSet;
+    double phaseNoiseStop = NotSet;
+    // Blocker at the chain input, `blockerOffset` Hz above the wanted signal; NotSet: none.
+    double blockerOffset = NotSet;
+    double blockerPowerDbm = NotSet;
 };
 
 // The budget of a traced chain at its input frequency, or at `inputFrequency` when given.
@@ -113,6 +170,12 @@ struct BudgetAnalysisSetup {
     // Spur analysis
     bool spurs = true;
     QString spurOrder = QStringLiteral("5");
+    // Phase-noise integration range (empty: bandwidth/1000 to bandwidth/2)
+    QString phaseNoiseStart;
+    QString phaseNoiseStop;
+    // Blocker for reciprocal mixing (empty power: no blocker)
+    QString blockerOffset;
+    QString blockerPower;
 
     static QString type() { return QStringLiteral("rf-budget"); }
     static BudgetAnalysisSetup fromJson(const QJsonObject &object);

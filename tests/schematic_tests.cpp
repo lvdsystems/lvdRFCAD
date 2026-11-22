@@ -1,4 +1,4 @@
-﻿#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "core/Connectivity.h"
 #include "core/Netlist.h"
@@ -90,7 +90,7 @@ TEST_CASE("the built-in libraries load completely and round-trip")
             REQUIRE(*again == *definition);
         }
     }
-    REQUIRE(count == 125);
+    REQUIRE(count == 154);
     REQUIRE(libraries.find(key("basic:ground"))->netName == QStringLiteral("0"));
     REQUIRE(libraries.find(key("basic:sheet_port"))->isSheetPort());
     REQUIRE(libraries.find(key("nothing:here")) == nullptr);

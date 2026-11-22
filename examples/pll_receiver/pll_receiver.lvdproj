@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "path": "pll_receiver.lvdrf"
+        },
+        {
+            "path": "front_end.lvdrf"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

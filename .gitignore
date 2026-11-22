@@ -5,3 +5,8 @@ CMakeUserPresets.json
 .vs/
 __pycache__/
 *.pyc
+
+# Local planning notes (not part of the repository)
+/concept.md
+/requirements.md
+/rftool_minor.md

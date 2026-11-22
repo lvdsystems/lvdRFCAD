@@ -615,6 +615,43 @@ public:
         }
     }
 
+    // ---- RF examples of release 0.5
+
+    void rfExamples05()
+    {
+        {
+            auto window = openExample(QStringLiteral("downconverter"), QStringLiteral("downconverter.lvdproj"));
+            if (SchematicWorkspace *workspace = openSchematic(window.get(), QStringLiteral("downconverter"))) {
+                if (runAnalysis(workspace, QStringLiteral("S-parameters"))) {
+                    focusResults(window.get(), workspace);
+                    save(window.get(), QStringLiteral("downconverter-sparams.png"),
+                         QStringLiteral("Down-converter example: schematic and the \"S-parameters\" analysis (match and RF-to-IF leakage)."));
+                }
+            }
+        }
+        {
+            auto window = openExample(QStringLiteral("filter_bank"), QStringLiteral("filter_bank.lvdproj"));
+            if (SchematicWorkspace *workspace = openSchematic(window.get(), QStringLiteral("filter_bank"))) {
+                if (runAnalysis(workspace, QStringLiteral("S-parameters"))) {
+                    focusResults(window.get(), workspace);
+                    save(window.get(), QStringLiteral("filter-bank.png"),
+                         QStringLiteral("Switched filter bank example with band = 2: the selected path's response."));
+                }
+            }
+        }
+        {
+            auto window = openExample(QStringLiteral("agc_module"), QStringLiteral("agc_module.lvdproj"));
+            if (SchematicWorkspace *workspace = openSchematic(window.get(), QStringLiteral("agc_module"))) {
+                if (runAnalysis(workspace, QStringLiteral("Main path"))) {
+                    workspace->simulation()->budgetView()->tabs()->setCurrentIndex(sim::BudgetView::TableTab);
+                    focusResults(window.get(), workspace);
+                    save(window.get(), QStringLiteral("agc-budget.png"),
+                         QStringLiteral("AGC module example: schematic and the \"Main path\" budget at p_in = -40 dBm."));
+                }
+            }
+        }
+    }
+
     // ---- SPICE (release 0.2)
 
     static QString spiceAnalysisId(SchematicWorkspace *workspace, const QString &name)
@@ -905,6 +942,52 @@ public:
         }
     }
 
+    void antennaFullWave()
+    {
+        auto window = openExample(QStringLiteral("fullwave_elements"), QStringLiteral("fullwave_elements.lvdproj"));
+        Project *project = m_session->project();
+        Document *document = project ? project->document(QStringLiteral("patch_2g4")) : nullptr;
+        if (!document) {
+            problem(QStringLiteral("element patch_2g4 not found (generate the examples with openEMS installed)"));
+            return;
+        }
+        window->openDocument(document);
+        settle(500);
+        antui::ElementWorkspace *w = window->currentElementWorkspace();
+        if (!w) {
+            problem(QStringLiteral("no element workspace"));
+            return;
+        }
+        w->showView(QStringLiteral("geometry"));
+        settle(500);
+        save(window.get(), QStringLiteral("antenna-fullwave-geometry.png"),
+             QStringLiteral("Full-wave element: the openEMS tutorial patch, its template parameters and the geometry."));
+        w->showView(QStringLiteral("port"));
+        settle(300);
+        save(window.get(), QStringLiteral("antenna-fullwave-s11.png"), QStringLiteral("Simulated S11 and input impedance of the patch."));
+        w->showView(QStringLiteral("cuts"));
+
+        // The simulated horn.
+        auto hornWindow = openExample(QStringLiteral("fullwave_horn"), QStringLiteral("fullwave_horn.lvdproj"));
+        Project *hornProject = m_session->project();
+        Document *horn = hornProject ? hornProject->document(QStringLiteral("horn_ku")) : nullptr;
+        if (!horn) {
+            problem(QStringLiteral("element horn_ku not found (generate the examples with openEMS installed)"));
+            return;
+        }
+        hornWindow->openDocument(horn);
+        settle(500);
+        if (antui::ElementWorkspace *h = hornWindow->currentElementWorkspace()) {
+            h->showView(QStringLiteral("geometry"));
+            settle(500);
+            save(hornWindow.get(), QStringLiteral("antenna-fullwave-horn.png"),
+                 QStringLiteral("The openEMS tutorial horn: pin-fed waveguide and flare, simulated from 10 to 20 GHz."));
+            h->showView(QStringLiteral("cuts"));
+            settle(300);
+            save(hornWindow.get(), QStringLiteral("antenna-fullwave-horn-cuts.png"),
+                 QStringLiteral("Simulated horn pattern at 15 GHz: E-plane (phi = 90) and H-plane (phi = 0) cuts."));
+        }
+    }
 
     void antennaHorns()
     {
@@ -1054,6 +1137,7 @@ int main(int argc, char *argv[])
         shooter.lna();
         shooter.matching();
         shooter.upconverter();
+        shooter.rfExamples05();
         shooter.spiceAmplifier();
         shooter.spiceSupply();
         shooter.spiceBjt();
@@ -1062,6 +1146,7 @@ int main(int argc, char *argv[])
         shooter.antennaSatcom();
         shooter.antennaBeamforming();
         shooter.antennaElements();
+        shooter.antennaFullWave();
         shooter.antennaHorns();
         shooter.antennaDf();
         session.closeProject();

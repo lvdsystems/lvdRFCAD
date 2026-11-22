@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     QApplication::setApplicationName(QStringLiteral("lvdRFcad"));
     QApplication::setApplicationDisplayName(QStringLiteral("lvd RF cad"));
     QApplication::setApplicationVersion(QStringLiteral(LVD_VERSION));
+    QApplication::setWindowIcon(lvd::MainWindow::applicationIcon());
 
     lvd::Session session;
     // User libraries live in the per-user data folder unless the user chose another one.
@@ -45,6 +46,8 @@ int main(int argc, char *argv[])
         arguments.size() > 1 ? arguments.at(1) : QSettings().value(QStringLiteral("lastProject")).toString();
     if (!project.isEmpty() && QFileInfo::exists(project))
         window.openProjectFile(project);
+    // Unsaved work of another project left by a crash.
+    window.offerRecoveryOfOtherProjects();
 
     return app.exec();
 }

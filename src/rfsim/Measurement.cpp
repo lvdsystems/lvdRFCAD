@@ -349,7 +349,8 @@ private:
             return noiseParameter(name);
         }
         if (name == QLatin1String("K") || name == QLatin1String("Delta") || name == QLatin1String("mu")
-            || name == QLatin1String("mup") || name == QLatin1String("MAG")) {
+            || name == QLatin1String("mup") || name == QLatin1String("MAG") || name == QLatin1String("GUmax")
+            || name == QLatin1String("U") || name == QLatin1String("GammaMS") || name == QLatin1String("GammaML")) {
             if (!integers.isEmpty() || !arguments.isEmpty()) {
                 fail(QStringLiteral("%1 takes no arguments").arg(name));
                 return std::nullopt;
@@ -365,6 +366,23 @@ private:
                 return perFrequency([&](int i) { return Complex(stabilityMu(s(i)), 0); }, false, {});
             if (name == QLatin1String("mup"))
                 return perFrequency([&](int i) { return Complex(stabilityMuPrime(s(i)), 0); }, false, {});
+            if (name == QLatin1String("GUmax"))
+                return perFrequency([&](int i) { return Complex(maximumUnilateralGainDb(s(i)), 0); }, false,
+                                    QStringLiteral("dB"));
+            if (name == QLatin1String("U"))
+                return perFrequency([&](int i) { return Complex(masonUnilateralGainDb(s(i)), 0); }, false,
+                                    QStringLiteral("dB"));
+            if (name == QLatin1String("GammaMS") || name == QLatin1String("GammaML")) {
+                const bool source = name == QLatin1String("GammaMS");
+                return perFrequency(
+                    [&](int i) {
+                        const auto match = simultaneousConjugateMatch(s(i));
+                        if (!match)
+                            return Complex(std::nan(""), std::nan("")); // K <= 1: no simultaneous match
+                        return source ? match->gammaS : match->gammaL;
+                    },
+                    true, {});
+            }
             return perFrequency([&](int i) { return Complex(maximumAvailableGainDb(s(i)), 0); }, false,
                                 QStringLiteral("dB"));
         }

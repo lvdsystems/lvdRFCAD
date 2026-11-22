@@ -34,8 +34,9 @@ class BudgetView : public QWidget
 {
     Q_OBJECT
 public:
-    enum class LevelTrace { Signal, Noise, Op1db, Gain, Nf };
-    enum class SweepTrace { Gain, Nf, Iip3 };
+    // TotalNoise and Snr appear only with LO phase noise or a blocker.
+    enum class LevelTrace { Signal, Noise, Op1db, Gain, Nf, TotalNoise };
+    enum class SweepTrace { Gain, Nf, Iip3, Snr };
     enum Tab { TableTab, LevelTab, SweepTab, SpurTab, PlanTab };
 
     explicit BudgetView(QWidget *parent = nullptr);
@@ -113,13 +114,13 @@ private:
 
     PlotWidget *m_levelPlot;
     QLabel *m_stageLegend;
-    int m_levelTraces[5] = {-1, -1, -1, -1, -1};
+    int m_levelTraces[6] = {-1, -1, -1, -1, -1, -1};
 
     QStackedWidget *m_sweepPages;
     QLabel *m_sweepPlaceholder;
     QComboBox *m_sweepStageCombo;
     PlotWidget *m_sweepPlot;
-    int m_sweepTraces[3] = {-1, -1, -1};
+    int m_sweepTraces[4] = {-1, -1, -1, -1};
 
     SpurTableModel *m_spurModel;
     SpurFilterModel *m_spurFilter;

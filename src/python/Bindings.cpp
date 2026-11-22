@@ -9,6 +9,7 @@
 #include "core/RuleCheck.h"
 #include "core/Schematic.h"
 #include "core/Session.h"
+#include "core/Substrates.h"
 #include "rfdata/Touchstone.h"
 #include "rfsim/Analysis.h"
 #include "rfsim/Budget.h"
@@ -201,6 +202,18 @@ py::dict budgetStageDict(const rf::BudgetStage &s)
     d["signal"] = s.signalDbm;
     d["noise"] = s.noiseDbm;
     d["snr"] = s.snrDb;
+    d["thermal_snr"] = s.thermalSnrDb;
+    d["phase_noise"] = s.phaseNoiseDbm;
+    d["reciprocal_mixing"] = s.reciprocalMixingDbm;
+    d["total_noise"] = s.totalNoiseDbm;
+    d["phase_noise_snr"] = s.phaseNoiseSnrDb;
+    d["reciprocal_mixing_snr"] = s.reciprocalMixingSnrDb;
+    d["lo_phase_noise"] = s.loPhaseNoiseDbc;
+    d["lo_rms_phase"] = s.loRmsPhaseDeg;
+    d["lo_jitter"] = s.loJitterS;
+    d["lo_phase_noise_at_offset"] = s.loPhaseNoiseAtOffsetDbcHz;
+    d["blocker"] = s.blockerDbm;
+    d["dac_image"] = s.dacImageDbm;
     d["sfdr"] = s.sfdrDb;
     d["headroom"] = s.headroomDb;
     d["compressed"] = s.compressed;
@@ -235,6 +248,38 @@ py::dict budgetResultDict(const rf::BudgetResult &b)
         d["adc"] = adc;
     } else {
         d["adc"] = py::none();
+    }
+    if (b.hasPhaseNoise || b.hasBlocker) {
+        py::dict phaseNoise;
+        phaseNoise["start"] = b.phaseNoiseStart;
+        phaseNoise["stop"] = b.phaseNoiseStop;
+        phaseNoise["has_lo_phase_noise"] = b.hasPhaseNoise;
+        phaseNoise["blocker_offset"] = b.blockerOffset;
+        phaseNoise["blocker_power"] = b.blockerPowerDbm;
+        d["phase_noise"] = phaseNoise;
+    } else {
+        d["phase_noise"] = py::none();
+    }
+    if (b.hasDac) {
+        py::dict dac;
+        dac["sinc"] = b.dacSincDb;
+        dac["nsd"] = b.dacNsdDbmHz;
+        dac["nsd_from_quantisation"] = b.dacNsdFromQuantisation;
+        dac["image_frequency"] = b.dacImageFrequency;
+        dac["image_level"] = b.dacImageDbm;
+        d["dac"] = dac;
+    } else {
+        d["dac"] = py::none();
+    }
+    if (b.hasDetector) {
+        py::dict detector;
+        detector["sensitivity"] = b.detectorSensitivityDbm;
+        detector["max_level"] = b.detectorMaxDbm;
+        detector["margin"] = b.detectorMarginDb;
+        detector["headroom"] = b.detectorHeadroomDb;
+        d["detector"] = detector;
+    } else {
+        d["detector"] = py::none();
     }
     return d;
 }
@@ -276,6 +321,7 @@ py::dict budgetRunDict(const rf::BudgetRun &run)
             item["lo_source"] = stage.loSource.toStdString();
             item["lo_frequency"] = stage.loFrequency;
             item["lo_power"] = stage.loPowerDbm;
+            item["lo_multiplication"] = stage.loMultiplication;
         }
         plan.append(item);
     }
@@ -1024,8 +1070,7 @@ void registerBindings(py::module_ &m)
         .def("netlist",
              [](const SchematicHandle &h) {
                  const Netlist netlist = buildNetlist(h.project(), h.doc());
-                 py::list components;
-                 for (const FlatComponent &flat : netlist.components) {
+                 const auto componentDict = [](const FlatComponent &flat) {
                      py::dict pins, texts, values;
                      for (auto it = flat.pinNets.begin(); it != flat.pinNets.end(); ++it)
                          pins[py::str(it.key().toStdString())] = it.value().toStdString();
@@ -1040,8 +1085,14 @@ void registerBindings(py::module_ &m)
                      item["pins"] = pins;
                      item["parameters"] = texts;
                      item["values"] = values;
-                     components.append(item);
-                 }
+                     return item;
+                 };
+                 py::list components, substrates;
+                 for (const FlatComponent &flat : netlist.components)
+                     components.append(componentDict(flat));
+                 // Substrate parts hold data, not circuit elements: listed apart.
+                 for (const FlatComponent &flat : netlist.substrates)
+                     substrates.append(componentDict(flat));
                  std::vector<std::string> nets, errors;
                  for (const QString &net : netlist.nets)
                      nets.push_back(net.toStdString());
@@ -1049,12 +1100,14 @@ void registerBindings(py::module_ &m)
                      errors.push_back(message.toStdString());
                  py::dict result;
                  result["components"] = components;
+                 result["substrates"] = substrates;
                  result["nets"] = nets;
                  result["errors"] = errors;
                  result["text"] = netlist.toText().toStdString();
                  return result;
              },
-             "Flattened netlist of this sheet and everything below it, with evaluated parameters.")
+             "Flattened netlist of this sheet and everything below it, with evaluated parameters;\n"
+             "'substrates' lists the Substrate parts (rf-circuit:substrate) apart from the components.")
         .def("check",
              [](const SchematicHandle &h) {
                  py::list result;
@@ -1147,8 +1200,13 @@ void registerBindings(py::module_ &m)
              [](const SchematicHandle &h, const py::object &path, const std::string &start, const std::string &frequency,
                 const std::string &power, const std::string &bandwidth, bool mismatch, const std::string &sweepStart,
                 const std::string &sweepStop, const py::object &sweepPoints, bool spurs, const py::object &spurOrder,
-                const std::string &name, const std::string &id) {
+                const std::string &name, const std::string &id, const std::string &pnStart, const std::string &pnStop,
+                const std::string &blockerOffset, const std::string &blockerPower) {
                  rf::BudgetAnalysisSetup setup;
+                 setup.phaseNoiseStart = QString::fromStdString(pnStart);
+                 setup.phaseNoiseStop = QString::fromStdString(pnStop);
+                 setup.blockerOffset = QString::fromStdString(blockerOffset);
+                 setup.blockerPower = QString::fromStdString(blockerPower);
                  setup.id = QString::fromStdString(id);
                  setup.name = QString::fromStdString(name);
                  if (!path.is_none()) {
@@ -1173,12 +1231,17 @@ void registerBindings(py::module_ &m)
              py::arg("path") = py::none(), py::arg("start") = "", py::arg("frequency") = "", py::arg("power") = "",
              py::arg("bandwidth") = "1MHz", py::arg("mismatch") = true, py::arg("sweep_start") = "",
              py::arg("sweep_stop") = "", py::arg("sweep_points") = 101, py::arg("spurs") = true,
-             py::arg("spur_order") = 5, py::arg("name") = "", py::arg("id") = "",
+             py::arg("spur_order") = 5, py::arg("name") = "", py::arg("id") = "", py::arg("pn_start") = "",
+             py::arg("pn_stop") = "", py::arg("blocker_offset") = "", py::arg("blocker_power") = "",
              "Stores a system budget analysis; returns its id. path: optional list of references,\n"
-             "with 'REF.pin' to choose a branch; frequency and power override the start component.")
+             "with 'REF.pin' to choose a branch; frequency and power override the start component.\n"
+             "pn_start, pn_stop: phase-noise integration range (default bandwidth/1000 to bandwidth/2);\n"
+             "blocker_offset, blocker_power: a blocker for reciprocal mixing (empty power: none).")
         .def("budget",
              [](const SchematicHandle &h, const py::object &analysis, const py::object &path, const std::string &frequency,
-                const std::string &power, const std::string &bandwidth, bool mismatch, bool spurs) {
+                const std::string &power, const std::string &bandwidth, bool mismatch, bool spurs,
+                const std::string &pnStart, const std::string &pnStop, const std::string &blockerOffset,
+                const std::string &blockerPower) {
                  rf::BudgetAnalysisSetup setup;
                  if (!analysis.is_none()) {
                      const QString wanted = QString::fromStdString(py::str(analysis));
@@ -1201,6 +1264,10 @@ void registerBindings(py::module_ &m)
                      setup.bandwidth = QString::fromStdString(bandwidth);
                      setup.mismatch = mismatch;
                      setup.spurs = spurs;
+                     setup.phaseNoiseStart = QString::fromStdString(pnStart);
+                     setup.phaseNoiseStop = QString::fromStdString(pnStop);
+                     setup.blockerOffset = QString::fromStdString(blockerOffset);
+                     setup.blockerPower = QString::fromStdString(blockerPower);
                  }
                  const rf::BudgetRun run = rf::runBudgetAnalysis(h.project(), h.doc(), setup);
                  for (const QString &warning : run.warnings)
@@ -1213,8 +1280,11 @@ void registerBindings(py::module_ &m)
              },
              py::arg("analysis") = py::none(), py::arg("path") = py::none(), py::arg("frequency") = "",
              py::arg("power") = "", py::arg("bandwidth") = "1MHz", py::arg("mismatch") = true, py::arg("spurs") = true,
+             py::arg("pn_start") = "", py::arg("pn_stop") = "", py::arg("blocker_offset") = "",
+             py::arg("blocker_power") = "",
              "Runs a system budget: a stored analysis (id or name) or an ad-hoc one. Returns a dictionary with\n"
-             "'stages' (per-stage and cumulative figures), 'frequency_plan', 'adc', 'spurs', 'sweep', 'warnings'.")
+             "'stages' (per-stage and cumulative figures), 'frequency_plan', 'adc', 'dac', 'detector',\n"
+             "'phase_noise', 'spurs', 'sweep', 'warnings'.")
         .def("optimize",
              [](const SchematicHandle &h, const py::sequence &variables, const py::sequence &goals,
                 const py::object &analysis, const std::string &method, int maxEvaluations, bool apply, bool snapped) {
@@ -1626,6 +1696,26 @@ void registerBindings(py::module_ &m)
             return "<Result: " + std::to_string(h.result->network.portCount()) + " ports, "
                    + std::to_string(h.result->network.frequencyCount()) + " frequencies>";
         });
+
+    m.def("substrates",
+          [] {
+              py::list result;
+              for (const SubstrateMaterial &material : SubstrateCatalog::builtIn().materials) {
+                  py::dict item;
+                  item["id"] = material.id.toStdString();
+                  item["name"] = material.name.toStdString();
+                  item["er"] = material.er;
+                  item["tand"] = material.tand;
+                  item["frequency"] = material.frequency;
+                  item["thicknesses"] = std::vector<double>(material.thicknesses.begin(), material.thicknesses.end());
+                  item["note"] = material.note.toStdString();
+                  item["source"] = material.source.toStdString();
+                  result.append(item);
+              }
+              return result;
+          },
+          "Built-in substrate materials (libraries/substrates.json): id, name, er, tand, frequency (Hz at\n"
+          "which er and tand apply), thicknesses (standard, metres), note, source.");
 
     m.def("libraries",
           [] {

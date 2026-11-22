@@ -6,6 +6,7 @@
 #include <QWidget>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 class QComboBox;
@@ -74,6 +75,29 @@ public:
     bool stabilityCirclesEnabled() const { return m_stabilityCircles; }
     int stabilityCircleCount() const { return static_cast<int>(m_circleIds.size()); }
 
+    // Design circles of a two-port at the first marker's frequency (the
+    // middle of the sweep without markers), Smith charts only:
+    // gain circles, constant available gain GA in the source plane and
+    // constant operating power gain GP in the load plane, at levels in dB
+    // below MAG (MSG when K < 1), default 1, 2, 3; noise circles, constant
+    // noise figure in the source plane, at levels in dB above NFmin,
+    // default 0.25, 0.5, 1, 2 (needs a result with noise). Levels are
+    // changed in the buttons' menus. Every circle is labelled with its
+    // value, plane and frequency.
+    void setGainCirclesEnabled(bool enabled);
+    bool gainCirclesEnabled() const { return m_gainCircles; }
+    void setNoiseCirclesEnabled(bool enabled);
+    bool noiseCirclesEnabled() const { return m_noiseCircles; }
+    void setGainCircleLevels(const QList<double> &dbBelowMaximum);
+    QList<double> gainCircleLevels() const { return m_gainLevels; }
+    void setNoiseCircleLevels(const QList<double> &dbAboveMinimum);
+    QList<double> noiseCircleLevels() const { return m_noiseLevels; }
+    int designCircleCount() const { return static_cast<int>(m_designCircleIds.size()); }
+    QStringList designCircleNames() const { return m_designCircleNames; }
+    // "1, 2, 3" -> {1, 2, 3}: 1 to 12 non-negative numbers separated by
+    // commas, semicolons or spaces; nullopt otherwise.
+    static std::optional<QList<double>> parseLevels(const QString &text);
+
 Q_SIGNALS:
     void definitionEdited(const lvd::sim::PlotDefinition &definition);
     void removeRequested(const QString &plotId);
@@ -97,6 +121,9 @@ private:
     void layoutAxes();
     void refreshList();
     void updateStabilityCircles();
+    void updateDesignCircles();
+    int circleFrequencyIndex() const;
+    void editCircleLevels(bool gain);
     void setInputError(const QString &error);
     QColor errorColor() const;
 
@@ -112,6 +139,8 @@ private:
     QToolButton *m_addButton;
     QToolButton *m_removeButton;
     QToolButton *m_stabilityButton;
+    QToolButton *m_gainButton;
+    QToolButton *m_noiseButton;
     QToolButton *m_editorButton;
     QToolButton *m_closeButton;
     QTreeWidget *m_traces;
@@ -121,6 +150,12 @@ private:
 
     bool m_stabilityCircles = false;
     std::vector<int> m_circleIds;
+    bool m_gainCircles = false;
+    bool m_noiseCircles = false;
+    QList<double> m_gainLevels{1.0, 2.0, 3.0};
+    QList<double> m_noiseLevels{0.25, 0.5, 1.0, 2.0};
+    std::vector<int> m_designCircleIds;
+    QStringList m_designCircleNames;
     bool m_updating = false;
 };
 

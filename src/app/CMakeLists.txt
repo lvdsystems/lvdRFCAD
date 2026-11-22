@@ -1,4 +1,4 @@
-add_executable(lvdrfcad WIN32 main.cpp)
+add_executable(lvdrfcad WIN32 main.cpp lvdrfcad.rc)
 target_link_libraries(lvdrfcad PRIVATE lvdgui)
 
 if(WIN32 AND LVD_DEPLOY_QT)

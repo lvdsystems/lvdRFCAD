@@ -52,6 +52,9 @@ project.save()
 | `format_value(value, unit='', digits=4)` | `'2.4 GHz'` |
 | `antenna_libraries()` | Antenna libraries: `[{name, description, path, entries: [{key, name, kind, description}]}]` |
 | `read_pattern(path)` | Describes a far-field pattern file: `{frequencies, theta, phi, has_phase, peak, warnings}` |
+| `fullwave_templates()` | Full-wave antenna templates: `[{id, name, description, f_start, f_stop, parameters: [{id, name, unit, default, min, max}]}]` |
+| `openems_available()` | True when the openEMS solver is installed |
+| `substrates()` | Built-in substrate materials from `libraries/substrates.json` ([file-format.md](file-format.md), section 8): `[{id, name, er, tand, frequency, thicknesses, note, source}]`; `frequency` in Hz is where `er` and `tand` apply, `thicknesses` are the standard thicknesses in metres |
 
 Errors raise `RuntimeError`, `ValueError` or `KeyError` with a readable message.
 
@@ -82,14 +85,14 @@ Components can be given by item id (`'c3'`) or reference (`'A1'`). Points are `(
 | `undo()`, `redo()`, `can_undo`, `can_redo` | History |
 | `nets()` | `{net name: ['A1.in', ...]}` for this sheet |
 | `net_of(c, pin)` | Net name of one pin |
-| `netlist()` | Flattened hierarchy: `{components, nets, errors, text}`; each component has `path`, `definition`, `document`, `pins`, `parameters` (text) and `values` (evaluated numbers) |
+| `netlist()` | Flattened hierarchy: `{components, substrates, nets, errors, text}`; each component has `path`, `definition`, `document`, `pins`, `parameters` (text) and `values` (evaluated numbers). `substrates` lists the Substrate parts (`rf-circuit:substrate`) with the same keys; they hold substrate data and are not circuit components |
 | `check()` | Rule check of this sheet and its sub-sheets: list of `{severity, document, item, message}` |
 | `analyses` | Stored analysis setups (dictionaries) |
 | `add_analysis(start, stop, points=201, sweep='linear', noise=True, name='', id='')` | Store an S-parameter analysis; returns its id |
 | `simulate(analysis=None, start=None, stop=None, points=201, sweep='linear', noise=True)` | Run a stored analysis (id or name), an ad-hoc sweep, or the first stored one; returns a `Result` |
 
-| `add_budget(path=None, start='', frequency='', power='', bandwidth='1MHz', mismatch=True, sweep_start='', sweep_stop='', sweep_points=101, spurs=True, spur_order=5, name='', id='')` | Store a system budget analysis; returns its id |
-| `budget(analysis=None, path=None, frequency='', power='', bandwidth='1MHz', mismatch=True, spurs=True)` | Run a stored budget analysis (id or name) or an ad-hoc one; returns a dictionary |
+| `add_budget(path=None, start='', frequency='', power='', bandwidth='1MHz', mismatch=True, sweep_start='', sweep_stop='', sweep_points=101, spurs=True, spur_order=5, name='', id='', pn_start='', pn_stop='', blocker_offset='', blocker_power='')` | Store a system budget analysis; returns its id. `pn_start`, `pn_stop`: phase-noise integration range (empty: bandwidth/1000 to bandwidth/2); `blocker_offset`, `blocker_power`: a blocker at the chain input for reciprocal mixing (empty power: none) |
+| `budget(analysis=None, path=None, frequency='', power='', bandwidth='1MHz', mismatch=True, spurs=True, pn_start='', pn_stop='', blocker_offset='', blocker_power='')` | Run a stored budget analysis (id or name) or an ad-hoc one; returns a dictionary |
 
 | `optimize(variables, goals, analysis=None, method='nelder-mead', max_evaluations=500, apply=True, snapped=True)` | Optimise on a copy of the project; with `apply=True` the result is written as one undo step. Returns a dictionary |
 
@@ -116,9 +119,12 @@ print(outcome["best"], outcome["snapped"], outcome["goals"])
 |---|---|
 | `start`, `end`, `end_kind` | Chain ends |
 | `input_frequency`, `input_power`, `bandwidth`, `input_noise`, `mismatch` | Conditions (input noise is k T B of the source, an antenna's `temp` or 290 K) |
-| `stages` | One dictionary per stage: `component`, `kind`, `input_frequency`, `output_frequency`, stage `gain`, `nf`, `oip3`, `op1db`, `oip2`, and cumulative `cumulative_gain`, `cumulative_nf`, `iip3`, `cumulative_oip3`, `ip1db`, `cumulative_op1db`, `iip2`, `signal`, `noise`, `snr`, `sfdr`, `headroom`, `compressed` |
+| `stages` | One dictionary per stage: `component`, `kind`, `input_frequency`, `output_frequency`, stage `gain`, `nf`, `oip3`, `op1db`, `oip2`, `input_return_loss`, and cumulative `cumulative_gain`, `cumulative_nf`, `iip3`, `cumulative_oip3`, `ip1db`, `cumulative_op1db`, `iip2`, `signal`, `noise` (thermal), `snr` (over the total noise), `sfdr`, `headroom`, `compressed`; noise parts `thermal_snr`, `phase_noise` and `reciprocal_mixing` (in-channel levels in dBm, `-inf` when absent), `total_noise`, `phase_noise_snr`, `reciprocal_mixing_snr`; for mixers `lo_phase_noise` (integrated, both sidebands, dBc), `lo_rms_phase` (deg), `lo_jitter` (s), `lo_phase_noise_at_offset` (dBc/Hz at the blocker offset), `blocker` (dBm at the mixer input), NaN when not applicable; `dac_image` (dBm, chains that start at a DAC) |
 | `adc` | `full_scale`, `headroom`, `quantisation_snr`, `sample_rate`, `alias_frequency`, or `None` |
-| `frequency_plan` | Per stage: frequencies, and for mixers `lo_source`, `lo_frequency`, `lo_power` |
+| `dac` | Chain starting at a DAC: `sinc` (dB), `nsd` (dBm/Hz), `nsd_from_quantisation`, `image_frequency`, `image_level` (dBm at the DAC output), or `None` |
+| `detector` | Chain ending at a detector: `sensitivity`, `max_level`, `margin`, `headroom`, or `None` |
+| `phase_noise` | With LO phase noise or a blocker: `start`, `stop` (integration range), `has_lo_phase_noise`, `blocker_offset`, `blocker_power`; else `None` |
+| `frequency_plan` | Per stage: frequencies, and for mixers `lo_source`, `lo_frequency`, `lo_power`, `lo_multiplication` |
 | `sweep_frequencies`, `sweep` | Swept budget: one budget dictionary per input frequency |
 | `spurs` | Spur analysis: `kind` (product, spurious_response, image, half_if, lo_leakage), `mixer`, `m`, `n`, `frequency`, `input_frequency`, `level`, `dbc`, `rejection`, `in_band`, `estimated` |
 | `warnings` | Messages such as a branch taken by default or a compressed stage |
@@ -263,6 +269,14 @@ Beam metrics: `peak_gain`, `peak_theta`, `peak_phi`, `gain_at_steer`, `pointing_
 
 `AntennaElement` (`document.element`): `design`, `update(changes)`, `use_library(key)`, `import_pattern(path)` (copies the file into the project's `patterns` folder), `directivity(frequency=None)`, `gain(theta, phi=0, frequency=None, component='total', co='x')`, `cut(phi=0, step=0.5, frequency=None, component='total', co='x')`.
 
+Full-wave simulation of an element (manual section 15.4):
+
+| Method | Meaning |
+|---|---|
+| `use_template(template, values={})` | Switches the element to the full-wave model with a template and parameter values (millimetres, ohms). Band, mesh, STL bodies and the embedded array are under `design['element']['fullWave']` |
+| `simulate(verbose=True)` | Runs openEMS (blocking; minutes for a large model) and makes the element use the simulated pattern, with its frequency set to the resonance and its efficiency to the simulated radiation efficiency. Returns `results()` |
+| `results()` | The last run: `{frequency, s11, zin` (complex lists)`, z_ref, resonance, far_field_frequencies, directivity` (dBi)`, efficiency` (linear)`, pattern_file, cells, timesteps, seconds, warnings}`, or `None` |
+
 ```python
 p = lvdrfcad.project()
 a = p.new_document("antenna", "radar").array
@@ -276,4 +290,12 @@ for s in a.scan():
 e = p.new_document("antenna-element", "horn").element
 e.import_pattern("horn.ffe")
 print(e.directivity(), e.cut(phi=90)["gain"][:5])
+
+import math
+w = p.new_document("antenna-element", "wifi patch").element
+w.use_template("patch-inset", {"patchX": 28.0, "insetDepth": 9})
+w.update({"element": {"fullWave": {"settings": {"fStart": 2.0e9, "fStop": 3.0e9}}}})
+r = w.simulate()
+s11 = [20 * math.log10(abs(s)) for s in r["s11"]]
+print(r["resonance"] / 1e9, min(s11), r["directivity"], w.directivity())
 ```

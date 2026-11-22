@@ -55,13 +55,6 @@ NetworkData attenuator(double loss, std::vector<double> frequencies)
     return network(std::move(frequencies), std::move(s), {50, 50});
 }
 
-// Available gain of a two-port driven from a source with reflection gs.
-double availableGain(const CMatrix &s, Complex gs)
-{
-    const Complex gOut = s(1, 1) + s(0, 1) * s(1, 0) * gs / (1.0 - s(0, 0) * gs);
-    return std::norm(s(1, 0)) * (1.0 - std::norm(gs)) / (std::norm(1.0 - s(0, 0) * gs) * (1.0 - std::norm(gOut)));
-}
-
 } // namespace
 
 // Both sides interpolate magnitude and unwrapped phase linearly: agreement to rounding.
@@ -459,4 +452,94 @@ TEST_CASE("Thermal noise of passive networks", "[rfdata][ops][noise]")
     REQUIRE(plain);
     CHECK_FALSE(plain->hasNoiseCorrelation());
     CHECK_FALSE(plain->hasNoiseParameters());
+}
+
+// Gains and design circles. scikit-rf supplies Mason's U, GUmax, MAG and
+// the noise-figure circles (gains.json); the gain and stability circles are
+// checked against their definition: every point on a GA circle gives that
+// available gain, every point on a GP circle that operating power gain.
+TEST_CASE("Gain figures and design circles", "[rfdata][ops][gains]")
+{
+    const QJsonObject data = loadJson(QStringLiteral("gains.json"));
+    for (const QJsonValue &item : data.value(QStringLiteral("cases")).toArray()) {
+        const QJsonObject c = item.toObject();
+        const CMatrix s = toMatrix(c.value(QStringLiteral("s")));
+        CHECK_THAT(masonUnilateralGainDb(s), WithinAbs(c.value(QStringLiteral("uDb")).toDouble(), 1e-9));
+        CHECK_THAT(maximumUnilateralGainDb(s), WithinAbs(c.value(QStringLiteral("guMaxDb")).toDouble(), 1e-9));
+        const double mag = maximumAvailableGainDb(s);
+        CHECK_THAT(mag, WithinAbs(c.value(QStringLiteral("magDb")).toDouble(), 1e-9));
+        const double k = c.value(QStringLiteral("k")).toDouble();
+
+        // GA and GP circles: points on the circle give the gain.
+        for (const double below : {0.5, 1.0, 2.0, 3.0, 6.0}) {
+            const double gain = mag - below;
+            const SmithCircle ga = availableGainCircle(s, gain);
+            const SmithCircle gp = operatingPowerGainCircle(s, gain);
+            REQUIRE(ga.valid);
+            REQUIRE(gp.valid);
+            for (int i = 0; i < 12; ++i) {
+                const Complex on = std::polar(1.0, 2 * Pi * i / 12);
+                const Complex gs = ga.centre + ga.radius * on, gl = gp.centre + gp.radius * on;
+                if (std::abs(gs) < 0.999)
+                    CHECK_THAT(10 * std::log10(availableGain(s, gs)), WithinAbs(gain, 1e-9));
+                if (std::abs(gl) < 0.999)
+                    CHECK_THAT(10 * std::log10(operatingPowerGain(s, gl)), WithinAbs(gain, 1e-9));
+            }
+        }
+        if (k > 1) {
+            // Above MAG there is no circle; at MAG it shrinks to the conjugate match.
+            CHECK_FALSE(availableGainCircle(s, mag + 0.5).valid);
+            const auto match = simultaneousConjugateMatch(s);
+            REQUIRE(match);
+            CHECK_THAT(10 * std::log10(availableGain(s, match->gammaS)), WithinAbs(mag, 1e-9));
+            CHECK_THAT(10 * std::log10(operatingPowerGain(s, match->gammaL)), WithinAbs(mag, 1e-9));
+            const SmithCircle atMag = availableGainCircle(s, mag - 1e-9);
+            CHECK(std::abs(atMag.centre - match->gammaS) < 1e-3);
+            // Gin with gammaL is the conjugate of gammaS.
+            const Complex gin = s(0, 0) + s(0, 1) * s(1, 0) * match->gammaL / (1.0 - s(1, 1) * match->gammaL);
+            CHECK(std::abs(gin - std::conj(match->gammaS)) < 1e-12);
+        } else {
+            CHECK_FALSE(simultaneousConjugateMatch(s));
+        }
+
+        // Noise-figure circles against scikit-rf's nf_circle, and their definition.
+        NoiseParameters noise;
+        noise.fminDb = c.value(QStringLiteral("fminDb")).toDouble();
+        noise.gammaOpt = toComplex(c.value(QStringLiteral("gammaOpt")));
+        noise.rn = c.value(QStringLiteral("rn")).toDouble();
+        for (const QJsonValue &circleValue : c.value(QStringLiteral("nfCircles")).toArray()) {
+            const QJsonObject expected = circleValue.toObject();
+            const double nf = expected.value(QStringLiteral("nfDb")).toDouble();
+            const SmithCircle circle = noiseFigureCircle(noise, nf, 50);
+            REQUIRE(circle.valid);
+            CHECK(std::abs(circle.centre - toComplex(expected.value(QStringLiteral("centre")))) < 1e-9);
+            CHECK_THAT(circle.radius, WithinAbs(expected.value(QStringLiteral("radius")).toDouble(), 1e-9));
+            for (int i = 0; i < 8; ++i)
+                CHECK_THAT(noiseFigureDb(noise, circle.centre + circle.radius * std::polar(1.0, i * Pi / 4), 50),
+                           WithinAbs(nf, 1e-9));
+        }
+        CHECK_FALSE(noiseFigureCircle(noise, noise.fminDb - 0.1, 50).valid);
+
+        // Stability circles: |Gout| = 1 on the source circle, |Gin| = 1 on the load circle.
+        const SmithCircle source = sourceStabilityCircle(s), load = loadStabilityCircle(s);
+        REQUIRE(source.valid);
+        REQUIRE(load.valid);
+        for (int i = 0; i < 8; ++i) {
+            const Complex on = std::polar(1.0, i * Pi / 4);
+            const Complex gs = source.centre + source.radius * on, gl = load.centre + load.radius * on;
+            CHECK_THAT(std::abs(s(1, 1) + s(0, 1) * s(1, 0) * gs / (1.0 - s(0, 0) * gs)), WithinAbs(1.0, 1e-9));
+            CHECK_THAT(std::abs(s(0, 0) + s(0, 1) * s(1, 0) * gl / (1.0 - s(1, 1) * gl)), WithinAbs(1.0, 1e-9));
+        }
+    }
+
+    // A unilateral two-port: U is infinite, GUmax is the transducer gain with
+    // both ports conjugately matched.
+    CMatrix u(2, 2);
+    u << Complex(0.5, 0), 0.0, Complex(3, 0), Complex(0, 0.4);
+    CHECK(std::isinf(masonUnilateralGainDb(u)));
+    CHECK_THAT(maximumUnilateralGainDb(u), WithinAbs(10 * std::log10(9 / (0.75 * 0.84)), 1e-12));
+    // U of a passive reciprocal lossy two-port is below 1 (0 dB).
+    CMatrix att(2, 2);
+    att << 0.1, 0.5, 0.5, 0.1;
+    CHECK(masonUnilateralGainDb(att) < 0);
 }

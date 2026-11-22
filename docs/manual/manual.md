@@ -39,10 +39,12 @@ lvd RF cad runs on 64-bit Windows 10 and 11. Two packages are available:
 
 | Package | Use it when |
 |---|---|
-| `lvdRFcad-0.3.0-setup.exe` | You want a normal installation with a Start menu entry. Project files (`.lvdproj`) then open with a double-click. The installer asks whether to install for all users (administrator rights) or only for you. |
-| `lvdRFcad-0.3.0-win64.zip` | You cannot install software, or want several versions side by side. Unpack the ZIP anywhere and run `lvdrfcad.exe`. Nothing is written outside that folder except your settings. |
+| `lvdRFcad-0.5.0-setup.exe` | You want a normal installation with a Start menu entry. Project files (`.lvdproj`) then open with a double-click. The installer asks whether to install for all users (administrator rights) or only for you. |
+| `lvdRFcad-0.5.0-win64.zip` | You cannot install software, or want several versions side by side. Unpack the ZIP anywhere and run `lvdrfcad.exe`. Nothing is written outside that folder except your settings. |
 
-Both packages contain everything needed, including Python and the ngspice simulator (in the `ngspice` folder, with its licence); nothing else has to be installed. Uninstall from *Settings → Apps*, or delete the unpacked folder.
+Both packages contain everything needed, including Python, the ngspice simulator (`ngspice` folder) and the openEMS full-wave solver (`openems` folder); nothing else has to be installed. Uninstall from *Settings → Apps*, or delete the unpacked folder.
+
+lvd RF cad is free software under the GNU General Public License, version 3 or later (`LICENSE`). The bundled components keep their own licences: `THIRD-PARTY-NOTICES.md` lists them with their versions and sources, and the `licenses` folder holds the texts. *Help → About lvd RF cad* shows the same list, with buttons that open the notices and the licence.
 
 The examples used in this manual are in the `examples` folder of the installation. Copy them to your documents before working on them.
 
@@ -82,7 +84,19 @@ A **project** is a folder that holds a project file (`.lvdproj`) and its documen
 
 All files are readable text (JSON), so projects work well with version control such as git.
 
-### 2.3 A five-minute example
+**Autosave and recovery.** While a document has unsaved changes, the program writes a copy of it every two minutes. The copies go to an `autosave` folder under `%LOCALAPPDATA%\lvdRFcad` in your user profile, never into the project, so they do not show up in git. Saving a document, or closing the project or the program normally, removes them. If the program ends without that (a crash or a power cut), opening the project again asks whether to **Restore** the unsaved versions or **Discard** them; at start-up the program also offers to open any other project with unsaved work. Restored documents are marked modified: save them to keep them. The interval is the setting `autosave/intervalSeconds` (0 turns autosave off). Touchstone files open in the S-parameter editor and the symbol editor are not autosaved.
+
+### 2.3 Printing and exporting schematics
+
+With a schematic open:
+
+- *File → Print…* (Ctrl+P) prints the sheet on one page, landscape when the drawing is wider than tall.
+- *File → Export Schematic (PDF, SVG, PNG)…* writes the sheet as a PDF page (A4), or as an SVG or PNG image (PNG at 200 dpi). The file type follows the extension.
+- *File → Title Block…* sets the title (empty: the document name), revision, author and company. They are saved with the document, and *Undo* reverts them.
+
+Printed pages and PDF files have a frame and a title block in the lower right corner: title, project and document, revision and date, author and company, and the program version. SVG and PNG images hold only the drawing, for use in reports. All three are drawn from the schematic itself in the light style, without grid, selection or highlights, and the PDF and SVG files are vector drawings with selectable text.
+
+### 2.4 A five-minute example
 
 1. *File → Open Project…* and open `examples/lowpass_filter/lowpass_filter.lvdproj`.
 2. Double-click **lpf** in the Project panel. The schematic is a 5th-order Butterworth low-pass filter.
@@ -195,9 +209,9 @@ Analyses flatten the hierarchy: a component inside instance X1 is called `X1/A1`
 
 | Library | Content |
 |---|---|
-| `basic` | Resistor, capacitor and inductor (with optional Q), ground, sheet port |
+| `basic` | Resistor, capacitor and inductor (with optional Q and parasitics), the same in SMD sizes 0201 to 0805 with typical parasitics, ground, sheet port |
 | `rf-system` | Behavioural blocks: amplifier, attenuator, filter (low/high/band-pass, band-stop; ideal, Butterworth, Chebyshev), mixer, signal source, local oscillator, splitter, combiner, directional coupler, SPDT switch, isolator, circulator, cable, antenna, frequency multiplier, phase shifter, ADC, S-parameter blocks (1 to 4 ports), simulation port, termination |
-| `rf-circuit` | Ideal transmission line, open and short stubs, coupled lines, microstrip, stripline, coax, coplanar waveguide, ideal transformer |
+| `rf-circuit` | Ideal transmission line, open and short stubs, coupled lines, microstrip, coupled microstrip, stripline, coax, coplanar waveguide, microstrip open end, gap, step, bend, T-junction and via, the Substrate part, ideal transformer |
 | `spice-sources` | DC, sine, pulse, PWL, exponential and SFFM voltage and current sources, free SPICE source text, controlled sources (E, F, G, H), behavioural sources |
 | `spice-semiconductors` | Generic diode, zener, NPN, PNP, MOSFETs and JFETs with editable model parameters, and common parts: 1N4148, 1N4007, 1N5819, BAT54, BZX84C5V1, red LED, 2N3904, 2N3906, 2N2222A, BC547B, BC557B, TIP31C/32C, 2N7000, BSS138, BSS84, IRF540N, J310, 2N5457 |
 | `spice-ics` | Ideal and macromodel op-amps (generic, LM358-, TL072-, OPA2134-like, rail-to-rail), comparators, fixed and adjustable regulators (7805, 7812, LM1117-3.3, LM317-like), TL431-like reference, logic gates and a Schmitt trigger |
@@ -234,6 +248,38 @@ RF blocks and circuit elements are referenced to ground: only their signal pins 
 *Library → Manage Libraries…* lists all libraries, creates new ones and sets the folder of the user libraries.
 
 Each schematic keeps a copy of the definitions it uses. If a library is missing on another computer, the copy is used and the part is marked; if the library changed since you saved, the part is marked too, so differences never go unnoticed.
+
+### 5.4 Substrates
+
+Microstrip, stripline, CPW, coupled microstrip and the microstrip discontinuities each have their own substrate parameters (`h`, `er`, `tand`, `t`, `sigma`, `rough`). For a whole board, describe the substrate once:
+
+1. Place a **Substrate** part (*Transmission lines → Substrate*). It gets the reference `SUB1`. It has no pins; put it anywhere on the sheet.
+2. Choose its `material`, for example `RO4003C`, and set the height `h`, the copper thickness `t` and, if you know it, the copper roughness `rough`.
+3. In each line, type `SUB1` into its `substrate` parameter.
+
+The lines then use the Substrate part's values instead of their own. With a material from the list, εr and tan δ come from the built-in catalog; choose `custom` to type your own `er` and `tand`. The catalog holds typical data-sheet values (Rogers, Taconic, Isola laminates, alumina, fused silica, GaAs, silicon): **check them against the data sheet of your material**. The list with sources is in `docs/libraries.md`.
+
+Change `h` or the material of `SUB1` and every line follows. A sub-sheet uses the Substrate part of its own sheet if it has one with that name, otherwise the one of the sheet above. A misspelt name is an error in the rule check and in the analysis.
+
+`rough` is the rms roughness of the copper surface. At high frequencies the current flows in a thin skin (0.66 µm at 10 GHz), and a rough surface makes its path longer: the conductor loss rises by up to a factor of 2. Low-profile foils are around 0.3 to 0.5 µm, standard foils 1 to 3 µm.
+
+**Microstrip discontinuities.** A real layout has open ends, gaps, steps in width, bends, T-junctions and vias. The `microstrip_open`, `microstrip_gap`, `microstrip_step`, `microstrip_bend` (plain or mitred), `microstrip_tee` and `microstrip_via` parts add their parasitic capacitances and inductances. For example, a stub filter is more accurate with an open end at each stub and a T-junction where each stub meets the main line. The models are the published closed formulas used by Qucs; each has a stated range (in `docs/libraries.md`). Outside it, check the design with a field solver.
+
+The full-wave antenna templates have a **Substrate** list too ([15.4](#154-full-wave-simulation-openems)): it fills εr, tan δ and the nearest standard thickness from the same catalog.
+
+### 5.5 Real capacitors, inductors and resistors
+
+At RF a chip capacitor is not just a capacitor: its leads and electrodes add inductance (ESL), and it resonates. Above that **self-resonant frequency** it behaves like an inductor. A chip inductor has the opposite problem: the capacitance between its windings makes it resonate, and above that it is a capacitor.
+
+- `capacitor` has `esr` (series resistance) and `esl` (series inductance).
+- `inductor` has `cp` (capacitance across it) next to its Q.
+- `resistor` has `esl` and `cp`.
+
+All are 0 by default, which is the ideal part. Under *Passive → SMD packages* you find ready parts with typical values for 0201, 0402, 0603 and 0805 capacitors, 0402 and 0603 inductors and 0402 and 0603 resistors. Example: a 10 pF 0402 capacitor (`capacitor_0402`) has esl = 0.5 nH and resonates at about 2.25 GHz. As a DC block at 2.4 GHz it is near its best; at 6 GHz it is an inductor of about 0.4 nH net reactance.
+
+These are generic typical values (±30 %), not a particular vendor's part. For a final design, use the vendor's S-parameter file of the exact part in an S-parameter block.
+
+The same parasitics are written into the SPICE netlist as extra elements, so both analyses see the same part.
 
 ---
 
@@ -274,6 +320,8 @@ A trace is a **measurement expression**:
 | `NF`, `NF(2,1)` | noise figure in dB (`NF` alone for two-ports) |
 | `NFmin`, `Rn`, `GammaOpt` | two-port noise parameters |
 | `K`, `mu`, `mup`, `Delta`, `MAG` | stability factors, maximum available or stable gain |
+| `GUmax`, `U` | maximum unilateral gain (S12 neglected) and Mason's unilateral gain, in dB |
+| `GammaMS`, `GammaML` | source and load reflection for a simultaneous conjugate match (complex; only where K > 1) |
 | `dB(S21) - dB(S11)`, `2*NF` | arithmetic |
 
 On plots:
@@ -283,6 +331,16 @@ On plots:
 - Drag markers along their trace. Click a legend entry to hide or show a trace.
 - Smith chart markers show Γ, the impedance and VSWR; the admittance grid can be turned on.
 - *Export* writes PNG, SVG or CSV, or copies the image.
+
+**Design circles on a Smith chart.** For a two-port (a transistor's S-parameter file between two ports, for example), the Traces editor of a Smith chart has three switches:
+
+- **Stability circles**: the source and load reflections where the amplifier is on the edge of oscillation.
+- **Gain circles**: constant *available gain* GA in the **source** plane and constant *operating power gain* GP in the **load** plane, by default 1, 2 and 3 dB below MAG (or below MSG when K < 1). A source reflection on the GA = 14 dB circle gives 14 dB when the output is conjugately matched.
+- **Noise circles**: constant noise figure in the source plane, by default NFmin + 0.25, 0.5, 1 and 2 dB. They need an analysis with noise.
+
+The circles are drawn at the frequency of the first marker; without markers, at the middle of the sweep. Move the marker and they follow. Each circle is labelled with its value, plane and frequency in the legend. To change the levels, open the small menu of the *Gain circles* or *Noise circles* button and choose *Levels…*, then type them separated by commas, for example `0.5, 1, 2`.
+
+A typical low-noise design: put a marker at the band centre, turn on the noise and gain circles, and pick a source reflection between GammaOpt and the GA circles that gives the noise figure and gain you need, outside the source stability circle.
 
 The **table** under the plots lists the measurements per frequency; add columns by expression, copy them or export CSV. *Export → Touchstone* saves the S-parameters (and noise parameters of two-ports) as a `.sNp` file, and *Simulate → Open Result in S-Parameter Editor* opens them in the S-parameter editor.
 
@@ -365,11 +423,12 @@ The budget analysis follows a signal through a chain of blocks and reports, per 
 
 *New Analysis → RF Budget Analysis…*
 
-- **Start**: the chain starts at a source, at port 1 or at an antenna (automatic), or at the component you choose.
-- **Path**: normally traced automatically to the load (termination, ADC, port or antenna). At a splitter, coupler, switch or circulator the automatic path takes the first output and warns; to choose, use *Trace* and pick the exit pin of that component (written `SPL1.out2`).
+- **Start**: the chain starts at a source or a DAC, at port 1 or at an antenna (automatic), or at the component you choose.
+- **Path**: normally traced automatically to the load (termination, ADC, detector, port or antenna). At a splitter, coupler, hybrid or circulator the automatic path takes the first output and warns; a switch follows its `state`, a diplexer the band of the signal. To choose, use *Trace* and pick the exit pin of that component (written `SPL1.out2`).
 - **Frequency** and **power** of the input signal: taken from the source block, or typed here. **A port or an antenna has no frequency or power: enter them here.**
 - **Bandwidth**: the noise bandwidth for noise power, SNR and dynamic range.
 - **Mismatch**: *actual S-parameters* includes reflections between stages; *ideal* cascades matched stages.
+- **LO phase noise and blocker**: the range over which LO phase noise is integrated (empty: bandwidth/1000 to bandwidth/2), and an optional blocker: its power at the chain input and its offset above the wanted frequency. See 10.4.
 - **Swept budget** (optional): repeats the budget over a range of input frequencies.
 - **Spur analysis** and its maximum order.
 
@@ -377,7 +436,7 @@ The budget analysis follows a signal through a chain of blocks and reports, per 
 
 ![Budget table of the receiver](images/budget-table.png)
 
-**Budget** tab: one column per stage. Stage gain, NF, OIP3 and OP1dB; cumulative gain, NF, IIP3/OIP3, IP1dB/OP1dB, IIP2; signal and noise level, SNR, SFDR and compression headroom. Stages driven into compression are highlighted. A chain that ends in an ADC adds its full-scale headroom, quantisation SNR and the frequency the signal aliases to.
+**Budget** tab: one column per stage. Stage gain, NF, OIP3 and OP1dB; cumulative gain, NF, IIP3/OIP3, IP1dB/OP1dB, IIP2; signal and noise level, SNR, SFDR and compression headroom. Stages driven into compression are highlighted. A chain that ends in an ADC adds its full-scale headroom, quantisation SNR and the frequency the signal aliases to; a chain that ends in a detector adds the margin over its sensitivity and the room to the top of its range. With LO phase noise or a blocker, more rows appear: thermal SNR, the integrated LO phase noise at each mixer, the phase-noise level, the blocker level at each mixer and the reciprocal-mixing level. *SNR* is then the signal over all noise together. A chain that starts at a DAC shows the DAC image frequency and the image level after every stage. Hover over a mixer's column for its LO's RMS phase error and jitter.
 
 ![Level diagram](images/level-diagram.png)
 
@@ -385,7 +444,7 @@ The budget analysis follows a signal through a chain of blocks and reports, per 
 
 ![Swept budget](images/swept-budget.png)
 
-**Swept Budget**: cumulative gain, NF and IIP3 versus input frequency, at the output or at a chosen stage. For a chain with mixers this is the conversion gain.
+**Swept Budget**: cumulative gain, NF and IIP3 versus input frequency, at the output or at a chosen stage, and the total SNR when there is LO phase noise or a blocker. For a chain with mixers this is the conversion gain.
 
 ![Frequency plan](images/frequency-plan.png)
 
@@ -409,11 +468,43 @@ The signal may enter at either `rf` or `if`; with `sum` or `difference` the wiri
 
 If the stages after a mixer pass the other product far better than the selected one (for example a 16 GHz filter after a mixer that produces 14 GHz), the budget warns and suggests changing `product`.
 
-### 10.4 Notes
+### 10.4 LO phase noise and blockers
+
+A mixer copies the phase noise of its LO onto the signal. The budget takes the LO's phase noise from the block that drives the mixer's `lo` pin:
+
+- an **LO** with a `phase_noise` file: two columns, offset in Hz and L(f) in dBc/Hz (format in `docs/libraries.md`);
+- a **VCO**: `pn` dBc/Hz at the offset `pn_offset`, falling 20 dB per decade, down to the floor `pn_floor`;
+- a **PLL**: reference noise and PLL floor inside the loop bandwidth, VCO noise outside it.
+
+A frequency multiplier between the LO and the mixer raises the phase noise by 20·log10(N): 6 dB for a doubler.
+
+**Phase noise on the signal.** The budget integrates L(f) over the integration range and over both sidebands. The result, in dBc, is how far the phase noise lies below the signal after the mixer. Its negative is an SNR limit. The mixer's tooltip also shows the RMS phase error and the jitter.
+
+**Reciprocal mixing.** A strong signal near the wanted one (a blocker) also mixes with the LO's phase noise. Part of that lands in your channel. At each mixer the budget computes blocker power at the mixer + L(offset) + 10·log10(bandwidth). The blocker reaches the mixer through the stages before it, so a filter in front of the mixer helps.
+
+All noise adds up: the table's *SNR* row combines thermal noise, phase noise and reciprocal mixing.
+
+*Worked example.* A 1 GHz signal at −60 dBm drives a mixer with −7 dB gain. The LO is a VCO with −130 dBc/Hz at 100 kHz. The bandwidth is 10 kHz, so the integration runs from 10 Hz to 5 kHz.
+
+1. L(f) = −130 dBc/Hz · (100 kHz / f)². Integral over 10 Hz to 5 kHz: 10⁻¹³ · 10¹⁰ · (1/10 − 1/5000) = 1.0 · 10⁻⁴, or −40.0 dBc for one sideband.
+2. Both sidebands: −37.0 dBc. The phase-noise SNR is 37.0 dB. The RMS phase error is √(2 · 10⁻⁴) rad = 0.81°.
+3. A 0 dBm blocker 1 MHz away: L(1 MHz) = −150 dBc/Hz. In the channel: 0 − 150 + 40 = −110 dBm at the mixer input. The signal there is −60 dBm, so the reciprocal-mixing SNR is 50 dB.
+4. The thermal SNR is far higher here, so the total SNR is set by the phase noise: about 37 dB.
+
+### 10.5 DAC, detector and other blocks
+
+- A **DAC** starts a transmit chain. Its output power is full scale − backoff, less the sinc roll-off 20·log10|sinc(f/fs)|. The noise at the input is the DAC's noise density × bandwidth instead of kTB; set `nsd` = 0 to use the quantisation floor. The budget shows the first image at fs − f and its level after every stage, so you can check the reconstruction filter.
+- A **detector** ends a chain. The budget reports how far the signal is above its sensitivity and below the top of its dynamic range.
+- A **limiter** passes small signals with its loss; its `limit` acts as a hard compression point.
+- **Hybrids, balun, SP3T/SP4T switches, bias tee, DC block, diplexer**: see `docs/libraries.md`. The budget follows a switch's `state` (or its `select`, a throw number from an expression such as a variable `band`) and a diplexer's band; a balun counts the power of both balanced pins.
+- **Return loss and slopes.** Most blocks have `rl_in` / `rl_out` (0 = ideal match) and an insertion-loss slope in dB/GHz around `freq`; the amplifier has `gain_slope` and `nf_slope`. With *actual S-parameters* the budget includes the reflections between stages. For measured curves, use a Touchstone block instead.
+
+### 10.6 Notes
 
 - Compression and intercept figures are those of the blocks' parameters; the analysis does not simulate nonlinear behaviour.
 - Mixer P1dB is estimated as IIP3 − 10 dB.
 - Shunt parts placed between blocks on the signal path (a stub, a capacitor to ground) are ignored by the budget, with a warning.
+- The PLL phase-noise model is a textbook first-order approximation, not a loop simulation.
 
 ---
 
@@ -573,13 +664,14 @@ The bar above the views chooses the component to show (total, co-polar, cross-po
 | Model | Parameters | Typical directivity |
 |---|---|---|
 | Isotropic | none | 0 dBi |
-| cos^n | exponent n, back radiation | 10 log 2(n+1), 5.4 dBi for n = 1.5 |
+| cos^n | exponent n, back radiation | 10 log 2(n+1): 6.0 dBi for n = 1, 7.0 dBi for n = 1.5 |
 | Dipole | length (0: half wave) | 2.15 dBi (half wave), 1.76 dBi (short) |
 | Dipole over ground | length, height over an infinite ground plane (0: λ/4) | about 7.5 dBi |
 | Monopole over ground | height (0: λ/4) | 5.16 dBi at the horizon |
 | Patch (cavity model) | width, length (0: designed for the frequency), substrate height and permittivity, back radiation | 6 to 8 dBi |
 | Aperture / horn | aperture a (y, broad wall) and b (x), cosine (TE10) or uniform distribution | from the aperture size |
 | Imported pattern | a pattern file | as measured |
+| Full wave (openEMS) | a template or STL bodies, simulated ([section 15.4](#154-full-wave-simulation-openems)) | as simulated |
 
 - **Polarisation**: linear x or y, slant ±45°, RHCP or LHCP. A circular element is two orthogonal copies fed in quadrature.
 - **Efficiency**: the radiation efficiency in dB. Gain equals directivity plus efficiency.
@@ -620,6 +712,44 @@ Double-click an entry, or select it and press **Use in Current Document**:
 | Array preset | not used | Replaces the geometry and excitation. |
 
 **Save to Antenna Library…** in an element document stores the element in a library of your user folder (`my-antennas` by default). A pattern file goes with it into the library's `patterns` folder. Antenna libraries are `.lvdantlib` files in the same folders as the component libraries.
+
+### 15.4 Full-wave simulation (openEMS)
+
+The **Full wave** model simulates the element's real geometry with the openEMS FDTD solver, which is installed with the application (`openems` folder; openEMS is GPL software, run as a separate program; see its `NOTICE.txt`). The result is the element's pattern, S11, input impedance and radiation efficiency, which arrays then use like any other element.
+
+1. Choose **Full wave (openEMS)** as the model, then a **template**. The form below shows its parameters, in millimetres. Templates with a dielectric have a **Substrate** list at the top: choosing, say, *Rogers RO4350B* sets εr, tan δ and the substrate height (to the material's standard thickness nearest the current one) from the catalog of [5.4](#54-substrates). It is one undoable edit; the values stay editable.
+2. Check the **Geometry** tab: the 3D view shows metal in gold, dielectrics in green and the port in red.
+
+   ![A full-wave element: the openEMS tutorial patch](images/antenna-fullwave-geometry.png)
+
+3. Set the **band**: the S11 sweep covers it and the far field is computed at its ends, its centre and the resonance.
+4. Press **Run**. The progress bar follows the solver's energy decay; **Abort** stops it.
+
+![Simulated S11 and input impedance](images/antenna-fullwave-s11.png)
+
+When the run ends, the element uses the simulated pattern. Its design frequency becomes the resonance (the smallest S11) and its efficiency the simulated radiation efficiency. **Undo** restores the earlier values. The **S11 / Zin** tab shows the match and the input impedance over the band; the Summary lists resonance, cells, run time and the directivity and efficiency at each far-field frequency.
+
+| Template | Default band | Notes |
+|---|---|---|
+| Patch, probe-fed | 1 to 3 GHz | The openEMS tutorial patch (Rogers εr 3.38); resonates at 2.44 GHz with 6.8 dBi |
+| Patch, inset-fed microstrip | 1.5 to 3.5 GHz | FR-4 (εr 4.4, tan δ 0.02): about 2.4 GHz, 6.4 dBi, but only about 40 % efficient, as thin FR-4 patches are |
+| Patch, aperture-coupled | 1.8 to 3.2 GHz | Two low-loss substrates; feed line under a slot in the ground, with an open stub; about 2.2 GHz, 6.8 dBi |
+| Dipole | 0.7 to 1.3 GHz | Centre-fed strip dipole, 132 mm: 1.0 GHz, 2.15 dBi |
+| Monopole | 0.7 to 1.3 GHz | On a finite square ground; the pattern tilts above the horizon |
+| Inverted-F | 1.8 to 3.2 GHz | Printed on FR-4 in the ground clearance of a 40 × 80 mm board: 2.47 GHz, about 3 dBi |
+| Slot | 1.5 to 3.5 GHz | Centre-fed slot in a ground plane: 2.3 GHz, radiating on both sides. The centre-fed resistance is high, so the port is 600 Ω |
+| Horn | 10 to 20 GHz | Pin-fed pyramidal horn (openEMS tutorial): 16.9 dBi at 15 GHz, as the tutorial; PML boundary |
+| Vivaldi | 3 to 10 GHz | Exponentially tapered slot with a cavity behind the feed; S11 below −14 dB from 3.9 to 10 GHz with the 100 Ω port; radiates **along +x** (end fire) |
+| Helix | 1.9 to 2.9 GHz | Axial-mode helix over a ground disc (openEMS tutorial): 13.3 dBi at 2.4 GHz, circular polarisation |
+| Imported geometry (STL) | your choice | Bodies from STL files plus one lumped port, below |
+
+**Settings.** *Cells per wavelength* sets the air cell at the highest frequency (20 is a good start; dielectrics get cells divided by √εr). The mesher puts lines on every edge and port, places metal edges with the "thirds" rule, refines thin layers and grades the cells by at most the *max ratio*. *End criterion* is the energy decay at which the run stops (−40 dB; −50 dB for accurate S11 of high-Q antennas). The *Mur* boundary is fast and suits resonant antennas; choose *PML* for horns and broadband antennas. The far-field step sets the angular grid of the pattern (3° by default).
+
+**Imported geometry.** With the *Imported geometry (STL)* template, **Add STL…** copies a file into the project's `cad` folder and asks its units and whether it is metal. In the table, set εr and tan δ for dielectric bodies. The template's parameters place the port: a lumped port between two points (its axis is the one along which they differ most), with its resistance. The STL bodies must touch the port ends.
+
+**Embedded element pattern.** *Embedded in an array* repeats the element nx × ny times at the given spacing. Only the centre element is fed; the others end in the port resistance. The resulting pattern includes mutual coupling and edge effects, which is what an array element really radiates ([section 16.5](#165-how-patterns-are-computed)).
+
+**Run time.** A patch takes under a minute, the dipole and slot about 20 s, the horn several minutes (2.4 million cells). The Summary and the progress text show the number of cells: halve *cells per wavelength* for a quick look. Runs go to `simulations/<element name>` in the project, and their results are reloaded when the project opens.
 
 ---
 
@@ -1027,6 +1157,64 @@ UHF (400 MHz) direction finding with quarter-wave monopoles (the element documen
 3. Run **df_demo.py** in the same way as 20.13. It prints:
    - The **Watson-Watt** bearing of the Adcock against the true bearing, from the difference channels relative to the sum. The error is the classic octantal spacing error, up to about 4° for a radius of 0.2λ; it is zero on the axes and diagonals. Make the radius smaller in all three documents and run the script again: the error falls.
    - A **beamscan** with the ring: the beam is steered round the horizon and the received power peaks at the two sources, 130° and 250° (6 dB weaker). With side lobes near −8 dB, weaker sources would be hidden by false peaks.
+### 20.15 Full-wave elements (`fullwave_elements`)
+
+Elements simulated with openEMS (section 15.4), with their results stored in the project's `simulations` folder:
+
+1. **patch_2g4**: the openEMS tutorial patch, probe-fed on Rogers (εr 3.38). The match is at 2.445 GHz (−34 dB) and the directivity is 6.9 dBi. Open the **S11 / Zin** tab, then change the patch length and press **Run** (about 35 s).
+2. **dipole_1g**: a strip dipole at 0.99 GHz, 2.15 dBi.
+3. **patch_array_4x4**: a 4 × 4 array of the simulated patch at 0.6λ, steered to 20°: 17.9 dBi. The element pattern includes the finite ground plane, so the scan loss is the simulated one. Set *Embedded in an array* to 3 × 3 at 74 mm in **patch_2g4** and run again (a few minutes) to include the coupling to the neighbours.
+### 20.16 Full-wave horn (`fullwave_horn`)
+
+The pyramidal horn of the openEMS Horn Antenna tutorial, simulated with openEMS (section 15.4), and an analytic model of the same mouth for comparison.
+
+![The simulated horn](images/antenna-fullwave-horn.png)
+
+1. **horn_ku**: a 20 × 10 mm waveguide fed by a pin a quarter guide wavelength in front of the back short, flaring at 20° over 50 mm to a 54.2 × 44.2 mm mouth. It is simulated from 10 to 20 GHz with a PML boundary: 2.3 million cells, about 7 minutes. The directivity rises from 14.0 dBi at 10 GHz to 16.8 dBi at 15 GHz, as in the tutorial, and S11 stays below about −7 dB from 10.5 to 19.5 GHz. The design frequency is set to 15 GHz: a horn has no resonance, so the frequency of the smallest S11 means little here. The polarisation is along y, so the E-plane is the φ = 90° cut, with the higher side lobes.
+
+   ![Simulated horn cuts at 15 GHz](images/antenna-fullwave-horn-cuts.png)
+
+2. **horn_aperture_model**: the analytic cosine (TE10) aperture of the same mouth gives 18.1 dBi at 15 GHz. That is about 1.3 dB more than the simulation, because the model leaves out the phase error of the flare (the mouth is not an equiphase surface) and the edge diffraction. Its broad wall is along y, so its E- and H-plane cuts are swapped with the simulated horn's.
+3. Make the horn longer with a smaller flare angle that keeps the same mouth (for example 100 mm at 9.9°) and press **Run**: the phase error falls and the simulated directivity moves towards the aperture model's. The run takes longer, because the model grows. Use **Summary** to read the directivity at each far-field frequency, and the *at* box above the cuts to draw the pattern at 10 or 20 GHz.
+
+### 20.17 Receiver with a PLL LO (`pll_receiver`)
+
+A 1.9 GHz receiver with a 140 MHz IF. The LO is a PLL at 880 MHz, doubled to 1.76 GHz. The budget uses a 200 kHz channel and a −30 dBm blocker 3 MHz above the signal.
+
+1. Run **Phase-noise budget**. At the mixer the LO phase noise is about −49 dBc (0.2° RMS); the doubler adds 6 dB to the PLL's phase noise.
+2. Read the SNR rows at the ADC: thermal about 30 dB, phase noise about 49 dB, reciprocal mixing about 27 dB, total about 25 dB. Here the blocker limits the receiver.
+3. Lower the PLL's `pn` (its VCO noise) by 6 dB and run again: the reciprocal-mixing SNR improves by about 6 dB. Change the blocker offset in the analysis setup to see L(f) at other offsets.
+
+### 20.18 X-band down-converter (`downconverter`)
+
+A 10 GHz receiver front end converted to a 1 GHz IF: limiter, LNA, image filter, mixer with a 9 GHz LO (low side), IF filter and IF amplifier. The input and output are simulation ports, so the same sheet has a budget and an S-parameter analysis.
+
+1. Run **Budget**: about 30 dB gain, 2.7 dB noise figure and −1.3 dBm input IP3 at 10 GHz. The swept budget covers 9.6 to 10.4 GHz; the spur table lists the mixer products up to order 5, including the image (an 8 GHz input lands on the 1 GHz IF), which the image filter suppresses by about 75 dB.
+2. Run **S-parameters**: *Match and leakage* shows the return loss of both ports and S21, which is only the RF-to-IF leakage of the mixer (the linear analysis does not convert frequency, [10.3](#103-mixers-which-product-do-you-get)).
+![S-parameters of the down-converter](images/downconverter-sparams.png)
+
+3. Raise `lo_power` or the mixer's `iip3` and run the budget again to see how much of the input IP3 the mixer sets.
+
+### 20.19 Switched filter bank (`filter_bank`)
+
+A selectable filter path from 0.5 to 6 GHz: two SP4T switches choose one of four band-pass filters (1, 2, 3.5 and 5 GHz), followed by an amplifier. Both switches have `select` = `band`, so the variable `band` (1 to 4) sets the path.
+
+1. Run **S-parameters**: *Selected path* shows band 2 (1.5 to 2.5 GHz) with about 11 dB gain (15 dB minus the switch and filter losses).
+2. Change `band` in the Variables panel to 1, 3 or 4, or open **Tune** and step it: the pass band moves and the other bands are rejected by the switch isolation and the filters.
+![The switched filter bank, band 2](images/filter-bank.png)
+
+3. **Budget (selected band)** follows the same path: its stages are SW1, F2, SW2, A1 for `band` = 2.
+
+### 20.20 AGC module (`agc_module`)
+
+A 2.4 GHz automatic-gain-control chain: three 20 dB amplifiers around a 0 to 31.5 dB step attenuator, a filter and a 20 dB coupler whose coupled port feeds a detector. The variable `att` is the attenuation a control loop would set: `max(0, min(31.5, round(2·(p_in + g_fixed − p_out))/2))`, in 0.5 dB steps.
+
+1. Run **Main path** with `p_in` = −40 dBm: the output is about +4.6 dBm (the target `p_out` is +5 dBm; the rest is mismatch between the stages).
+![Budget of the AGC module](images/agc-budget.png)
+
+2. Set `p_in` to −50, −30 or −25 dBm and run again: the output stays within 0.2 dB, because `att` follows the input. Below about −54 dBm or above −22 dBm the attenuator reaches its end and the output follows the input.
+3. Run **Detector path**: it ends at DET1, 20 dB below the output through the coupler, and reports about 30 dB margin above the detector's −45 dBm sensitivity and 10 dB headroom below the top of its 40 dB range.
+4. **S-parameters** shows the gain and match of the module at the current `att`.
 
 ---
 
@@ -1103,6 +1291,7 @@ The graphics driver offers no OpenGL. Update the driver; the other views work re
 |---|---|
 | Ctrl+Shift+N, Ctrl+O | New project, open project |
 | Ctrl+S, Ctrl+Shift+S | Save document, save all |
+| Ctrl+P | Print the schematic |
 | Ctrl+Shift+O | Open Touchstone file |
 | Ctrl+Z, Ctrl+Y | Undo, redo |
 | Ctrl+X, Ctrl+C, Ctrl+V, Ctrl+D, Del | Cut, copy, paste, duplicate, delete |

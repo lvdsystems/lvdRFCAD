@@ -1,0 +1,45 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.08014863693611395,
+            "frequency": 15000000000,
+            "fullWave": {
+                "settings": {
+                    "airMargin": 0.25,
+                    "boundary": "pml",
+                    "cellsPerWavelength": 20,
+                    "endCriteria": -40,
+                    "fStart": 10000000000,
+                    "fStop": 20000000000,
+                    "farFieldFrequencies": [
+                    ],
+                    "farFieldStep": 3,
+                    "frequencyPoints": 401,
+                    "maxRatio": 1.4,
+                    "maxTimesteps": 30000
+                },
+                "template": "horn",
+                "values": {
+                    "designFrequency": 15,
+                    "feedLength": 50,
+                    "flareAngle": 20,
+                    "hornLength": 50,
+                    "pinHalfWidth": 0.5,
+                    "pinLength": 0.55,
+                    "portGap": 1,
+                    "resistance": 50,
+                    "wall": 2,
+                    "waveguideA": 20,
+                    "waveguideB": 10
+                }
+            },
+            "model": "fullwave",
+            "patternFile": "simulations/horn_ku/pattern.csv",
+            "polarisation": "x"
+        },
+        "notes": "The openEMS Horn Antenna tutorial: a 20 x 10 mm waveguide fed by a pin, flaring at 20 deg over 50 mm to a 54.2 x 44.2 mm mouth. Simulated from 10 to 20 GHz with a PML boundary (2.3 million cells, about 7 minutes); E-plane along y (phi = 90)."
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

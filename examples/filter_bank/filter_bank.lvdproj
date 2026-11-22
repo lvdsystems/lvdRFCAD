@@ -1,0 +1,9 @@
+{
+    "documents": [
+        {
+            "path": "filter_bank.lvdrf"
+        }
+    ],
+    "format": "lvdrfcad-project",
+    "version": 1
+}

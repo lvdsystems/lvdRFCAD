@@ -1,0 +1,77 @@
+{
+    "content": {
+        "aesa": {
+            "amplitudeError": 0,
+            "attenuatorBits": 0,
+            "attenuatorStep": 0.5,
+            "delayLsb": 0,
+            "failed": [
+            ],
+            "failedFraction": 0,
+            "phaseBits": 0,
+            "phaseError": 0,
+            "seed": 1
+        },
+        "designFrequency": 2445000000,
+        "element": "element:patch_2g4",
+        "excitation": {
+            "steerPhi": 0,
+            "steerTheta": 20,
+            "steering": "phase",
+            "taperX": {
+                "kind": "uniform"
+            },
+            "taperY": {
+                "kind": "uniform"
+            }
+        },
+        "frequency": 2445000000,
+        "geometry": {
+            "aperture": "none",
+            "apertureX": 0,
+            "apertureY": 0,
+            "dx": 0.6,
+            "dy": 0.6,
+            "kind": "rectangular",
+            "nx": 4,
+            "ny": 4,
+            "unit": "lambda"
+        },
+        "sweeps": {
+            "bandPoints": 21,
+            "bandStart": 0,
+            "bandStop": 0,
+            "scanMax": 60,
+            "scanPlane": 0,
+            "scanStep": 2
+        },
+        "synthesis": {
+            "iterations": 300,
+            "mainBeam": 0,
+            "phaseOnly": false,
+            "sll": -30
+        },
+        "trModule": {
+            "ambientTemperature": 290,
+            "antennaTemperature": 290,
+            "beamformerLoss": 6,
+            "frontLoss": 0.5,
+            "rx": {
+                "gain": 25,
+                "nf": 3,
+                "power": 40,
+                "source": "typed"
+            },
+            "tx": {
+                "gain": 25,
+                "nf": 3,
+                "power": 40,
+                "source": "typed"
+            },
+            "txTaper": false
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna",
+    "version": 1
+}

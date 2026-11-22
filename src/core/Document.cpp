@@ -106,6 +106,35 @@ QJsonObject Document::toJson() const
     return object;
 }
 
+bool Document::restoreFromJson(const QJsonObject &object, QString *error)
+{
+    if (!checkFileHeader(object, formatId(), FormatVersion, m_filePath, error))
+        return false;
+    if (object.value(QStringLiteral("type")).toString() != documentTypeInfo(m_type).id) {
+        setError(error, QStringLiteral("%1: the copy is of another document type").arg(name()));
+        return false;
+    }
+    const QJsonObject content = object.value(QStringLiteral("content")).toObject();
+    if (isSchematic()) {
+        QString schematicError;
+        auto schematic = Schematic::fromJson(content, &schematicError);
+        if (!schematic) {
+            setError(error, QStringLiteral("%1: %2").arg(name(), schematicError));
+            return false;
+        }
+        attachSchematic(std::move(schematic));
+        m_schematic->undoStack()->setCleanUnreachable();
+        m_modified = false; // so that setModified(true) signals
+        setModified(true);
+    } else {
+        m_content = content;
+        m_modified = false;
+        setModified(true);
+        Q_EMIT contentChanged();
+    }
+    return true;
+}
+
 void Document::replaceSchematic(std::unique_ptr<Schematic> schematic)
 {
     if (isSchematic() && schematic)

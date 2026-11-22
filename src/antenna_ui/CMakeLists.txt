@@ -13,13 +13,20 @@ add_library(lvdantui STATIC
     PositionEditor.h
 )
 target_include_directories(lvdantui PUBLIC ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(lvdantui PUBLIC lvdantenna lvdplot lvdplot3d Qt6::Widgets)
+target_link_libraries(lvdantui PUBLIC lvdantenna lvdfullwave lvdplot lvdplot3d Qt6::Widgets)
 
 if(LVD_BUILD_TESTS)
     add_executable(antenna_ui_tests tests/antenna_ui_tests.cpp)
     target_link_libraries(antenna_ui_tests PRIVATE lvdantui Qt6::Test Catch2::Catch2)
     target_compile_definitions(antenna_ui_tests PRIVATE LVD_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-    add_test(NAME antenna_ui COMMAND antenna_ui_tests)
+    add_test(NAME antenna_ui COMMAND antenna_ui_tests "~[openems]")
+    if(LVD_OPENEMS_RUNTIME_DIR)
+        add_test(NAME antenna_ui_openems COMMAND antenna_ui_tests "[openems]")
+        set_tests_properties(antenna_ui_openems PROPERTIES
+            ENVIRONMENT "${LVD_TEST_GUI_ENVIRONMENT};LVD_OPENEMS_DIR=${LVD_OPENEMS_RUNTIME_DIR}"
+            ENVIRONMENT_MODIFICATION "${LVD_TEST_PATH_MODIFICATION}"
+            TIMEOUT 900)
+    endif()
     set_tests_properties(antenna_ui PROPERTIES
         ENVIRONMENT "${LVD_TEST_GUI_ENVIRONMENT}"
         ENVIRONMENT_MODIFICATION "${LVD_TEST_PATH_MODIFICATION}"

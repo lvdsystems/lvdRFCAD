@@ -31,7 +31,9 @@ struct PatternTable {
     Field sample(double thetaDeg, double phiDeg, double frequency) const;
 };
 
-enum class ElementModelKind { Isotropic, CosN, Dipole, DipoleOverGround, Monopole, Patch, Aperture, Imported };
+// FullWave: an openEMS model (template and settings in `fullWave`); its
+// pattern is the simulated far field in patternFile once it has run.
+enum class ElementModelKind { Isotropic, CosN, Dipole, DipoleOverGround, Monopole, Patch, Aperture, Imported, FullWave };
 enum class Polarisation { LinearX, LinearY, Slant45, SlantMinus45, Rhcp, Lhcp };
 
 QString elementModelId(ElementModelKind kind);
@@ -64,8 +66,11 @@ struct ElementSpec {
     double apertureB = 0;        // aperture: size along x (E-plane), 0: 0.34 wavelength
     bool cosineDistribution = true;
 
-    QString patternFile;         // imported: file name relative to the owning document or library
-    std::shared_ptr<const PatternTable> pattern; // imported: loaded table (not stored in JSON)
+    QString patternFile;         // imported and full-wave: file name relative to the owning document or library
+    QJsonObject fullWave;        // full-wave: template, parameters and run settings (src/fullwave)
+    std::shared_ptr<const PatternTable> pattern; // imported and full-wave: loaded table (not stored in JSON)
+
+    bool usesPatternFile() const { return model == ElementModelKind::Imported || model == ElementModelKind::FullWave; }
 
     QJsonObject toJson() const;
     static ElementSpec fromJson(const QJsonObject &object);

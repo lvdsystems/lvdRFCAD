@@ -4,6 +4,7 @@
 #include "core/RuleCheck.h"
 
 #include <QHash>
+#include <QIcon>
 #include <QMainWindow>
 #include <QPointer>
 
@@ -19,6 +20,8 @@ class QTreeWidget;
 class QTreeWidgetItem;
 
 namespace lvd {
+
+class Autosave;
 
 class Document;
 class LibraryBrowser;
@@ -54,6 +57,24 @@ public:
     TouchstoneEditor *openTouchstoneFile(const QString &path);
     TouchstoneEditor *addTouchstoneTab();
     bool openProjectFile(const QString &path);
+    // A file or folder shipped with the application (docs, examples); empty if missing.
+    static QString documentationPath(const QString &relative);
+    // The program icon (the red chip of the LVD Systems logo) in every size.
+    static QIcon applicationIcon();
+    // At start-up: unsaved work of other projects left by a crash; offers to
+    // open the most recent one (which then offers to restore it).
+    void offerRecoveryOfOtherProjects();
+    // File > Print, Export Schematic, Title Block (schematic documents).
+    void printSchematic();
+    void exportSchematic();
+    void editTitleBlock();
+    // The schematic document of the current tab, or nullptr.
+    Document *currentSchematicDocument() const;
+    // Crash safety (autosave copies in the user folder).
+    Autosave *autosave() const { return m_autosave; }
+    // For tests: answer the restore question without a dialog
+    // (1 restore, 0 discard, -1 ask).
+    void setRecoveryAnswerForTests(int answer) { m_recoveryAnswer = answer; }
     void logMessage(const QString &message);
 
     int openDocumentCount() const;
@@ -92,8 +113,6 @@ private:
     void manageLibraries();
     void showMatchingWindow();
     void showManual();
-    // A file or folder shipped with the application (docs, examples); empty if missing.
-    static QString documentationPath(const QString &relative);
     void updateMatchingTarget();
 
     void onProjectAboutToClose(Project *project);
@@ -119,6 +138,8 @@ private:
 
     Session *m_session;
     PythonInterpreter *m_python;
+    Autosave *m_autosave = nullptr;
+    int m_recoveryAnswer = -1;
 
     QTabWidget *m_tabs;
     QTreeWidget *m_projectTree;
@@ -145,6 +166,9 @@ private:
     QAction *m_closeProjectAction = nullptr;
     QAction *m_saveAction = nullptr;
     QAction *m_saveAllAction = nullptr;
+    QAction *m_printAction = nullptr;
+    QAction *m_exportSchematicAction = nullptr;
+    QAction *m_titleBlockAction = nullptr;
     QAction *m_removeDocumentAction = nullptr;
     QAction *m_runSimulationAction = nullptr;
     QAction *m_newAnalysisAction = nullptr;

@@ -48,6 +48,11 @@ public:
     // Fails for documents of a project snapshot.
     bool save(QString *error = nullptr);
 
+    // Replaces the content with a document object read from a file of the same
+    // type (an autosaved copy) and marks the document modified. Not undoable:
+    // call it before any editor shows the document.
+    bool restoreFromJson(const QJsonObject &document, QString *error = nullptr);
+
     // Replaces the schematic (for snapshots); not undoable.
     void replaceSchematic(std::unique_ptr<Schematic> schematic);
 

@@ -53,7 +53,7 @@
                 }
             ],
             "netlist": "VCC vcc 0 12\nVIN in 0 DC 0 AC 1m SIN(0 10m 1k)\nC1 in b 10u\nR1 vcc b 47k\nR2 b 0 10k\nRC vcc c 4.7k\nRE e 0 1k\nCE e 0 100u\nQ1 c b e QN\nCL c out 10u\nRL out 0 100k\n.model QN NPN(IS=6.7f BF=416 VAF=74 IKF=67m RB=10 RC=1 CJE=4.5p CJC=3.6p TF=301p TR=240n)",
-            "netlistSource": "D:/D/lvdRFcad/examples/bjt_amplifier/reference.cir"
+            "netlistSource": "reference.cir"
         },
         "texts": [
             {

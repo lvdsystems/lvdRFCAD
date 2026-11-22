@@ -44,6 +44,7 @@ constexpr NamedModel kModels[] = {
     {ElementModelKind::Patch, "patch", "Patch (cavity model)"},
     {ElementModelKind::Aperture, "aperture", "Aperture / horn"},
     {ElementModelKind::Imported, "imported", "Imported pattern"},
+    {ElementModelKind::FullWave, "fullwave", "Full-wave (openEMS)"},
 };
 
 struct NamedPolarisation {
@@ -238,6 +239,11 @@ QJsonObject ElementSpec::toJson() const
     case ElementModelKind::Imported:
         o.insert(QStringLiteral("patternFile"), patternFile);
         break;
+    case ElementModelKind::FullWave:
+        o.insert(QStringLiteral("fullWave"), fullWave);
+        if (!patternFile.isEmpty())
+            o.insert(QStringLiteral("patternFile"), patternFile);
+        break;
     case ElementModelKind::Isotropic:
         break;
     }
@@ -269,6 +275,7 @@ ElementSpec ElementSpec::fromJson(const QJsonObject &o)
     s.apertureB = std::max(0.0, o.value(QStringLiteral("apertureB")).toDouble(s.apertureB));
     s.cosineDistribution = o.value(QStringLiteral("distribution")).toString(QStringLiteral("cosine")) != QLatin1String("uniform");
     s.patternFile = o.value(QStringLiteral("patternFile")).toString();
+    s.fullWave = o.value(QStringLiteral("fullWave")).toObject();
     if (s.frequency <= 0)
         s.frequency = 10e9;
     return s;
@@ -317,6 +324,10 @@ QString ElementSpec::summary() const
                  mm(apertureB > 0 ? apertureB : 0.34 * wavelength(frequency)), pol);
     case ElementModelKind::Imported:
         return QStringLiteral("Imported: %1").arg(patternFile.isEmpty() ? QStringLiteral("(no file)") : patternFile);
+    case ElementModelKind::FullWave:
+        return QStringLiteral("Full-wave: %1%2")
+            .arg(fullWave.value(QStringLiteral("template")).toString(QStringLiteral("(no template)")),
+                 patternFile.isEmpty() ? QStringLiteral(" (not simulated)") : QString());
     }
     return {};
 }
@@ -395,6 +406,7 @@ Field ElementPattern::rawX(double theta, double phi, double frequency) const
         return {f * cp, -f * sp};
     }
     case ElementModelKind::Imported:
+    case ElementModelKind::FullWave:
         if (s.pattern)
             return s.pattern->sample(toDegrees(theta), toDegrees(phi), frequency);
         return {};
@@ -404,7 +416,7 @@ Field ElementPattern::rawX(double theta, double phi, double frequency) const
 
 Field ElementPattern::shape(double theta, double phi, double frequency) const
 {
-    if (m_spec.model == ElementModelKind::Monopole || m_spec.model == ElementModelKind::Imported)
+    if (m_spec.model == ElementModelKind::Monopole || m_spec.usesPatternFile())
         return rawX(theta, phi, frequency);
     switch (m_spec.polarisation) {
     case Polarisation::LinearX:

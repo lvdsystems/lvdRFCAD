@@ -5,6 +5,7 @@
 #include "core/Document.h"
 #include "core/Expression.h"
 #include "core/Schematic.h"
+#include "core/UndoStack.h"
 #include "core/Session.h"
 #include "schematic_editor/EditorSupport.h"
 #include "schematic_editor/PropertiesPanel.h"
@@ -615,6 +616,65 @@ TEST_CASE("a 2,000 component schematic loads and edits quickly")
     CHECK(loadMs < 5000);
     CHECK(paintMs < 3000);
     CHECK(editMs < 1500);
+}
+
+#include "core/Library.h"
+#include "core/Project.h"
+#include "schematic_editor/SchematicExport.h"
+
+#include <QFileInfo>
+#include <QImage>
+
+TEST_CASE("Schematics export to PDF, SVG and PNG with a title block")
+{
+    QTemporaryDir dir;
+    Session session;
+    session.libraries()->setSearchPath(LibraryScope::BuiltIn, QStringLiteral(LVD_SOURCE_TREE "/libraries"));
+    QString error;
+    Project *project = session.openProject(QStringLiteral(LVD_SOURCE_TREE "/examples/lowpass_filter/lowpass_filter.lvdproj"), &error);
+    INFO(error.toStdString());
+    REQUIRE(project);
+    Document *document = nullptr;
+    for (Document *d : project->documents())
+        if (d->isSchematic())
+            document = d;
+    REQUIRE(document);
+
+    document->schematic()->setTitleBlock({{QStringLiteral("revision"), QStringLiteral("B")},
+                                          {QStringLiteral("author"), QStringLiteral("  ")}});
+    CHECK(document->schematic()->titleBlock().value(QStringLiteral("revision")).toString() == QLatin1String("B"));
+    CHECK_FALSE(document->schematic()->titleBlock().contains(QStringLiteral("author"))); // blank fields dropped
+    const QStringList lines = SchematicExport::titleBlockLines(project, document);
+    REQUIRE(lines.size() >= 4);
+    CHECK(lines.first() == document->name());
+    CHECK(lines.join(QLatin1Char('\n')).contains(QStringLiteral("Revision: B")));
+    CHECK(lines.join(QLatin1Char('\n')).contains(QStringLiteral(LVD_VERSION)));
+    // The title block is part of the document and undoable.
+    CHECK(document->isModified());
+    document->schematic()->undoStack()->undo();
+    CHECK(document->schematic()->titleBlock().isEmpty());
+
+    for (const char *name : {"sheet.pdf", "sheet.svg", "sheet.png"}) {
+        const QString path = dir.filePath(QString::fromLatin1(name));
+        INFO(name);
+        REQUIRE(SchematicExport::exportFile(project, document, path, &error));
+        CHECK(QFileInfo(path).size() > 1000);
+    }
+    QFile pdf(dir.filePath(QStringLiteral("sheet.pdf")));
+    REQUIRE(pdf.open(QIODevice::ReadOnly));
+    CHECK(pdf.read(5) == "%PDF-");
+    // The PNG is white around a drawing in dark ink.
+    const QImage png(dir.filePath(QStringLiteral("sheet.png")));
+    REQUIRE_FALSE(png.isNull());
+    CHECK(png.pixelColor(0, 0) == QColor(Qt::white));
+    int dark = 0;
+    for (int y = 0; y < png.height(); y += 3)
+        for (int x = 0; x < png.width(); x += 3)
+            dark += png.pixelColor(x, y).lightness() < 128;
+    CHECK(dark > 50);
+    CHECK_FALSE(SchematicExport::exportFile(project, document, dir.filePath(QStringLiteral("sheet.doc")), &error));
+    if (const QByteArray keep = qgetenv("LVD_EXPORT_SAMPLE"); !keep.isEmpty())
+        SchematicExport::exportFile(project, document, QString::fromLocal8Bit(keep), &error);
 }
 
 int main(int argc, char *argv[])

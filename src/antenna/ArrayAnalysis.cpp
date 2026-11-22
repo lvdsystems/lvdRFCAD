@@ -16,9 +16,11 @@ ElementResolution elementFromSpec(ElementSpec spec, const QString &baseDirectory
 {
     ElementResolution r;
     r.label = label.isEmpty() ? spec.summary() : label;
-    if (spec.model == ElementModelKind::Imported && !spec.pattern) {
+    if (spec.usesPatternFile() && !spec.pattern) {
         if (spec.patternFile.isEmpty()) {
-            r.error = QStringLiteral("the imported element has no pattern file");
+            r.error = spec.model == ElementModelKind::FullWave
+                          ? QStringLiteral("the full-wave element has not been simulated yet")
+                          : QStringLiteral("the imported element has no pattern file");
             return r;
         }
         const QString path = QDir(baseDirectory).absoluteFilePath(spec.patternFile);

@@ -27,9 +27,18 @@ struct FlatComponent {
     QMap<QString, double> parameterValues; // successfully evaluated expression parameters
 };
 
+// Substrate parts (rf-circuit:substrate, see core/Substrates.h) are not
+// components of the flattened design: they are collected in `substrates`
+// (with "er" and "tand" already taken from the material catalog), and every
+// component with a non-empty text parameter "substrate" gets the named
+// substrate's values in place of its own parameters h, t, er, tand, sigma
+// and rough (and b, the stripline ground spacing). The name is looked up in
+// the component's own sheet instance first, then in each enclosing sheet up
+// to the top level.
 struct Netlist {
     QString topDocument;
     QList<FlatComponent> components; // sorted by path
+    QList<FlatComponent> substrates; // Substrate parts, sorted by path
     QStringList nets;                // nets with at least one pin, sorted
     QStringList errors;
     QStringList warnings;

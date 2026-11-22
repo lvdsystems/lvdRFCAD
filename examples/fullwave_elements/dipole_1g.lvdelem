@@ -1,0 +1,37 @@
+{
+    "content": {
+        "element": {
+            "efficiency": -0.002630479202706963,
+            "frequency": 994000000,
+            "fullWave": {
+                "settings": {
+                    "airMargin": 0.25,
+                    "boundary": "mur",
+                    "cellsPerWavelength": 20,
+                    "endCriteria": -40,
+                    "fStart": 700000000,
+                    "fStop": 1300000000,
+                    "farFieldFrequencies": [
+                    ],
+                    "farFieldStep": 3,
+                    "frequencyPoints": 401,
+                    "maxRatio": 1.4,
+                    "maxTimesteps": 30000
+                },
+                "template": "dipole",
+                "values": {
+                    "gap": 2,
+                    "length": 132,
+                    "resistance": 73,
+                    "width": 2
+                }
+            },
+            "model": "fullwave",
+            "patternFile": "simulations/dipole_1g/pattern.csv",
+            "polarisation": "x"
+        }
+    },
+    "format": "lvdrfcad-document",
+    "type": "antenna-element",
+    "version": 1
+}

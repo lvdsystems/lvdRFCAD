@@ -205,3 +205,84 @@ TEST_CASE("the session holds one project and announces changes")
     REQUIRE(session.openProject(firstFile, &error));
     REQUIRE(session.project()->name() == QStringLiteral("one"));
 }
+
+#include "core/Autosave.h"
+#include "core/Document.h"
+#include "core/Project.h"
+#include "core/Schematic.h"
+#include "core/UndoStack.h"
+
+TEST_CASE("autosave keeps copies of unsaved documents and restores them after a crash")
+{
+    QTemporaryDir dir;
+    Autosave::setBaseDirectory(dir.filePath(QStringLiteral("autosave")));
+    QString error;
+    const QString folder = dir.filePath(QStringLiteral("proj"));
+    QString projectFile;
+    {
+        Session session;
+        Autosave autosave(&session);
+        autosave.setIntervalSeconds(0); // driven by saveNow() here
+        Project *project = session.newProject(folder, QStringLiteral("proj"), &error);
+        REQUIRE(project);
+        projectFile = project->filePath();
+        Document *rf = project->createDocument(DocumentType::RfSchematic, QStringLiteral("front"), &error);
+        Document *ant = project->createDocument(DocumentType::AntennaElement, QStringLiteral("patch"), &error);
+        REQUIRE(rf);
+        REQUIRE(ant);
+        REQUIRE(project->saveAll(&error));
+        // Nothing modified: no copies.
+        REQUIRE(autosave.saveNow(&error));
+        CHECK_FALSE(Autosave::pendingRecovery(projectFile));
+
+        rf->schematic()->addText(QStringLiteral("unsaved note"), QPoint(10, 10));
+        QJsonObject content = ant->content();
+        content.insert(QStringLiteral("notes"), QStringLiteral("unsaved notes"));
+        ant->setContent(content);
+        REQUIRE(rf->isModified());
+        REQUIRE(autosave.saveNow(&error));
+        const auto pending = Autosave::pendingRecovery(projectFile);
+        REQUIRE(pending);
+        CHECK(pending->documents.size() == 2);
+        CHECK(pending->projectName == QLatin1String("proj"));
+        CHECK(QDir(Autosave::directoryFor(projectFile)).exists());
+        // The project folder holds no autosave files.
+        CHECK_FALSE(QDir(folder).entryList().join(QLatin1Char(' ')).contains(QLatin1String("session.json")));
+
+        // Saving one document drops its copy at the next autosave.
+        REQUIRE(ant->save(&error));
+        REQUIRE(autosave.saveNow(&error));
+        REQUIRE(Autosave::pendingRecovery(projectFile));
+        CHECK(Autosave::pendingRecovery(projectFile)->documents.size() == 1);
+        CHECK(Autosave::allPendingRecoveries().size() == 1);
+        // "Crash": the session ends without closing the project (Autosave goes first).
+    }
+    // The next session finds the unsaved schematic and restores it.
+    Session session;
+    Project *project = session.openProject(projectFile, &error);
+    REQUIRE(project);
+    const auto pending = Autosave::pendingRecovery(projectFile);
+    REQUIRE(pending);
+    Document *rf = project->document(QStringLiteral("front"));
+    REQUIRE(rf);
+    CHECK_FALSE(rf->isModified());
+    QStringList errors;
+    const QStringList restored = Autosave::restore(*project, *pending, &errors);
+    CHECK(errors.isEmpty());
+    CHECK(restored == QStringList{QStringLiteral("front")});
+    CHECK(rf->isModified());
+    CHECK(QJsonDocument(rf->content()).toJson().contains("unsaved note"));
+    // Undo cannot bring back the clean state: the document stays modified.
+    rf->schematic()->addText(QStringLiteral("more"), QPoint(20, 20));
+    rf->schematic()->undoStack()->undo();
+    CHECK(rf->isModified());
+    CHECK_FALSE(Autosave::pendingRecovery(projectFile));
+
+    // A clean close removes the copies.
+    Autosave autosave(&session);
+    REQUIRE(autosave.saveNow(&error));
+    REQUIRE(Autosave::pendingRecovery(projectFile));
+    session.closeProject();
+    CHECK_FALSE(Autosave::pendingRecovery(projectFile));
+    Autosave::setBaseDirectory(QString());
+}

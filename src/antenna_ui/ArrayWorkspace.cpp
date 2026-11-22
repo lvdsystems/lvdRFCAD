@@ -122,7 +122,14 @@ std::shared_ptr<ArrayResults> compute(std::shared_ptr<ArrayResults> r, std::shar
     options.uv = &r->uv;
     options.integrate = n <= 4096;
     r->metrics = computeMetrics(*engine, options, cancel);
-    if (r->evaluation.idealEngine && r->evaluation.idealEngine != engine) {
+    // A cancelled run (an edit arrived) leaves the metrics incomplete, with empty cuts: stop here,
+    // the workspace discards the result and starts again.
+    if (cancel && cancel->load()) {
+        r->cancelled = true;
+        return r;
+    }
+    if (r->evaluation.idealEngine && r->evaluation.idealEngine != engine && !r->metrics.cut1.theta.empty()
+        && !r->metrics.cut2.theta.empty()) {
         const Vec3 peak = radialUnit(toRadians(r->metrics.peakThetaDeg), toRadians(r->metrics.peakPhiDeg));
         const Vec3 along = (radialUnit(toRadians(r->metrics.cut1.theta.back()), toRadians(r->metrics.cut1.phi.back())));
         const Vec3 across = (radialUnit(toRadians(r->metrics.cut2.theta.back()), toRadians(r->metrics.cut2.phi.back())));
@@ -248,7 +255,7 @@ void ArrayWorkspace::buildPanel()
     f->addRow(tr("Element"), m_elementSource);
     std::vector<std::pair<QString, QString>> models;
     for (ElementModelKind k : elementModelKinds())
-        if (k != ElementModelKind::Imported)
+        if (k != ElementModelKind::Imported && k != ElementModelKind::FullWave)
             models.emplace_back(elementModelId(k), elementModelName(k));
     m_elementModel = idCombo(models);
     std::vector<std::pair<QString, QString>> pols;

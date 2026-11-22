@@ -4,16 +4,16 @@ The application ships eight libraries in `libraries/`. Their file format is desc
 
 | Library | File | Purpose |
 |---|---|---|
-| `basic` | `libraries/basic.lvdlib` | Parts used by both RF and SPICE schematics: R, L, C, ground, hierarchical port |
+| `basic` | `libraries/basic.lvdlib` | Parts used by both RF and SPICE schematics: R, L, C (ideal or with parasitics, and SMD packages), ground, hierarchical port |
 | `rf-system` | `libraries/rf-system.lvdlib` | Behavioural system blocks for budget, spur and linear RF analyses, S-parameter blocks, ports and terminations |
-| `rf-circuit` | `libraries/rf-circuit.lvdlib` | Linear RF circuit elements: ideal and physical transmission lines, stubs, coupled lines, transformer |
+| `rf-circuit` | `libraries/rf-circuit.lvdlib` | Linear RF circuit elements: ideal and physical transmission lines, stubs, coupled lines, microstrip discontinuities, the Substrate part, transformer |
 | `spice-sources` | `libraries/spice-sources.lvdlib` | SPICE independent, controlled and behavioural sources |
 | `spice-semiconductors` | `libraries/spice-semiconductors.lvdlib` | Diodes, BJTs, MOSFETs, JFETs: generic parts with editable models and common real parts |
 | `spice-ics` | `libraries/spice-ics.lvdlib` | Behavioural op-amps, comparators, regulators, shunt reference, logic gates |
 | `spice-misc` | `libraries/spice-misc.lvdlib` | Potentiometer, magnetics, crystal, switches, transmission lines, waveform probes |
 | `spice-instruments` | `libraries/spice-instruments.lvdlib` | Virtual instruments: oscilloscope, voltmeter, ammeter, function generator, spectrum analyser, Bode plotter |
 
-Four **antenna libraries** (`.lvdantlib`, [file-format.md](file-format.md), section 7.3) sit in the same folder; see [Antenna libraries](#antenna-libraries) at the end.
+Four **antenna libraries** (`.lvdantlib`, [file-format.md](file-format.md), section 7.3) sit in the same folder; see [Antenna libraries](#antenna-libraries) at the end. The **substrate catalog** `libraries/substrates.json` ([file-format.md](file-format.md), section 8) holds the dielectric materials of the Substrate part and of the full-wave templates; see [Substrate catalog](#substrate-catalog).
 
 Check the libraries after editing them:
 
@@ -31,12 +31,16 @@ The validator enforces the file format and also this document: a component whose
 - **Losses are positive.** `il` (insertion loss), `isolation`, `rejection`, `coupling`, `directivity` are positive dB numbers; a transmission of `il = 3` is |S21| = -3 dB. Gains (`gain`) are signed dB, so a conversion loss is a negative `gain`.
 - **Phase** is in degrees. A positive `phase` or electrical length `elen` is a phase *lag*: S21 = |S21| · exp(-j · phase · pi/180), as for a delay line.
 - **`z0`** is a real impedance in ohms. On behavioural blocks it is the port impedance to which every port is ideally matched (S11 = S22 = ... = 0 unless stated otherwise); for lines it is the characteristic impedance.
-- **`freq`** is a frequency in Hz. On a source it is the output frequency; on a lossy or dispersive part it is the frequency at which another parameter (Q, `elen`, `loss_per_m`) is specified.
+- **`freq`** is a frequency in Hz. On a source it is the output frequency; on a lossy or dispersive part it is the frequency at which another parameter (Q, `elen`, `loss_per_m`, a slope) is specified.
+- **Return loss** (`rl_in`, `rl_out`, `rl`, `rl_rf`, `rl_lo`, `rl_if`, dB, positive): |S_ii| = undb20(-rl). **`0` (the default) means an ideal match**, S_ii = 0, so a block without return losses behaves exactly as before they existed. The reflection is in quadrature with the block's through path: S_ii = j · |S_ii| · S21/|S21| (+90 degrees from the transmission; the phase of a lossless symmetric two-port). `il` stays the measured |S21| in a `z0` system. A passive block is then kept passive: if the largest singular value of S exceeds 1, all transmissions are scaled down by one common factor until it is 1 (the reflections are kept). Example: a reciprocal two-port matched at one port and reflecting |S11| at the other can pass at most |S21|² = 1 - |S11|; a lossless through with `rl_in` = `rl_out` = 20 dB gets |S21|² = 0.99.
+- **Slopes** (`gain_slope`, `nf_slope`, `il_slope`, dB/GHz) make a block frequency dependent around its `freq` (default 1 GHz): value(f) = value + slope · (f - freq) / 1 GHz. A loss or noise figure never goes below 0. Default 0: no frequency dependence. For measured curves use an S-parameter block (`nport2`) instead.
+- **Optional parameters**: the return losses, slopes and their `freq` were added after the first release. A component definition without them (an older project copy of a library part) gets the defaults, so old designs give the same numbers.
 - **Noise**: `nf` is a noise figure in dB at T0 = 290 K. A passive block without an `nf` parameter has noise figure equal to its loss at physical temperature T0.
 - **Implicit ground**: RF circuit elements (`rf-circuit` library) and RF behavioural blocks draw only their signal pins. Every port voltage is referenced to an implicit ground, which is the global net `0` (the net of `basic:ground`). One-pin parts (stubs, ports, terminations, sources, antennas) therefore connect from their pin to ground.
 - **Pin order** in a component is the order of the S-parameter ports and of the netlist.
 - **Canonical parameter names** used wherever applicable: `gain` (dB), `nf` (dB), `oip3`, `iip3`, `op1db`, `oip2` (dBm), `il` (dB), `isolation` (dB), `z0` (ohm), `freq` (Hz), `power` (dBm), and `fmin` / `fmax` (Hz) for an operating range. `fmin` / `fmax` are reserved for this meaning; no built-in block uses them yet.
 - **Components without a model**: `basic:ground` (`netName`) and `basic:sheet_port` (`role: "sheet-port"`) only define connectivity. Analyses must skip them instead of reporting them as unsupported.
+- **Substrate parts** (`rf-circuit:substrate`, element `substrate`) have no pins and no circuit model. The netlist takes them out of the component list and hands their values to the parts that name them (see [Substrates](#substrates)); no analysis, rule check or netlister sees them as components.
 
 ## basic
 
@@ -44,13 +48,15 @@ Parts shared by RF and SPICE schematics. The two-terminal parts have pins `p` (l
 
 ### resistor (R)
 
-Ideal resistor, ANSI zig-zag symbol. Pins `p`, `n`.
+Resistor, ANSI zig-zag symbol. Pins `p`, `n`. Ideal unless a parasitic is set.
 
 | Parameter | Unit | Default | Meaning |
 |---|---|---|---|
 | `r` | ohm | `1k` | Resistance (shown) |
+| `esl` | H | `0` | Series inductance; `0` = none |
+| `cp` | F | `0` | Parallel capacitance across the part; `0` = none |
 
-Models: `rf-element` `resistor`; `spice` `R{ref} {pin:p} {pin:n} {r}`.
+Models: `rf-element` `resistor`, Z = (r + jω·esl) in parallel with cp; `spice` `R{ref} {pin:p} {pin:n} {r}` with `"parasitics": "resistor"`: when `esl` or `cp` is non-zero the netlist gets `R{ref}` and `L{ref}_esl` in series through an internal node and `C{ref}_cp` across both.
 
 ### capacitor (C)
 
@@ -61,8 +67,10 @@ Pins `p`, `n`.
 | `c` | F | `1pF` | Capacitance (shown) |
 | `q` | | `0` | Unloaded Q at `freq`; `0` means ideal (lossless) |
 | `freq` | Hz | `1GHz` | Frequency at which `q` applies |
+| `esr` | ohm | `0` | Equivalent series resistance; `0` = none |
+| `esl` | H | `0` | Equivalent series inductance; `0` = none |
 
-Models: `rf-element` `capacitor`; `spice` `C{ref} {pin:p} {pin:n} {c}` (Q is ignored in SPICE).
+Models: `rf-element` `capacitor`, Z = rs + esr + jω·esl + 1/(jω·c) with rs = 1/(2π·freq·c·q) (0 for q = 0), a constant resistance; the series resonance 1/(2π√(esl·c)) is the self-resonant frequency. `spice` `C{ref} {pin:p} {pin:n} {c}` with `"parasitics": "capacitor"`: when rs + esr or esl is non-zero the netlist gets `C{ref}`, `R{ref}_esr` (rs + esr) and `L{ref}_esl` in series through internal nodes, the same circuit as the RF model. (Earlier builds ignored `q` in SPICE.)
 
 ### inductor (L)
 
@@ -73,8 +81,28 @@ Pins `p`, `n`.
 | `l` | H | `1nH` | Inductance (shown) |
 | `q` | | `0` | Unloaded Q at `freq`; `0` means ideal (lossless) |
 | `freq` | Hz | `1GHz` | Frequency at which `q` applies |
+| `cp` | F | `0` | Parallel (winding) capacitance; `0` = none. Sets the self-resonance 1/(2π√(l·cp)) |
 
-Models: `rf-element` `inductor`; `spice` `L{ref} {pin:p} {pin:n} {l}` (Q is ignored in SPICE).
+Models: `rf-element` `inductor`, Z = (rs + jω·l) in parallel with cp, rs = 2π·freq·l/q (0 for q = 0), a constant resistance; `spice` `L{ref} {pin:p} {pin:n} {l}` with `"parasitics": "inductor"`: `L{ref}` and `R{ref}_q` (rs) in series, `C{ref}_cp` across both, whenever rs or cp is non-zero. (Earlier builds ignored `q` in SPICE.)
+
+The rs of a finite Q is a constant resistance, so the modelled Q of an inductor grows in proportion to frequency (that of a capacitor falls) away from `freq`. Real parts are closer to a constant Q over a limited band: give `q` at the frequency you care about. All parasitics keep the noise right: a passive part is thermal noise at T0 in both analyses.
+
+### SMD packages (category Passive/SMD packages)
+
+Ready-made `resistor`, `capacitor` and `inductor` parts with **generic typical** parasitics of common SMD sizes. They use the same models and parameters as the parts above; only the defaults differ, and every value can be edited. The values are typical of the size and technology (thin-film resistors, C0G multilayer ceramic capacitors, multilayer chip inductors) in common manufacturers' data, rounded; treat them as ±30 %. They are not the data of any vendor's part. For a real design, use the vendor's S-parameter file (`.s2p`) of the exact part in an `rf-system:nport2` block.
+
+| id | Ref | Defaults | Notes |
+|---|---|---|---|
+| `resistor_0402` | R | `r` 50, `esl` 0.4nH, `cp` 0.05pF | thin film |
+| `resistor_0603` | R | `r` 50, `esl` 0.6nH, `cp` 0.08pF | thin film |
+| `capacitor_0201` | C | `c` 10pF, `esr` 0.2, `esl` 0.3nH | C0G; self-resonance of 10 pF about 2.9 GHz |
+| `capacitor_0402` | C | `c` 10pF, `esr` 0.15, `esl` 0.5nH | C0G; about 2.25 GHz |
+| `capacitor_0603` | C | `c` 10pF, `esr` 0.1, `esl` 0.7nH | C0G; about 1.9 GHz |
+| `capacitor_0805` | C | `c` 10pF, `esr` 0.08, `esl` 0.9nH | C0G; about 1.7 GHz |
+| `inductor_0402` | L | `l` 10nH, `q` 12 at `freq` 500MHz, `cp` 0.17pF | multilayer; self-resonance of 10 nH about 3.9 GHz |
+| `inductor_0603` | L | `l` 10nH, `q` 20 at `freq` 500MHz, `cp` 0.25pF | multilayer; about 3.2 GHz |
+
+The ESL of a capacitor depends mostly on its size, not on its value, so changing `c` keeps a sensible `esl`. The winding capacitance of an inductor grows with the inductance; for values far from 10 nH set `cp` from the data sheet's self-resonant frequency, cp = 1/((2π·SRF)²·l).
 
 ### ground (GND)
 
@@ -94,22 +122,22 @@ Behavioural blocks, each with the model `{"kind": "rf-behavioural", "block": "<b
 
 | id | Ref | Pins | Parameters (shown first) | Model |
 |---|---|---|---|---|
-| `amplifier` | A | in, out | `gain` dB 15 (shown), `nf` dB 2 (shown), `oip3` dBm 30, `oip2` dBm 45, `op1db` dBm 18, `isolation` dB 40, `z0` ohm 50 | `amplifier` |
-| `attenuator` | AT | in, out | `il` dB 3 (shown), `z0` ohm 50 | `attenuator` |
+| `amplifier` | A | in, out | `gain` dB 15 (shown), `nf` dB 2 (shown), `oip3` dBm 30, `oip2` dBm 45, `op1db` dBm 18, `isolation` dB 40, `gain_slope` dB/GHz 0, `nf_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `amplifier` |
+| `attenuator` | AT | in, out | `il` dB 3 (shown), `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `attenuator` |
 | `filter` | F | in, out | `type` bandpass (shown; lowpass, highpass, bandpass, bandstop), `fc` Hz 1GHz (shown), `response` butterworth (ideal, butterworth, chebyshev), `order` 5, `bw` Hz 100MHz, `il` dB 1, `ripple` dB 0.1, `rejection` dB 80, `z0` ohm 50 | `filter` |
-| `mixer` | MX | rf, lo, if | `gain` dB -7 (shown), `nf` dB 7, `iip3` dBm 15, `lo_power` dBm 13, `lo_rf_isolation` dB 35, `lo_if_isolation` dB 30, `rf_if_isolation` dB 25, `side` low (low, high), `product` auto (shown; auto, difference, sum), `spur_table` file (empty), `z0` ohm 50 | `mixer` |
+| `mixer` | MX | rf, lo, if | `gain` dB -7 (shown), `nf` dB 7, `iip3` dBm 15, `lo_power` dBm 13, `lo_rf_isolation` dB 35, `lo_if_isolation` dB 30, `rf_if_isolation` dB 25, `side` low (low, high), `product` auto (shown; auto, difference, sum), `spur_table` file (empty), `rl_rf` dB 0, `rl_lo` dB 0, `rl_if` dB 0, `z0` ohm 50 | `mixer` |
 | `source` | SRC | out | `freq` Hz 1GHz (shown), `power` dBm -30 (shown), `z0` ohm 50 | `source` |
-| `lo` | LO | out | `freq` Hz 2GHz (shown), `power` dBm 13 (shown), `phase_noise` file (empty), `z0` ohm 50 | `lo` |
-| `splitter` | SPL | in, out1, out2 | `il` dB 0.5 (shown), `isolation` dB 20, `imbalance` dB 0.1, `phase_imbalance` deg 1, `z0` ohm 50 | `splitter` |
-| `combiner` | CMB | in1, in2, out | `il` dB 0.5 (shown), `isolation` dB 20, `imbalance` dB 0.1, `phase_imbalance` deg 1, `z0` ohm 50 | `combiner` |
-| `coupler` | DC | in, out, cpl, iso | `coupling` dB 20 (shown), `directivity` dB 25, `il` dB 0.3, `z0` ohm 50 | `coupler` |
-| `switch_spdt` | SW | com, t1, t2 | `state` t1 (shown; t1, t2), `il` dB 0.5, `isolation` dB 30, `z0` ohm 50 | `switch_spdt` |
-| `isolator` | ISO | in, out | `il` dB 0.5 (shown), `isolation` dB 20, `z0` ohm 50 | `isolator` |
+| `lo` | LO | out | `freq` Hz 2GHz (shown), `power` dBm 13 (shown), `phase_noise` file (empty; offset Hz, L dBc/Hz), `z0` ohm 50 | `lo` |
+| `splitter` | SPL | in, out1, out2 | `il` dB 0.5 (shown), `isolation` dB 20, `imbalance` dB 0.1, `phase_imbalance` deg 1, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `splitter` |
+| `combiner` | CMB | in1, in2, out | `il` dB 0.5 (shown), `isolation` dB 20, `imbalance` dB 0.1, `phase_imbalance` deg 1, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `combiner` |
+| `coupler` | DC | in, out, cpl, iso | `coupling` dB 20 (shown), `directivity` dB 25, `il` dB 0.3, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl` dB 0, `z0` ohm 50 | `coupler` |
+| `switch_spdt` | SW | com, t1, t2 | `state` t1 (shown; t1, t2), `select` 0, `il` dB 0.5, `isolation` dB 30, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `switch_spdt` |
+| `isolator` | ISO | in, out | `il` dB 0.5 (shown), `isolation` dB 20, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `isolator` |
 | `circulator` | CIR | p1, p2, p3 | `il` dB 0.5 (shown), `isolation` dB 20, `z0` ohm 50 | `circulator` |
-| `cable` | CBL | in, out | `length` m 1 (shown), `loss_per_m` dB/m 0.5, `freq` Hz 1GHz, `il` dB 0.1, `vf` 0.7, `z0` ohm 50 | `cable` |
+| `cable` | CBL | in, out | `length` m 1 (shown), `loss_per_m` dB/m 0.5, `freq` Hz 1GHz, `il` dB 0.1, `vf` 0.7, `il_slope` dB/GHz 0, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `cable` |
 | `antenna` | ANT | p | `gain` dBi 0 (shown), `temp` K 290, `z0` ohm 50 | `antenna` |
 | `multiplier` | MUL | in, out | `factor` 2 (shown), `gain` dB -12, `rejection` dBc 20, `z0` ohm 50 | `multiplier` |
-| `phase_shifter` | PS | in, out | `phase` deg 90 (shown), `il` dB 1, `z0` ohm 50 | `phase_shifter` |
+| `phase_shifter` | PS | in, out | `phase` deg 90 (shown), `il` dB 1, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `phase_shifter` |
 | `adc` | ADC | in | `fs` Hz 100MHz (shown), `bits` 12 (shown), `full_scale` dBm 4, `nf` dB 30, `z0` ohm 50 | `adc` |
 | `nport1` | SP | p1 | `file` (file, shown, empty) | `sparameters` `{file}` |
 | `nport2` | SP | p1, p2 | `file` (file, shown, empty) | `sparameters` `{file}` |
@@ -117,6 +145,19 @@ Behavioural blocks, each with the model `{"kind": "rf-behavioural", "block": "<b
 | `nport4` | SP | p1, p2, p3, p4 | `file` (file, shown, empty) | `sparameters` `{file}` |
 | `port` | PORT | p | `num` 1 (shown), `z0` ohm 50 (shown) | `port` |
 | `termination` | TERM | p | `z0` ohm 50 (shown) | `termination` |
+| `vco` | VCO | out | `freq` Hz 2GHz (shown), `power` dBm 10 (shown), `pn` dBc/Hz -110, `pn_offset` Hz 100kHz, `pn_floor` dBc/Hz -160, `z0` ohm 50 | `vco` |
+| `pll` | PLL | out | `freq` Hz 2GHz (shown), `power` dBm 10 (shown), `ref_freq` Hz 10MHz, `ref_pn` dBc/Hz -150, `fom` dBc/Hz -226, `loop_bw` Hz 100kHz, `pn` dBc/Hz -110, `pn_offset` Hz 100kHz, `pn_floor` dBc/Hz -160, `z0` ohm 50 | `pll` |
+| `dac` | DAC | out | `freq` Hz 100MHz (shown), `fs` Hz 1GHz (shown), `bits` 14, `full_scale` dBm 0, `backoff` dB 6, `nsd` dBm/Hz 0 (0: from quantisation), `z0` ohm 50 | `dac` |
+| `dc_block` | DCB | in, out | `il` dB 0.1 (shown), `fc` Hz 1MHz, `z0` ohm 50 | `dc_block` |
+| `bias_tee` | BT | rf_in, rf_out, dc | `il` dB 0.3 (shown), `isolation` dB 40, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `bias_tee` |
+| `balun` | BAL | unbal, bal_p, bal_n | `il` dB 0.5 (shown), `isolation` dB 20, `imbalance` dB 0.2, `phase_imbalance` deg 2, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `balun` |
+| `hybrid_90` | HYB | in, out0, out90, iso | `il` dB 0.3 (shown), `isolation` dB 30, `imbalance` dB 0.2, `phase_imbalance` deg 2, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl` dB 0, `z0` ohm 50 | `hybrid_90` |
+| `hybrid_180` | HYB | sum, diff, p1, p2 | `il` dB 0.3 (shown), `isolation` dB 30, `imbalance` dB 0.2, `phase_imbalance` deg 2, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl` dB 0, `z0` ohm 50 | `hybrid_180` |
+| `switch_sp3t` | SW | com, t1, t2, t3 | `state` t1 (shown; t1, t2, t3), `select` 0, `il` dB 0.6, `isolation` dB 30, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `switch_sp3t` |
+| `switch_sp4t` | SW | com, t1, t2, t3, t4 | `state` t1 (shown; t1 .. t4), `select` 0, `il` dB 0.8, `isolation` dB 30, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `switch_sp4t` |
+| `limiter` | LIM | in, out | `limit` dBm 10 (shown), `il` dB 0.5, `il_slope` dB/GHz 0, `freq` Hz 1GHz, `rl_in` dB 0, `rl_out` dB 0, `z0` ohm 50 | `limiter` |
+| `detector` | DET | in | `sensitivity` dBm -50 (shown), `dynamic_range` dB 50, `z0` ohm 50 | `detector` |
+| `diplexer` | DPX | com, low, high | `crossover` Hz 1GHz (shown), `order` 3, `il` dB 0.3, `z0` ohm 50 | `diplexer` |
 
 S-parameter blocks: pin `pK` is Touchstone port K. The file is a Touchstone file with the matching number of ports, relative to the project folder; an empty `file` is an error at analysis time. On `nport4`, p1/p2 are on top (left/right) and p3/p4 below.
 
@@ -131,12 +172,56 @@ Linear circuit elements, each with the model `{"kind": "rf-element", "element": 
 | `short_stub` | TL | p | `z0` ohm 50 (shown), `elen` deg 90 (shown), `freq` Hz 1GHz | `stub_short` |
 | `coupled_lines` | CL | p1, p2, p3, p4 | `z0e` ohm 70 (shown), `z0o` ohm 35 (shown), `elen` deg 90, `freq` Hz 1GHz | `coupled_lines` |
 | `microstrip` | TL | in, out | `w` m 1.5mm (shown), `l` m 10mm (shown), `h` m 0.8mm, `er` 4.4, `tand` 0.02, `t` m 35um, `sigma` S/m 58M | `microstrip` |
-| `stripline` | TL | in, out | `w` m 0.5mm (shown), `l` m 10mm (shown), `b` m 1.6mm, `er` 4.4, `tand` 0.02, `t` m 35um, `sigma` S/m 58M | `stripline` |
+| `stripline` | TL | in, out | `w` m 0.65mm (shown), `l` m 10mm (shown), `b` m 1.6mm, `er` 4.4, `tand` 0.02, `t` m 35um, `sigma` S/m 58M | `stripline` |
 | `coax` | TL | in, out | `l` m 100mm (shown), `din` m 0.51mm, `dout` m 1.68mm, `er` 2.1, `tand` 0.0002, `sigma` S/m 58M | `coax` |
 | `cpw` | TL | in, out | `w` m 1mm (shown), `l` m 10mm (shown), `s` m 0.2mm, `h` m 0.8mm, `er` 4.4, `tand` 0.02, `t` m 35um, `sigma` S/m 58M, `backed` no (no, yes) | `cpw` |
 | `transformer` | TR | in, out | `n` 1 (shown) | `transformer` |
+| `coupled_microstrip` | CL | p1, p2, p3, p4 | `w` m 0.6mm (shown), `s` m 0.3mm (shown), `l` m 10mm (shown), `h` m 0.635mm, `er` 9.8, `tand` 0.0005, `t` m 5um, `sigma` S/m 58M, `rough` m 0 | `coupled_microstrip` |
+| `substrate` | SUB | (none) | `material` RO4003C (shown; `custom` and the catalog materials), `h` m 0.508mm (shown), `t` m 35um, `sigma` S/m 58M, `rough` m 0, `er` 3.55, `tand` 0.0027, `b` m 0 | `substrate` |
 
-Substrate parameters are stored on each line element for now; a shared substrate definition may replace them later.
+`microstrip`, `stripline` and `cpw` also have `rough` (m, default 0: smooth conductors) and `substrate` (text, default empty); `coupled_microstrip` and the discontinuities below have `substrate` too.
+
+Microstrip discontinuities (category Transmission lines/Microstrip discontinuities). They default to a 0.635 mm alumina substrate (`h` 0.635mm, `er` 9.8, `t` 5um):
+
+| id | Ref | Pins | Parameters (shown first) | Element |
+|---|---|---|---|---|
+| `microstrip_open` | MO | p | `w` m 0.6mm (shown), `h`, `er`, `t` | `microstrip_open` |
+| `microstrip_gap` | MG | in, out | `s` m 0.1mm (shown), `w1` m 0.6mm, `w2` m 0.6mm, `h`, `er`, `t` | `microstrip_gap` |
+| `microstrip_step` | MS | in, out | `w1` m 1.2mm (shown), `w2` m 0.6mm (shown), `h`, `er`, `t` | `microstrip_step` |
+| `microstrip_bend` | MB | in, out | `w` m 0.6mm (shown), `mitred` no (no, yes), `h`, `er`, `t` | `microstrip_bend` |
+| `microstrip_tee` | MT | p1, p2, p3 | `w1`, `w2`, `w3` m 0.6mm, `h`, `er`, `tand` 0.0005, `t`, `sigma` S/m 58M, `rough` m 0 | `microstrip_tee` |
+| `microstrip_via` | V | p | `d` m 0.4mm (shown), `h` m 0.635mm, `tp` m 20um, `sigma` S/m 58M | `microstrip_via` |
+
+### Substrates
+
+A **Substrate** part (`substrate`, reference `SUB1`, `SUB2`, ...) describes one substrate once for a whole design. It has no pins and is not a circuit element. A line or discontinuity uses it when its `substrate` parameter holds the Substrate part's reference, such as `SUB1`:
+
+- The Substrate part's `h`, `t`, `sigma`, `rough` and its permittivity and loss tangent replace the part's own `h`, `t`, `er`, `tand`, `sigma` and `rough` (each only where the part has that parameter). A stripline takes its ground plane spacing `b` from the Substrate part's `b`, or 2·h + t when `b` is 0. A via takes `h` and `sigma`; its plating thickness `tp` stays its own.
+- **Material**: with a catalog material (such as `RO4003C`) the permittivity and loss tangent come from the [substrate catalog](#substrate-catalog), and the Substrate part's own `er` and `tand` are ignored. To use other values, choose `custom`: then the Substrate part's `er` and `tand` apply. The height `h` is always the Substrate part's own; the standard thicknesses in the catalog are a guide.
+- An empty `substrate` parameter keeps the part's own values, so older designs are unchanged.
+- **Scope**: the name is looked up among the Substrate parts of the part's own sheet instance first, then of each enclosing sheet up to the top level. A sub-sheet can use the top level's `SUB1`, or define its own `SUB1`, which then wins inside it.
+- An unknown name, two Substrate parts with the same reference in one sheet, or a material that is not in the catalog are netlist errors, reported by the analyses and by the rule check.
+
+### Substrate catalog
+
+`libraries/substrates.json` lists the materials offered by the Substrate part and by the substrate picker of the full-wave templates. **The values are typical values from the manufacturer's data sheet (or the literature named); verify them for your lot, thickness and frequency.** Laminate makers quote a *design* Dk (for circuit design, from a microstrip phase method) and a lower *process* Dk (from a clamped stripline test); the catalog uses the design Dk where one is published.
+
+| Material id | er | tan δ | at | Standard thicknesses (mm) | Source |
+|---|---|---|---|---|---|
+| `FR-4` | 4.4 | 0.02 | 1 GHz | 0.2, 0.4, 0.8, 1.0, 1.6 | generic textbook value, not a data sheet; real FR-4 ranges about 3.8 to 4.8, tan δ 0.015 to 0.025 |
+| `RO4003C` | 3.55 | 0.0027 | 10 GHz | 0.203, 0.305, 0.406, 0.508, 0.813, 1.524 | Rogers, RO4000 Series data sheet (design Dk; process Dk 3.38 ± 0.05) |
+| `RO4350B` | 3.66 | 0.0037 | 10 GHz | 0.101, 0.168, 0.254, 0.338, 0.422, 0.508, 0.762, 1.524 | Rogers, RO4000 Series data sheet (design Dk; process Dk 3.48 ± 0.05) |
+| `RT/duroid 5880` | 2.2 | 0.0009 | 10 GHz | 0.127, 0.254, 0.381, 0.508, 0.787, 1.575 | Rogers, RT/duroid 5870/5880 data sheet |
+| `RO3003` | 3.00 | 0.0010 | 10 GHz | 0.13, 0.25, 0.50, 0.75, 1.52 | Rogers, RO3000 Series data sheet |
+| `RO3010` | 11.2 | 0.0022 | 10 GHz | 0.13, 0.25, 0.64, 1.28 | Rogers, RO3000 Series data sheet (design Dk; process Dk 10.2 ± 0.3) |
+| `TLY-5` | 2.20 | 0.0009 | 10 GHz | 0.127, 0.254, 0.381, 0.508, 0.787, 1.575 | Taconic (AGC), TLY data sheet |
+| `I-Tera MT40` | 3.45 | 0.0031 | 10 GHz | 0.127, 0.254, 0.508, 0.762 | Isola, I-Tera MT40 data sheet; Dk and Df depend on the resin content of the construction |
+| `Alumina 99.6%` | 9.9 | 0.0001 | 1 MHz | 0.254, 0.381, 0.635 | typical of 99.6 % thin-film alumina data sheets (for example CoorsTek Superstrate 996); microwave designs commonly use 9.8 to 9.9 |
+| `Fused silica` | 3.78 | 0.0001 | 10 GHz | 0.127, 0.254 | D. M. Pozar, *Microwave Engineering*, 4th ed., Appendix H (fused quartz) |
+| `GaAs` | 12.9 | 0.0005 | 10 GHz | 0.05, 0.075, 0.1, 0.2 | er: Ioffe Institute semiconductor database; **tan δ is an order-of-magnitude estimate**, not a data-sheet value: use your foundry's value |
+| `Silicon (HR)` | 11.7 | 0.0015 | 10 GHz | 0.2, 0.3, 0.5, 0.675 | er: Ioffe Institute database; tan δ computed as 1/(2π·f·ε0·er·ρ) for ρ = 10 kΩ·cm at 10 GHz. The loss of silicon is conduction loss and grows as 1/f (0.015 at 1 GHz): set tan δ for your frequency and resistivity |
+
+Not included: materials whose published Dk and Df depend so much on the laminate construction that one pair of numbers would mislead (for example Panasonic Megtron 6 or Isola FR408HR); use `custom` with the values of your stack-up. Every material has one er and tan δ for all frequencies (no wideband dielectric dispersion model).
 
 ## SPICE libraries
 
@@ -317,13 +402,17 @@ Every type below lists its pins in port order, the parameters the solver reads, 
 | `oip2` | dBm | Output second-order intercept point |
 | `op1db` | dBm | Output 1 dB compression point |
 | `isolation` | dB | Reverse isolation; linear: S12 = undb20(-isolation) |
-| `z0` | ohm | Port impedance; S11 = S22 = 0 |
+| `gain_slope` | dB/GHz | Optional. gain(f) = gain + gain_slope · (f - freq) / 1 GHz |
+| `nf_slope` | dB/GHz | Optional. nf(f) = max(0, nf + nf_slope · (f - freq) / 1 GHz) |
+| `freq` | Hz | Optional, default 1 GHz: the frequency at which `gain` and `nf` apply |
+| `rl_in`, `rl_out` | dB | Optional input and output return loss; 0: matched (S11 = S22 = 0) |
+| `z0` | ohm | Port impedance |
 
-Phases of S21 and S12 are 0.
+Phases of S21 and S12 are 0; S11 = j · undb20(-rl_in), S22 = j · undb20(-rl_out). The amplifier is active, so its transmission is not limited by the return losses. Its noise is T0 (F(f) - 1) |S21|² at the output, so the stage noise figure in a matched system is nf(f).
 
 #### `attenuator` — pins `in`, `out`
 
-`il` (dB): S21 = S12 = undb20(-il), matched to `z0`. Noise figure = `il`.
+`il` (dB): S21 = S12 = undb20(-il(f)) with il(f) = max(0, il + il_slope · (f - freq) / 1 GHz) (no slope: `il` as given), `rl_in` / `rl_out` as in the conventions, `z0`. Noise figure = the loss.
 
 #### `filter` — pins `in`, `out`
 
@@ -355,9 +444,10 @@ Band edges for bandpass/bandstop are f1 = fc - bw/2 and f2 = fc + bw/2. The freq
 | `side` | choice | `low`: f_LO < f_RF and f_IF = f_RF - f_LO; `high`: f_LO > f_RF and f_IF = f_LO - f_RF |
 | `product` | choice | The wanted output product, whichever pin the signal enters: `difference` \|f_in - f_LO\|, `sum` f_in + f_LO. `auto` (the default, and files made before this parameter existed): the difference when the signal enters at `rf`; when it enters at `if` (up-conversion), the sum for `side` = low and the difference for `side` = high |
 | `spur_table` | file | Optional m×n spur table (format below); a relative path resolves against the project folder; empty: spur levels are estimated from `iip3` |
+| `rl_rf`, `rl_lo`, `rl_if` | dB | Optional return losses of the three pins; 0: matched. The budget uses those of the pins the signal enters and leaves |
 | `z0` | ohm | Port impedance |
 
-The frequency of the signal at `lo` comes from what drives it (normally an `lo` block). A mixer is frequency-translating: the linear analysis treats it only through its isolations and reports the conversion path as unsupported.
+The frequency of the signal at `lo` comes from what drives it (an `lo`, `vco` or `pll` block, or a `source`), through two-pin blocks: multipliers multiply the frequency by `factor`, amplifiers add `gain`, passive blocks subtract `il`. **LO phase noise** in the budget: the phase-noise profile of that block, raised by 20·log10(N) for the product N of the multiplier factors on the way, integrated over the budget's integration range: integrated phase noise A = 10·log10(2 ∫ L(f) df) dBc (both sidebands), RMS phase error sqrt(2 ∫ L df) rad, RMS jitter = phase error / (2π f_LO). The signal after the mixer carries noise A dB below itself (phase-noise SNR = -A). With a blocker, the in-channel reciprocal-mixing noise referred to the mixer input is P_blocker at the mixer + L(offset) + 10·log10(B). See the manual, section 10. A mixer is frequency-translating: the linear analysis treats it only through its isolations and reports the conversion path as unsupported.
 
 **Spur table file.** A text file with the levels of the m×n products |m·f_RF ± n·f_LO| in dBc below the wanted (1×1) output, as printed in mixer datasheets, for an RF input at the reference power and the LO at `lo_power`. Signs of m and n do not matter (m is the RF harmonic, n the LO harmonic). Rules:
 
@@ -390,7 +480,44 @@ CW tone that starts a budget chain: `freq` (Hz), `power` (dBm, available power),
 
 #### `lo` — pin `out`
 
-Local oscillator: `freq` (Hz), `power` (dBm), `z0` (ohm), and `phase_noise`: optional text file with two columns, offset frequency in Hz and single-sideband phase noise L(f) in dBc/Hz, interpolated linearly in log-frequency; empty means no phase noise. In the linear analysis an LO is a `z0` termination.
+Local oscillator: `freq` (Hz), `power` (dBm), `z0` (ohm), and `phase_noise`: optional text file with two columns, offset frequency in Hz and single-sideband phase noise L(f) in dBc/Hz, relative to the project folder. `#` or `!` starts a comment; values are separated by spaces, tabs, commas or semicolons; the rows may come in any order, offsets must be positive and distinct. Between the points L (dB) is interpolated linearly over log10(f), so each segment is a power law that the integration follows exactly; beyond the first and last point L is held constant. The budget uses the file for the LO phase noise and reciprocal mixing of the mixers the LO drives (see `mixer`); a file that cannot be read gives a warning and no phase noise. An empty `phase_noise` means no phase noise. In the linear analysis an LO is a `z0` termination.
+
+```
+# offset (Hz)   L (dBc/Hz)
+1e3             -85
+1e4             -95
+1e5             -115
+1e6             -135
+1e7             -150
+```
+
+#### `vco` — pin `out`
+
+Free-running oscillator: `freq` (Hz), `power` (dBm), `z0` (ohm) and a phase-noise model: `pn` (dBc/Hz) at the offset `pn_offset` (Hz), falling 20 dB per decade, added in power to the floor `pn_floor` (dBc/Hz):
+
+L(f) = 10·log10(10^((pn - 20·log10(f / pn_offset)) / 10) + 10^(pn_floor / 10))
+
+Drives a mixer's `lo` like an `lo` block. The profile is tabulated at 20 points per decade from 0.1 Hz to 10 GHz and then used like an `lo` file. In the linear analysis a `z0` termination.
+
+#### `pll` — pin `out`
+
+Phase-locked synthesizer: `freq` (output, Hz), `power` (dBm), `z0` (ohm), `ref_freq` (reference = phase-detector frequency, Hz), `ref_pn` (reference phase noise, flat, dBc/Hz), `fom` (normalised in-band PLL floor at 1 Hz, dBc/Hz; typically -220 to -230), `loop_bw` (Hz), and the VCO as for `vco`: `pn` at `pn_offset`, `pn_floor`. With N = freq / ref_freq and x = f / loop_bw:
+
+- in band: L_in = max(ref_pn + 20·log10 N, fom + 10·log10(ref_freq) + 20·log10 N)
+- L(f) = 10·log10( L_in / (1 + x²) + L_vco(f) · x² / (1 + x²) ), levels linear inside the sum, L_vco as for `vco`.
+
+A first-order loop shape: the in-band noise is low-pass filtered and the VCO noise high-pass filtered at `loop_bw`. It is a textbook approximation (no loop filter, no peaking, no divider noise), not a loop simulation. Note that a VCO with 20 dB/decade noise contributes the flat level L_vco(loop_bw) inside the loop. Drives a mixer's `lo` like an `lo` block; tabulated like `vco`. In the linear analysis a `z0` termination.
+
+#### `dac` — pin `out`
+
+Digital-to-analogue converter that starts a transmit chain: `freq` (output frequency, Hz), `fs` (sample rate, Hz), `bits`, `full_scale` (power of a full-scale sine, dBm), `backoff` (dB below full scale), `nsd` (noise spectral density at the output, dBm/Hz; `0` = from quantisation), `z0` (ohm).
+
+- Signal power: full_scale - backoff + 20·log10|sinc(freq / fs)|, sinc(x) = sin(πx)/(πx) (the zero-order-hold roll-off of an NRZ DAC).
+- Noise density: `nsd`, or with `nsd` = 0 the quantisation floor full_scale - 6.02·bits - 1.76 - 10·log10(fs / 2).
+- The noise at the chain input is NSD + 10·log10(B) instead of k T0 B (the budget uses T = 10^((NSD - 30)/10) / k as source temperature).
+- First image at |fs - freq|, at full_scale - backoff + 20·log10|sinc(image / fs)|; the budget reports it and its level after every stage (transmission |S21| at the image frequency).
+
+The budget follows a swept input frequency with the sinc roll-off. A DAC is a start like `source`: without a chosen start, the chain starts at the first source or DAC. In the linear analysis a `z0` termination.
 
 #### `splitter` — pins `in`, `out1`, `out2`; `combiner` — pins `in1`, `in2`, `out`
 
@@ -402,6 +529,8 @@ Two-way in-phase splitter / combiner; the S-matrix is the same, the block type o
 | `isolation` | dB | Between the two split ports (`out1`–`out2`, `in1`–`in2`) |
 | `imbalance` | dB | Amplitude imbalance: port 1 path is +imbalance/2, port 2 path is -imbalance/2 |
 | `phase_imbalance` | deg | Phase imbalance: port 1 path is +phase_imbalance/2, port 2 path is -phase_imbalance/2 |
+| `il_slope`, `freq` | dB/GHz, Hz | Optional slope of `il` around `freq` |
+| `rl_in`, `rl_out` | dB | Optional return losses: `rl_in` at the input side (splitter `in`; combiner `in1`, `in2`), `rl_out` at the output side |
 | `z0` | ohm | Port impedance, all ports matched |
 
 Transmission between the common port and split port k: -(3.0103 + il ± imbalance/2) dB. In the budget, a combiner passes each input to `out` with that loss (incoherent addition of different signals).
@@ -413,17 +542,23 @@ Transmission between the common port and split port k: -(3.0103 + il ± imbalanc
 | `coupling` | dB | Attenuation `in` → `cpl` (and `out` → `iso`) |
 | `directivity` | dB | Isolation minus coupling: `in` → `iso` (and `out` → `cpl`) is coupling + directivity |
 | `il` | dB | Main line loss `in` → `out` (and `cpl` → `iso`) |
+| `il_slope`, `freq` | dB/GHz, Hz | Optional slope of `il` around `freq` |
+| `rl` | dB | Optional return loss of every port |
 | `z0` | ohm | Port impedance, all ports matched |
 
 Reciprocal. Through paths have phase 0, coupled paths +90 degrees (quadrature coupler).
 
 #### `switch_spdt` — pins `com`, `t1`, `t2`
 
-`state` (choice `t1` or `t2`) selects the throw connected to `com` with loss `il` (dB). The other throw sees `isolation` (dB) to `com` and to the selected throw, and is terminated in `z0` (absorptive switch). Reciprocal.
+`state` (choice `t1` or `t2`) selects the throw connected to `com` with loss `il` (dB). The other throw sees `isolation` (dB) to `com` and to the selected throw, and is terminated in `z0` (absorptive switch). Reciprocal. `select` is an expression giving the throw number (1, 2, ...) and overrides `state` when it is not 0, so one variable can set several switches (`select` = `band`); a number outside the throws is an error. Optional `il_slope` / `freq` (slope of `il`), `rl_in` (return loss at `com`) and `rl_out` (at the throws).
+
+#### `switch_sp3t` — pins `com`, `t1`, `t2`, `t3`; `switch_sp4t` — pins `com`, `t1` .. `t4`
+
+As `switch_spdt` with three or four throws: `state` selects the throw; every other pair of pins is `isolation` apart. Same parameters. The matrix is kept passive (a low `isolation` with a low `il` reduces the transmission).
 
 #### `isolator` — pins `in`, `out`
 
-`il` (dB) forward loss `in` → `out`, `isolation` (dB) reverse loss `out` → `in`, matched to `z0`.
+`il` (dB) forward loss `in` → `out`, `isolation` (dB) reverse loss `out` → `in`, matched to `z0`. Optional `il_slope` / `freq`, `rl_in`, `rl_out`.
 
 #### `circulator` — pins `p1`, `p2`, `p3`
 
@@ -438,9 +573,11 @@ Circulation p1 → p2 → p3 → p1 with loss `il` (dB); the reverse direction (
 | `freq` | Hz | Frequency at which `loss_per_m` is given |
 | `il` | dB | Fixed loss independent of length and frequency (connectors) |
 | `vf` | | Velocity factor (fraction of c0) |
+| `il_slope` | dB/GHz | Optional slope of the fixed loss `il` around `freq` |
+| `rl_in`, `rl_out` | dB | Optional return losses (connectors) |
 | `z0` | ohm | Characteristic and port impedance (matched) |
 
-Loss at frequency f: il + loss_per_m · length · sqrt(f / freq) dB (skin-effect scaling). Phase lag 360 · f · length / (vf · c0) degrees.
+Loss at frequency f: il(f) + loss_per_m · length · sqrt(f / freq) dB (skin-effect scaling), il(f) = max(0, il + il_slope · (f - freq) / 1 GHz). Phase lag 360 · f · length / (vf · c0) degrees.
 
 #### `antenna` — pin `p`
 
@@ -448,11 +585,47 @@ Loss at frequency f: il + loss_per_m · length · sqrt(f / freq) dB (skin-effect
 
 #### `multiplier` — pins `in`, `out`
 
-`factor` (integer >= 1): f_out = factor · f_in. `gain` (dB): output power at the wanted harmonic over input power. `rejection` (dBc, positive): level of the other harmonics below the wanted one. `z0`: port impedance. Phase noise increases by 20·log10(factor). Not supported by the linear analysis.
+`factor` (integer >= 1): f_out = factor · f_in. `gain` (dB): output power at the wanted harmonic over input power. `rejection` (dBc, positive): level of the other harmonics below the wanted one. `z0`: port impedance. Not supported by the linear analysis. Phase noise rises by 20·log10(factor): on an LO path the budget raises the LO's phase-noise profile by that much; on the signal path it multiplies the accumulated phase-noise ratio of the signal by factor².
 
 #### `phase_shifter` — pins `in`, `out`
 
-`phase` (deg, positive = lag), `il` (dB), `z0`: S21 = S12 = undb20(-il) · exp(-j · phase · pi/180), matched.
+`phase` (deg, positive = lag), `il` (dB), `z0`: S21 = S12 = undb20(-il) · exp(-j · phase · pi/180), matched. Optional `il_slope` / `freq`, `rl_in`, `rl_out`.
+
+#### `dc_block` — pins `in`, `out`
+
+Series DC block: `il` (dB) extra loss, `fc` (Hz) low corner, `z0`. A series capacitor with 1/(2π f C · 2 z0) = fc / f: S11 = S22 = x / (1 + x), S21 = S12 = undb20(-il) / (1 + x) with x = -j · fc / f, so |S21|² = 10^(-il/10) / (1 + (fc/f)²) (-3 dB at fc) and DC is blocked (S21 = 0, S11 = 1 at 0 Hz).
+
+#### `bias_tee` — pins `rf_in`, `rf_out`, `dc`
+
+RF path `rf_in` → `rf_out` with loss `il` (dB, optional `il_slope` / `freq`, `rl_in`, `rl_out`); the `dc` pin is matched at RF and `isolation` (dB) away from both RF pins (absorptive, kept passive). The signal chain never passes the `dc` pin.
+
+#### `balun` — pins `unbal`, `bal_p`, `bal_n`
+
+`il` (dB, excess over the 3.01 dB split), `isolation` (dB, `bal_p`–`bal_n`), `imbalance` (dB: `bal_p` path -(3.01 + il + imbalance/2) dB, `bal_n` path -(3.01 + il - imbalance/2) dB), `phase_imbalance` (deg, -/+ half at `bal_p` / `bal_n`), optional `il_slope` / `freq`, `rl_in` (at `unbal`), `rl_out` (at the balanced pins), `z0`. `unbal` → `bal_n` is at 180 degrees to `unbal` → `bal_p`. The phase imbalance is applied as phase shifts at the balanced pins, which keeps the block passive. In the budget the balun is one stage between `unbal` and the balanced pair: gain = 10·log10(|S_p,unbal|² + |S_n,unbal|²) ≈ -il, because a differential load takes the power of both pins.
+
+#### `hybrid_90` — pins `in`, `out0`, `out90`, `iso`
+
+3 dB quadrature hybrid. `il` (dB, excess over 3.01 dB), `isolation` (dB, `in`–`iso` and `out0`–`out90`), `imbalance` (dB, `out0` path +imbalance/2 of loss), `phase_imbalance` (deg), optional `il_slope` / `freq`, `rl` (every port), `z0`. Without imbalance: S(out0, in) = a, S(out90, in) = -j·a (lags by 90 degrees), S(iso, out0) = -j·a, S(iso, out90) = a, a = undb20(-(3.01 + il)); reciprocal. The phase imbalance shifts `out0` by -phase_imbalance/2 and `out90` by +phase_imbalance/2. With a poor isolation and low loss the matrix would not be passive; the transmissions are then scaled down (with `il` = 0.3 dB that happens below about 30 dB of isolation).
+
+#### `hybrid_180` — pins `sum`, `diff`, `p1`, `p2`
+
+3 dB 180-degree (rat-race) hybrid. Same parameters as `hybrid_90`. `sum` → `p1` and `p2` in phase, `diff` → `p1` in phase and `diff` → `p2` at 180 degrees; `sum`–`diff` and `p1`–`p2` are `isolation` apart. Imbalances on the `p1` / `p2` paths.
+
+#### `limiter` — pins `in`, `out`
+
+Power limiter: small-signal loss `il` (dB, optional `il_slope` / `freq`, `rl_in`, `rl_out`), output clamp `limit` (dBm, the flat leakage), `z0`. Linear model as `attenuator`. In the budget `limit` is the stage's output compression point (OP1dB), a hard clamp: the cascade P1dB and headroom include it, and a signal above it marks the stage as compressed.
+
+#### `detector` — pin `in`
+
+Power detector that ends a chain: `sensitivity` (dBm, e.g. the tangential sensitivity), `dynamic_range` (dB), `z0`. The budget reports the margin = signal - sensitivity and the headroom = sensitivity + dynamic_range - signal (both should be positive), like the ADC's full-scale headroom. In the linear analysis a `z0` termination.
+
+#### `diplexer` — pins `com`, `low`, `high`
+
+Complementary Butterworth diplexer: `crossover` (Hz, the -3 dB point of both paths), `order` (integer >= 1), `il` (dB), `z0`. With H_L the low-pass and H_H the high-pass Butterworth response of that order (as `filter`), |H_L|² + |H_H|² = 1, and the lossless reciprocal 3-port matched at `com`:
+
+S = undb20(-il) · [[0, H_L, H_H], [H_L, conj(H_H)², -conj(H_H·H_L)], [H_H, -conj(H_H·H_L), conj(H_L)²]]
+
+In the budget, a signal entering at `com` leaves at `low` below the crossover and at `high` from it on (choose another with `DPX1.high`); `low` and `high` lead to `com`.
 
 #### `adc` — pin `in`
 
@@ -476,15 +649,19 @@ Two-pin elements of the `basic` library are two-terminal elements between their 
 
 #### `resistor` — pins `p`, `n`
 
-`r` (ohm): impedance R.
+`r` (ohm): impedance R. Optional `esl` (H) and `cp` (F), read as 0 when the definition lacks them: Z = (R + j·2π·f·esl) in parallel with 1/(j·2π·f·cp).
 
 #### `capacitor` — pins `p`, `n`
 
-`c` (F), `q`, `freq` (Hz). Ideal (Z = 1/(j·2π·f·c)) if `q` = 0. Otherwise a series resistance Rs = 1 / (2π · freq · c · q), constant over frequency, so that the Q at `freq` is `q`.
+`c` (F), `q`, `freq` (Hz). Ideal (Z = 1/(j·2π·f·c)) if `q` = 0. Otherwise a series resistance Rs = 1 / (2π · freq · c · q), constant over frequency, so that the Q at `freq` is `q`. Optional `esr` (ohm) and `esl` (H) in series: Z = Rs + esr + j·2π·f·esl + 1/(j·2π·f·c).
 
 #### `inductor` — pins `p`, `n`
 
-`l` (H), `q`, `freq` (Hz). Ideal (Z = j·2π·f·l) if `q` = 0. Otherwise a series resistance Rs = 2π · freq · l / q, constant over frequency.
+`l` (H), `q`, `freq` (Hz). Ideal (Z = j·2π·f·l) if `q` = 0. Otherwise a series resistance Rs = 2π · freq · l / q, constant over frequency. Optional `cp` (F) across the whole: Z = (Rs + j·2π·f·l) in parallel with 1/(j·2π·f·cp).
+
+#### `substrate` — no pins
+
+Not an element: the netlist resolves it (see [Substrates](#substrates)). `material` (choice: `custom` or a catalog id), `h`, `t`, `sigma`, `rough`, `er`, `tand` (used for `custom`), `b` (stripline ground spacing; 0 = 2·h + t). An analysis that meets one reports an error.
 
 #### `tline` — pins `in`, `out`
 
@@ -513,12 +690,14 @@ Ideal symmetric lossless coupled TEM lines. Line A runs p1 → p2, line B runs p
 | `tand` | | Substrate loss tangent |
 | `t` | m | Metal thickness (0: zero-thickness strip) |
 | `sigma` | S/m | Conductor conductivity; 0 means no conductor loss |
+| `rough` | m | Conductor rms surface roughness (optional, 0 = smooth) |
+| `substrate` | | Reference of a Substrate part (optional, empty = the values above) |
 
-Z0 and εeff from Hammerstad–Jensen with thickness correction, dispersion after Kirschning–Jansen; dielectric loss from `tand`, conductor loss from `sigma` (skin effect).
+Z0 and εeff from Hammerstad–Jensen with thickness correction, dispersion after Kirschning–Jansen; dielectric loss from `tand`, conductor loss from `sigma` (skin effect). Surface roughness multiplies the conductor loss by the Hammerstad–Jensen factor K = 1 + (2/π)·atan(1.4·(Δ/δ)²), Δ the rms roughness and δ the skin depth (E. Hammerstad and O. Jensen, IEEE MTT-S Digest 1980; the same factor as Qucs and scikit-rf). K grows from 1 to at most 2 once Δ is well above δ; at 10 GHz in copper δ is 0.66 µm. Typical rms roughness of copper foils is from about 0.3 µm (rolled, low-profile) to 2–3 µm (standard electrodeposited); take it from the laminate maker. The same factor applies to `stripline`, `cpw` and `coupled_microstrip`.
 
 #### `stripline` — pins `in`, `out`
 
-Symmetric stripline centred between two ground planes: `w`, `l`, `b` (m, ground-plane spacing), `er`, `tand`, `t`, `sigma` as for `microstrip`.
+Symmetric stripline centred between two ground planes: `w`, `l`, `b` (m, ground-plane spacing), `er`, `tand`, `t`, `sigma`, `rough`, `substrate` as for `microstrip`.
 
 #### `coax` — pins `in`, `out`
 
@@ -526,11 +705,28 @@ Symmetric stripline centred between two ground planes: `w`, `l`, `b` (m, ground-
 
 #### `cpw` — pins `in`, `out`
 
-Coplanar waveguide: `w` (m) centre strip width, `s` (m) gap to the side grounds, `l`, `h`, `er`, `tand`, `t`, `sigma` as for `microstrip`, and `backed` (choice `no` / `yes`): whether the substrate has a ground plane on its back (conductor-backed CPW). The side grounds are the implicit ground.
+Coplanar waveguide: `w` (m) centre strip width, `s` (m) gap to the side grounds, `l`, `h`, `er`, `tand`, `t`, `sigma`, `rough`, `substrate` as for `microstrip`, and `backed` (choice `no` / `yes`): whether the substrate has a ground plane on its back (conductor-backed CPW). The side grounds are the implicit ground.
 
 #### `transformer` — pins `in`, `out`
 
 Ideal transformer with both windings referenced to ground. `n` = N_secondary / N_primary: V_out = n · V_in, I_out = -I_in / n, so a load Z_L at `out` appears at `in` as Z_L / n².
+
+#### `coupled_microstrip` — pins `p1`, `p2`, `p3`, `p4`
+
+Two identical parallel microstrips, same pin convention as `coupled_lines` (line A p1 → p2, line B p3 → p4, p1 and p3 at the same end). `w`, `s` (edge-to-edge gap), `l`, `h`, `er`, `tand`, `t`, `sigma`, `rough`, `substrate`. Even- and odd-mode impedance and effective permittivity from M. Kirschning and R. H. Jansen, "Accurate wide-range design equations for the frequency-dependent characteristic of parallel coupled microstrip lines", IEEE T-MTT 32(1), 1984 (with the corrections of T-MTT 33(3), 1985), including their dispersion; strip thickness (only for s > 20·t) by Schneider's width correction and Jansen's even/odd split. This is the formula set of Qucs (MCOUPLED, model "Kirschning"), except that Qucs's misprinted P1 term of the even-mode dispersion is replaced by the single-line P1 of Kirschning–Jansen. Each mode is a lossy line with conductor loss as the microstrip (current-distribution factor with the mean of the two mode impedances, roughness factor) and dielectric loss from its filling factor. Stated validity: 0.1 ≤ w/h ≤ 10, 0.1 ≤ s/h ≤ 10, er ≤ 18, f·h ≤ 25 GHz·mm.
+
+#### Microstrip discontinuities
+
+All use the microstrip model above (Hammerstad–Jensen, Kirschning–Jansen) for the impedance and effective permittivity of the strips, and the formulas of the Qucs technical papers (section "Microstrip components"), whose sources are:
+
+- `microstrip_open` (pin `p`; `w`, `h`, `er`, `t`): the fringing field as a capacitance to ground, C = Δl·√εeff/(c0·Z0), with the length extension Δl of M. Kirschning, R. H. Jansen and N. H. L. Koster, "Accurate model for open end effect of microstrip lines", Electronics Letters 17(3), 1981 (accuracy 0.2 % for 0.01 ≤ w/h ≤ 100, er ≤ 50). εeff and Z0 at the analysis frequency.
+- `microstrip_gap` (pins `in`, `out`; `w1`, `w2`, `s`, `h`, `er`, `t`): a π network, shunt C1, series Cs, shunt C2, after M. Kirschning, R. H. Jansen and N. H. L. Koster, "Measurement and computer-aided modeling of microstrip discontinuities by an improved resonator method", IEEE MTT-S Digest 1983, and Kirschning's dissertation (1984). C1 and C2 tend to the open-end capacitances for a wide gap. Stated validity 0.1 ≤ w/h ≤ 3, 1 ≤ w2/w1 ≤ 3, 6 ≤ er ≤ 13, s/h ≥ 0.2, 0.2 to 18 GHz.
+- `microstrip_step` (pins `in`, `out`; `w1`, `w2`, `h`, `er`, `t`): series L1, shunt C, series L2, from K. C. Gupta, R. Garg, I. Bahl and P. Bhartia, *Microstrip Lines and Slotlines*, 2nd ed., 1996: C = √(w1·w2)·[(10.1·log er + 2.33)·r − 12.6·log er − 3.17] pF/m (er ≤ 10, 1.5 ≤ r ≤ 3.5, error < 10 %), L = h·[40.5·(r − 1) − 75·log r + 0.2·(r − 1)²] nH/m (r ≤ 5, error < 5 %), r = wider/narrower width, split between the sides in proportion to their inductance per length. C is set to 0 where the formula turns negative (r below about 1.3), so equal widths give no step.
+- `microstrip_bend` (pins `in`, `out`; `w`, `mitred` no/yes, `h`, `er`, `t`): a 90° bend as a T of series L, shunt C, series L (Kirschning, Jansen and Koster, MTT-S 1983 above): unmitred C = w·[(10.35·er + 2.5)·w/h + 2.6·er + 5.64] pF/m, L = 220·h·[1 − 1.35·exp(−0.18·(w/h)^1.39)] nH/m; 50 % mitred C = w·[(3.93·er + 0.62)·w/h + 7.6·er + 3.80] pF/m, L = 440·h·[1 − 1.062·exp(−0.177·(w/h)^0.947)] nH/m. Stated for 0.2 ≤ w/h ≤ 6, 2.36 ≤ er ≤ 10.4, up to 14 GHz, about 0.3 %. Reference planes as in Qucs (MCORN, MMBEND).
+- `microstrip_tee` (pins `p1`, `p2` main arms, `p3` side arm; `w1`, `w2`, `w3`, `h`, `er`, `tand`, `t`, `sigma`, `rough`): E. Hammerstad, "Computer-aided design of microstrip couplers with accurate discontinuity models", IEEE MTT-S Digest 1981: a node with shunt susceptance BT, a transformer in each main arm and short arm lines (lossy, possibly of negative length) between the reference planes and the node. At 0 Hz it is an ideal three-way node.
+- `microstrip_via` (pin `p` to ground; `d` diameter, `h`, `tp` plating thickness, `sigma`): L = μ0/(2π)·[h·ln((h + a)/r) + 1.5·(r − a)], r = d/2, a = √(r² + h²) (M. E. Goldfarb and R. A. Pucel, "Modeling via hole grounds in microstrip", IEEE Microwave and Guided Wave Letters 1(6), 1991), in series with the plated barrel's resistance h/(σ·π·(r² − (r − tp)²))·√(1 + f·π·μ0·σ·tp²) (skin effect, as in Qucs MVIA). Stated for h < 0.03·λ0.
+
+Outside the stated ranges the formulas still evaluate; check such designs with a field solver. The discontinuities are reactive (lossless) except the tee's arm lines and the via; noise follows from the losses (passive at T0). Validation: `src/rfdata/tests` compare the C++ code with an independent Python evaluation of the same formulas (`tools/generate_rf_reference.py`, section `discontinuities`), and the coupled-line model with a 2D finite-difference field solution (largest deviation 0.6 % in Z, 0.3 % in εeff over the tested cases).
 
 ## Antenna libraries
 
@@ -543,7 +739,7 @@ Analytic antenna element models: isotropic, cos^n, dipoles, monopole, patches, a
 | Entry | Name | Description |
 |---|---|---|
 | `isotropic` | Isotropic | Ideal isotropic radiator (array factor only). |
-| `cos15` | Generic array element cos^1.5 | Typical embedded element pattern of a well-matched planar array element (about 5.4 dBi, scan loss cos^1.5). |
+| `cos15` | Generic array element cos^1.5 | Typical embedded element pattern of a well-matched planar array element (about 7.0 dBi, scan loss cos^1.5). |
 | `cos12-slant` | cos^1.2 element, slant 45 | Wide-beam base-station style element, slant +45 polarisation. |
 | `dipole-half-wave` | Half-wave dipole | Free-space half-wave dipole along x, 2.15 dBi. |
 | `dipole-over-ground` | Dipole a quarter wave over ground | Half-wave dipole a quarter wavelength over an infinite ground plane; classic array element. |

@@ -583,6 +583,148 @@ double maximumAvailableGainDb(const CMatrix &s)
     return db10(gain);
 }
 
+// Stability circles (Gonzalez eqs. 3.3.7-3.3.10): the load circle has
+// centre (S22 - Delta S11*)* / (|S22|^2 - |Delta|^2) and radius
+// |S12 S21| / ||S22|^2 - |Delta|^2|; the source circle swaps S11 and S22.
+namespace {
+
+SmithCircle stabilityCircle(Complex sii, Complex sjj, Complex delta, double coupling)
+{
+    SmithCircle circle;
+    const double denominator = std::norm(sii) - std::norm(delta);
+    if (std::abs(denominator) < 1e-12)
+        return circle; // the circle degenerates into a line
+    circle.centre = std::conj(sii - delta * std::conj(sjj)) / denominator;
+    circle.radius = coupling / std::abs(denominator);
+    circle.valid = std::isfinite(circle.radius);
+    return circle;
+}
+
+// Gonzalez eqs. 3.6.x / 3.7.x: with g = G/|S21|^2 and C = Sii - Delta Sjj*,
+// centre g C* / (1 + g (|Sii|^2 - |Delta|^2)),
+// radius sqrt(1 - 2 K |S12 S21| g + |S12 S21|^2 g^2) / |1 + g (|Sii|^2 - |Delta|^2)|.
+SmithCircle gainCircle(const CMatrix &s, Complex sii, Complex sjj, double gainDb)
+{
+    SmithCircle circle;
+    const double s21 = std::norm(s(1, 0));
+    if (!(s21 > 0))
+        return circle;
+    const Complex delta = stabilityDelta(s);
+    const double g = std::pow(10.0, gainDb / 10.0) / s21;
+    const double coupling = std::abs(s(0, 1) * s(1, 0));
+    const double k = stabilityK(s);
+    const double radicand = 1.0 - 2.0 * k * coupling * g + coupling * coupling * g * g;
+    const double denominator = 1.0 + g * (std::norm(sii) - std::norm(delta));
+    if (radicand < 0 || std::abs(denominator) < 1e-15 || !std::isfinite(k))
+        return circle;
+    circle.centre = g * std::conj(sii - delta * std::conj(sjj)) / denominator;
+    circle.radius = std::sqrt(radicand) / std::abs(denominator);
+    circle.valid = std::isfinite(circle.radius);
+    return circle;
+}
+
+} // namespace
+
+SmithCircle sourceStabilityCircle(const CMatrix &s)
+{
+    return stabilityCircle(s(0, 0), s(1, 1), stabilityDelta(s), std::abs(s(0, 1) * s(1, 0)));
+}
+
+SmithCircle loadStabilityCircle(const CMatrix &s)
+{
+    return stabilityCircle(s(1, 1), s(0, 0), stabilityDelta(s), std::abs(s(0, 1) * s(1, 0)));
+}
+
+// GA = |S21|^2 (1 - |Gs|^2) / (|1 - S11 Gs|^2 (1 - |Gout|^2)),
+// Gout = S22 + S12 S21 Gs / (1 - S11 Gs); GP likewise with the ports swapped.
+double availableGain(const CMatrix &s, Complex gammaS)
+{
+    const Complex gammaOut = s(1, 1) + s(0, 1) * s(1, 0) * gammaS / (1.0 - s(0, 0) * gammaS);
+    return std::norm(s(1, 0)) * (1.0 - std::norm(gammaS)) / (std::norm(1.0 - s(0, 0) * gammaS) * (1.0 - std::norm(gammaOut)));
+}
+
+double operatingPowerGain(const CMatrix &s, Complex gammaL)
+{
+    const Complex gammaIn = s(0, 0) + s(0, 1) * s(1, 0) * gammaL / (1.0 - s(1, 1) * gammaL);
+    return std::norm(s(1, 0)) * (1.0 - std::norm(gammaL)) / (std::norm(1.0 - s(1, 1) * gammaL) * (1.0 - std::norm(gammaIn)));
+}
+
+SmithCircle availableGainCircle(const CMatrix &s, double gainDb)
+{
+    return gainCircle(s, s(0, 0), s(1, 1), gainDb);
+}
+
+SmithCircle operatingPowerGainCircle(const CMatrix &s, double gainDb)
+{
+    return gainCircle(s, s(1, 1), s(0, 0), gainDb);
+}
+
+// Gonzalez eqs. 4.3.4-4.3.6: N = (F - Fmin) |1 + Gopt|^2 / (4 Rn/z0),
+// centre Gopt/(1 + N), radius sqrt(N (N + 1 - |Gopt|^2))/(1 + N).
+SmithCircle noiseFigureCircle(const NoiseParameters &noise, double nfDb, double z0)
+{
+    SmithCircle circle;
+    const double f = std::pow(10.0, nfDb / 10.0), fmin = std::pow(10.0, noise.fminDb / 10.0);
+    if (f < fmin || !(noise.rn > 0) || !(z0 > 0))
+        return circle;
+    const double n = (f - fmin) * std::norm(1.0 + noise.gammaOpt) / (4.0 * noise.rn / z0);
+    const double radicand = n * (n + 1.0 - std::norm(noise.gammaOpt));
+    if (radicand < 0)
+        return circle;
+    circle.centre = noise.gammaOpt / (1.0 + n);
+    circle.radius = std::sqrt(radicand) / (1.0 + n);
+    circle.valid = std::isfinite(circle.radius);
+    return circle;
+}
+
+double maximumUnilateralGainDb(const CMatrix &s)
+{
+    const double den = (1.0 - std::norm(s(0, 0))) * (1.0 - std::norm(s(1, 1)));
+    if (!(den > 0))
+        return Infinity;
+    return db10(std::norm(s(1, 0)) / den);
+}
+
+// S. J. Mason, "Power gain in feedback amplifier", IRE Trans. Circuit Theory
+// 1(2), 1954; in S-parameters (as scikit-rf's unilateral_gain):
+// U = |S21/S12 - 1|^2 / (2 (K |S21/S12| - Re(S21/S12))).
+double masonUnilateralGainDb(const CMatrix &s)
+{
+    if (std::abs(s(0, 1)) == 0)
+        return std::abs(s(1, 0)) > 0 ? Infinity : -Infinity;
+    const Complex ratio = s(1, 0) / s(0, 1);
+    const double den = 2.0 * (stabilityK(s) * std::abs(ratio) - ratio.real());
+    const double num = std::norm(ratio - 1.0);
+    if (den == 0)
+        return num > 0 ? Infinity : -Infinity;
+    return db10(num / den); // a negative U (active in a way U does not cover) gives NaN
+}
+
+// Gonzalez eqs. 3.6.6-3.6.9: B1 = 1 + |S11|^2 - |S22|^2 - |Delta|^2,
+// C1 = S11 - Delta S22*, Gms = (B1 - sqrt(B1^2 - 4 |C1|^2))/(2 C1); the load
+// side with the ports swapped.
+std::optional<ConjugateMatch> simultaneousConjugateMatch(const CMatrix &s)
+{
+    const Complex delta = stabilityDelta(s);
+    if (!(stabilityK(s) > 1) || !(std::abs(delta) < 1))
+        return std::nullopt;
+    const auto side = [&](Complex sii, Complex sjj) -> std::optional<Complex> {
+        const double b = 1.0 + std::norm(sii) - std::norm(sjj) - std::norm(delta);
+        const Complex c = sii - delta * std::conj(sjj);
+        if (std::abs(c) < 1e-15)
+            return Complex(0, 0);
+        const double radicand = b * b - 4.0 * std::norm(c);
+        if (radicand < 0)
+            return std::nullopt;
+        return (b - std::sqrt(radicand)) / (2.0 * c);
+    };
+    const auto gammaS = side(s(0, 0), s(1, 1));
+    const auto gammaL = side(s(1, 1), s(0, 0));
+    if (!gammaS || !gammaL)
+        return std::nullopt;
+    return ConjugateMatch{*gammaS, *gammaL};
+}
+
 std::vector<double> unwrappedPhase(const NetworkData &network, int row, int col)
 {
     std::vector<double> phase;

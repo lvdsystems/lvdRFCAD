@@ -593,7 +593,44 @@ ImportedNetlist importSpiceNetlist(const QString &text, const QString &baseDirec
     return imported;
 }
 
-SpiceDeck deckFromNetlist(const QString &circuit, const QString &title)
+QString rewriteIncludePaths(const QString &circuit, const QString &directory, bool relative)
+{
+    if (directory.isEmpty())
+        return circuit;
+    static const QRegularExpression card(QStringLiteral("^(\\s*\\.(?:include|inc|lib)\\s+)(\"[^\"]*\"|'[^']*'|\\S+)(.*)$"),
+                                         QRegularExpression::CaseInsensitiveOption);
+    const QDir dir(directory);
+    QStringList lines = circuit.split(QLatin1Char('\n'));
+    for (QString &line : lines) {
+        const QRegularExpressionMatch m = card.match(line);
+        if (!m.hasMatch())
+            continue;
+        QString file = m.captured(2);
+        file.remove(QLatin1Char('"'));
+        file.remove(QLatin1Char('\''));
+        // ".lib name" without a file (a section of an earlier .lib) stays as it is.
+        if (m.captured(1).trimmed().startsWith(QLatin1String(".lib"), Qt::CaseInsensitive) && m.captured(3).trimmed().isEmpty()
+            && !file.contains(QLatin1Char('.')))
+            continue;
+        QString rewritten;
+        if (relative) {
+            if (QFileInfo(file).isRelative())
+                continue;
+            const QString rel = dir.relativeFilePath(file);
+            if (rel.startsWith(QLatin1String("..")) || QFileInfo(rel).isAbsolute())
+                continue; // outside the project: keep the absolute path
+            rewritten = rel;
+        } else {
+            if (!QFileInfo(file).isRelative())
+                continue;
+            rewritten = dir.absoluteFilePath(file);
+        }
+        line = m.captured(1) + QStringLiteral("\"%1\"").arg(QDir::fromNativeSeparators(rewritten)) + m.captured(3);
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+SpiceDeck deckFromNetlist(const QString &circuit, const QString &title, const QString &projectDirectory)
 {
     SpiceDeck deck;
     const ImportedNetlist parsed = importSpiceNetlist(QStringLiteral("* title\n") + circuit);
@@ -609,7 +646,7 @@ SpiceDeck deckFromNetlist(const QString &circuit, const QString &title)
         element.elementNames << element.name;
         deck.elements << element;
     }
-    deck.text = QStringLiteral("* %1\n%2\n.end\n").arg(title, circuit);
+    deck.text = QStringLiteral("* %1\n%2\n.end\n").arg(title, rewriteIncludePaths(circuit, projectDirectory, false));
     return deck;
 }
 
@@ -639,8 +676,14 @@ Document *importNetlistDocument(Project &project, const QString &path, const QSt
     Document *document = project.createDocument(DocumentType::SpiceSchematic, documentName, error);
     if (!document)
         return nullptr;
-    QJsonObject simulation{{QStringLiteral("netlist"), imported.circuit},
-                           {QStringLiteral("netlistSource"), QDir::fromNativeSeparators(QFileInfo(path).absoluteFilePath())}};
+    // Paths inside the project are stored relative to it, so the project can move.
+    const QDir projectDir(project.directory());
+    QString source = QFileInfo(path).absoluteFilePath();
+    const QString relativeSource = projectDir.relativeFilePath(source);
+    if (!relativeSource.startsWith(QLatin1String("..")) && !QFileInfo(relativeSource).isAbsolute())
+        source = relativeSource;
+    QJsonObject simulation{{QStringLiteral("netlist"), rewriteIncludePaths(imported.circuit, project.directory(), true)},
+                           {QStringLiteral("netlistSource"), QDir::fromNativeSeparators(source)}};
     for (const SpiceAnalysisSetup &setup : imported.analyses)
         simulation = withSpiceAnalysis(simulation, setup);
     document->schematic()->setSimulation(simulation);

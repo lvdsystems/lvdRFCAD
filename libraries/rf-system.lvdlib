@@ -21,6 +21,11 @@
                 { "name": "oip2", "label": "Output IP2", "unit": "dBm", "default": "45" },
                 { "name": "op1db", "label": "Output P1dB", "unit": "dBm", "default": "18" },
                 { "name": "isolation", "label": "Reverse isolation", "unit": "dB", "default": "40" },
+                { "name": "gain_slope", "label": "Gain slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "nf_slope", "label": "Noise figure slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -50,6 +55,10 @@
             ],
             "parameters": [
                 { "name": "il", "label": "Attenuation", "unit": "dB", "default": "3", "shown": true },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -156,6 +165,9 @@
                 { "name": "side", "label": "LO side", "unit": "", "default": "low", "choices": ["low", "high"] },
                 { "name": "product", "label": "Wanted product", "unit": "", "default": "auto", "shown": true, "choices": ["auto", "difference", "sum"] },
                 { "name": "spur_table", "label": "Spur table file", "unit": "", "default": "", "file": true },
+                { "name": "rl_rf", "label": "RF return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_lo", "label": "LO return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_if", "label": "IF return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -210,7 +222,7 @@
             "id": "lo",
             "name": "Local oscillator",
             "category": "RF/Sources",
-            "description": "Local oscillator with optional phase noise",
+            "description": "Local oscillator; its phase-noise file feeds the budget's phase-noise and reciprocal-mixing figures",
             "referencePrefix": "LO",
             "pins": [
                 { "name": "out" }
@@ -218,7 +230,7 @@
             "parameters": [
                 { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "2GHz", "shown": true },
                 { "name": "power", "label": "Power", "unit": "dBm", "default": "13", "shown": true },
-                { "name": "phase_noise", "label": "Phase noise file", "unit": "", "default": "", "file": true },
+                { "name": "phase_noise", "label": "Phase noise file (offset Hz, L dBc/Hz)", "unit": "", "default": "", "file": true },
                 { "name": "z0", "label": "Source impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -252,6 +264,10 @@
                 { "name": "isolation", "label": "Output isolation", "unit": "dB", "default": "20" },
                 { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.1" },
                 { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "1" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -289,6 +305,10 @@
                 { "name": "isolation", "label": "Input isolation", "unit": "dB", "default": "20" },
                 { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.1" },
                 { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "1" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -326,6 +346,9 @@
                 { "name": "coupling", "label": "Coupling", "unit": "dB", "default": "20", "shown": true },
                 { "name": "directivity", "label": "Directivity", "unit": "dB", "default": "25" },
                 { "name": "il", "label": "Main line insertion loss", "unit": "dB", "default": "0.3" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl", "label": "Return loss of every port (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -367,8 +390,13 @@
                     "shown": true,
                     "choices": ["t1", "t2"]
                 },
+                { "name": "select", "label": "Throw number from an expression (0: use the selected throw)", "unit": "", "default": "0" },
                 { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.5" },
                 { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Return loss at com (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Return loss at the throws (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -406,6 +434,10 @@
             "parameters": [
                 { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.5", "shown": true },
                 { "name": "isolation", "label": "Reverse isolation", "unit": "dB", "default": "20" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -475,6 +507,9 @@
                 { "name": "freq", "label": "Frequency of loss_per_m", "unit": "Hz", "default": "1GHz" },
                 { "name": "il", "label": "Fixed loss (connectors)", "unit": "dB", "default": "0.1" },
                 { "name": "vf", "label": "Velocity factor", "unit": "", "default": "0.7" },
+                { "name": "il_slope", "label": "Slope of the fixed loss around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -569,6 +604,10 @@
             "parameters": [
                 { "name": "phase", "label": "Phase shift (lag)", "unit": "deg", "default": "90", "shown": true },
                 { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "1" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
                 { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
             ],
             "symbol": {
@@ -830,6 +869,542 @@
             },
             "models": [
                 { "kind": "rf-behavioural", "block": "termination" }
+            ]
+        },
+        {
+            "id": "vco",
+            "name": "VCO",
+            "category": "RF/Sources",
+            "description": "Free-running oscillator with a -20 dB/decade phase-noise slope and a floor; drives a mixer's LO",
+            "referencePrefix": "VCO",
+            "pins": [
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "freq", "label": "Frequency", "unit": "Hz", "default": "2GHz", "shown": true },
+                { "name": "power", "label": "Power", "unit": "dBm", "default": "10", "shown": true },
+                { "name": "pn", "label": "Phase noise at pn_offset", "unit": "dBc/Hz", "default": "-110" },
+                { "name": "pn_offset", "label": "Offset of pn", "unit": "Hz", "default": "100kHz" },
+                { "name": "pn_floor", "label": "Phase-noise floor", "unit": "dBc/Hz", "default": "-160" },
+                { "name": "z0", "label": "Source impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "circle", "center": [0, 0], "radius": 20, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "VCO", "size": 9, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "vco" }
+            ]
+        },
+        {
+            "id": "pll",
+            "name": "PLL synthesizer",
+            "category": "RF/Sources",
+            "description": "Phase-locked oscillator: reference and PLL floor in band, VCO noise outside a first-order loop",
+            "referencePrefix": "PLL",
+            "pins": [
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "freq", "label": "Output frequency", "unit": "Hz", "default": "2GHz", "shown": true },
+                { "name": "power", "label": "Power", "unit": "dBm", "default": "10", "shown": true },
+                { "name": "ref_freq", "label": "Reference (phase detector) frequency", "unit": "Hz", "default": "10MHz" },
+                { "name": "ref_pn", "label": "Reference phase noise (flat)", "unit": "dBc/Hz", "default": "-150" },
+                { "name": "fom", "label": "Normalised PLL floor at 1 Hz", "unit": "dBc/Hz", "default": "-226" },
+                { "name": "loop_bw", "label": "Loop bandwidth", "unit": "Hz", "default": "100kHz" },
+                { "name": "pn", "label": "VCO phase noise at pn_offset", "unit": "dBc/Hz", "default": "-110" },
+                { "name": "pn_offset", "label": "Offset of pn", "unit": "Hz", "default": "100kHz" },
+                { "name": "pn_floor", "label": "VCO phase-noise floor", "unit": "dBc/Hz", "default": "-160" },
+                { "name": "z0", "label": "Source impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "PLL", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "pll" }
+            ]
+        },
+        {
+            "id": "dac",
+            "name": "DAC",
+            "category": "RF/Converters",
+            "description": "Digital to analogue converter at the start of a transmit chain",
+            "referencePrefix": "DAC",
+            "pins": [
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "freq", "label": "Output frequency", "unit": "Hz", "default": "100MHz", "shown": true },
+                { "name": "fs", "label": "Sample rate", "unit": "Hz", "default": "1GHz", "shown": true },
+                { "name": "bits", "label": "Resolution", "unit": "bit", "default": "14" },
+                { "name": "full_scale", "label": "Full-scale output power", "unit": "dBm", "default": "0" },
+                { "name": "backoff", "label": "Backoff below full scale", "unit": "dB", "default": "6" },
+                { "name": "nsd", "label": "Noise spectral density (0 = from quantisation)", "unit": "dBm/Hz", "default": "0" },
+                { "name": "z0", "label": "Output impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    {
+                        "type": "polygon",
+                        "points": [[20, 0], [10, -20], [-20, -20], [-20, 20], [10, 20]],
+                        "fill": "none"
+                    },
+                    { "type": "text", "at": [-4, 0], "text": "DAC", "size": 10, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "dac" }
+            ]
+        },
+        {
+            "id": "dc_block",
+            "name": "DC block",
+            "category": "RF/Passive",
+            "description": "Series DC block: a high-pass corner and a small insertion loss",
+            "referencePrefix": "DCB",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.1", "shown": true },
+                { "name": "fc", "label": "Low corner frequency (-3 dB)", "unit": "Hz", "default": "1MHz" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-3, 0]] },
+                    { "type": "line", "points": [[-3, -10], [-3, 10]] },
+                    { "type": "line", "points": [[3, -10], [3, 10]] },
+                    { "type": "line", "points": [[3, 0], [20, 0]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "dc_block" }
+            ]
+        },
+        {
+            "id": "bias_tee",
+            "name": "Bias tee",
+            "category": "RF/Passive",
+            "description": "Bias tee: RF path rf_in to rf_out, DC feed at dc isolated from RF",
+            "referencePrefix": "BT",
+            "pins": [
+                { "name": "rf_in" },
+                { "name": "rf_out" },
+                { "name": "dc" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "RF insertion loss", "unit": "dB", "default": "0.3", "shown": true },
+                { "name": "isolation", "label": "RF to DC port isolation", "unit": "dB", "default": "40" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Return loss at rf_in (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Return loss at rf_out (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-8, 0]] },
+                    { "type": "line", "points": [[-8, -7], [-8, 7]] },
+                    { "type": "line", "points": [[-4, -7], [-4, 7]] },
+                    { "type": "line", "points": [[-4, 0], [20, 0]] },
+                    { "type": "line", "points": [[10, 0], [10, 4]] },
+                    { "type": "arc", "center": [10, 6], "radius": 2, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 10], "radius": 2, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [10, 14], "radius": 2, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "line", "points": [[10, 16], [10, 20]] }
+                ],
+                "pins": [
+                    { "pin": "rf_in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "rf_out", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "dc", "at": [10, 30], "length": 10, "direction": "up" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [-30, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "bias_tee" }
+            ]
+        },
+        {
+            "id": "balun",
+            "name": "Balun",
+            "category": "RF/Passive",
+            "description": "Balun: unbalanced input to a balanced pair in antiphase",
+            "referencePrefix": "BAL",
+            "pins": [
+                { "name": "unbal" },
+                { "name": "bal_p" },
+                { "name": "bal_n" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Excess insertion loss", "unit": "dB", "default": "0.5", "shown": true },
+                { "name": "isolation", "label": "Isolation bal_p to bal_n", "unit": "dB", "default": "20" },
+                { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.2" },
+                { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "2" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Return loss at unbal (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Return loss at bal_p, bal_n (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-6, 0]] },
+                    { "type": "arc", "center": [-4, -6], "radius": 3, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-4, 0], "radius": 3, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [-4, 6], "radius": 3, "startAngle": -90, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, -6], "radius": 3, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, 0], "radius": 3, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "arc", "center": [4, 6], "radius": 3, "startAngle": 90, "spanAngle": 180 },
+                    { "type": "line", "points": [[4, -9], [8, -10], [20, -10]] },
+                    { "type": "line", "points": [[4, 9], [8, 10], [20, 10]] }
+                ],
+                "pins": [
+                    { "pin": "unbal", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "bal_p", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "bal_n", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "balun" }
+            ]
+        },
+        {
+            "id": "hybrid_90",
+            "name": "90° hybrid",
+            "category": "RF/Passive",
+            "description": "3 dB quadrature hybrid: in to out0 and out90 (lagging 90°), iso isolated",
+            "referencePrefix": "HYB",
+            "pins": [
+                { "name": "in" },
+                { "name": "out0" },
+                { "name": "out90" },
+                { "name": "iso" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Excess insertion loss", "unit": "dB", "default": "0.3", "shown": true },
+                { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.2" },
+                { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "2" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl", "label": "Return loss of every port (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, -10], [20, -10]] },
+                    { "type": "line", "points": [[-20, 10], [20, 10]] },
+                    { "type": "line", "points": [[-8, -10], [-8, 10]] },
+                    { "type": "line", "points": [[8, -10], [8, 10]] },
+                    { "type": "text", "at": [0, 0], "text": "90°", "size": 7, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "out0", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "out90", "at": [30, 10], "length": 10, "direction": "left" },
+                    { "pin": "iso", "at": [-30, 10], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "hybrid_90" }
+            ]
+        },
+        {
+            "id": "hybrid_180",
+            "name": "180° hybrid",
+            "category": "RF/Passive",
+            "description": "3 dB rat-race hybrid: sum to p1 and p2 in phase, diff to p1 and p2 in antiphase",
+            "referencePrefix": "HYB",
+            "pins": [
+                { "name": "sum" },
+                { "name": "diff" },
+                { "name": "p1" },
+                { "name": "p2" }
+            ],
+            "parameters": [
+                { "name": "il", "label": "Excess insertion loss", "unit": "dB", "default": "0.3", "shown": true },
+                { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "imbalance", "label": "Amplitude imbalance", "unit": "dB", "default": "0.2" },
+                { "name": "phase_imbalance", "label": "Phase imbalance", "unit": "deg", "default": "2" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl", "label": "Return loss of every port (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "circle", "center": [0, 0], "radius": 11, "fill": "none" },
+                    { "type": "text", "at": [0, 0], "text": "180°", "size": 6, "anchor": "center" },
+                    { "type": "text", "at": [-14, -14], "text": "Σ", "size": 6, "anchor": "center" },
+                    { "type": "text", "at": [-14, 15], "text": "Δ", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "sum", "at": [-30, -10], "length": 10, "direction": "right" },
+                    { "pin": "diff", "at": [-30, 10], "length": 10, "direction": "right" },
+                    { "pin": "p1", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "p2", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "hybrid_180" }
+            ]
+        },
+        {
+            "id": "switch_sp3t",
+            "name": "SP3T switch",
+            "category": "RF/Switches",
+            "description": "Single-pole triple-throw switch",
+            "referencePrefix": "SW",
+            "pins": [
+                { "name": "com" },
+                { "name": "t1" },
+                { "name": "t2" },
+                { "name": "t3" }
+            ],
+            "parameters": [
+                {
+                    "name": "state",
+                    "label": "Selected throw",
+                    "unit": "",
+                    "default": "t1",
+                    "shown": true,
+                    "choices": ["t1", "t2", "t3"]
+                },
+                { "name": "select", "label": "Throw number from an expression (0: use the selected throw)", "unit": "", "default": "0" },
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.6" },
+                { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Return loss at com (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Return loss at the throws (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-12, 0]] },
+                    { "type": "circle", "center": [-10, 0], "radius": 2, "fill": "outline" },
+                    { "type": "line", "points": [[-9, -2], [8, -18]] },
+                    { "type": "circle", "center": [10, -20], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, 0], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, 20], "radius": 2, "fill": "none" },
+                    { "type": "line", "points": [[12, -20], [20, -20]] },
+                    { "type": "line", "points": [[12, 0], [20, 0]] },
+                    { "type": "line", "points": [[12, 20], [20, 20]] }
+                ],
+                "pins": [
+                    { "pin": "com", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "t1", "at": [30, -20], "length": 10, "direction": "left" },
+                    { "pin": "t2", "at": [30, 0], "length": 10, "direction": "left" },
+                    { "pin": "t3", "at": [30, 20], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -40],
+                "valueAt": [0, 40]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "switch_sp3t" }
+            ]
+        },
+        {
+            "id": "switch_sp4t",
+            "name": "SP4T switch",
+            "category": "RF/Switches",
+            "description": "Single-pole four-throw switch",
+            "referencePrefix": "SW",
+            "pins": [
+                { "name": "com" },
+                { "name": "t1" },
+                { "name": "t2" },
+                { "name": "t3" },
+                { "name": "t4" }
+            ],
+            "parameters": [
+                {
+                    "name": "state",
+                    "label": "Selected throw",
+                    "unit": "",
+                    "default": "t1",
+                    "shown": true,
+                    "choices": ["t1", "t2", "t3", "t4"]
+                },
+                { "name": "select", "label": "Throw number from an expression (0: use the selected throw)", "unit": "", "default": "0" },
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.8" },
+                { "name": "isolation", "label": "Isolation", "unit": "dB", "default": "30" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Return loss at com (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Return loss at the throws (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "line", "points": [[-20, 0], [-12, 0]] },
+                    { "type": "circle", "center": [-10, 0], "radius": 2, "fill": "outline" },
+                    { "type": "line", "points": [[-9, -2], [8, -28]] },
+                    { "type": "circle", "center": [10, -30], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, -10], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, 10], "radius": 2, "fill": "none" },
+                    { "type": "circle", "center": [10, 30], "radius": 2, "fill": "none" },
+                    { "type": "line", "points": [[12, -30], [20, -30]] },
+                    { "type": "line", "points": [[12, -10], [20, -10]] },
+                    { "type": "line", "points": [[12, 10], [20, 10]] },
+                    { "type": "line", "points": [[12, 30], [20, 30]] }
+                ],
+                "pins": [
+                    { "pin": "com", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "t1", "at": [30, -30], "length": 10, "direction": "left" },
+                    { "pin": "t2", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "t3", "at": [30, 10], "length": 10, "direction": "left" },
+                    { "pin": "t4", "at": [30, 30], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -50],
+                "valueAt": [0, 50]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "switch_sp4t" }
+            ]
+        },
+        {
+            "id": "limiter",
+            "name": "Limiter",
+            "category": "RF/Passive",
+            "description": "Power limiter: small-signal loss, output clamped at the limit level",
+            "referencePrefix": "LIM",
+            "pins": [
+                { "name": "in" },
+                { "name": "out" }
+            ],
+            "parameters": [
+                { "name": "limit", "label": "Output limit (flat leakage)", "unit": "dBm", "default": "10", "shown": true },
+                { "name": "il", "label": "Small-signal insertion loss", "unit": "dB", "default": "0.5" },
+                { "name": "il_slope", "label": "Insertion loss slope around freq", "unit": "dB/GHz", "default": "0" },
+                { "name": "freq", "label": "Reference frequency of the slopes", "unit": "Hz", "default": "1GHz" },
+                { "name": "rl_in", "label": "Input return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "rl_out", "label": "Output return loss (0 = ideal match)", "unit": "dB", "default": "0" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-14, 0], [-10, -8], [-4, -8], [0, 0], [4, 8], [10, 8], [14, 0], [20, 0]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "out", "at": [30, 0], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "limiter" }
+            ]
+        },
+        {
+            "id": "detector",
+            "name": "Detector",
+            "category": "RF/Converters",
+            "description": "Power detector at the end of a chain: sensitivity and dynamic range",
+            "referencePrefix": "DET",
+            "pins": [
+                { "name": "in" }
+            ],
+            "parameters": [
+                { "name": "sensitivity", "label": "Sensitivity (TSS)", "unit": "dBm", "default": "-50", "shown": true },
+                { "name": "dynamic_range", "label": "Dynamic range", "unit": "dB", "default": "50" },
+                { "name": "z0", "label": "Input impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-6, 0]] },
+                    { "type": "polygon", "points": [[-6, -7], [-6, 7], [6, 0]], "fill": "none" },
+                    { "type": "line", "points": [[6, -7], [6, 7]] },
+                    { "type": "line", "points": [[6, 0], [14, 0]] }
+                ],
+                "pins": [
+                    { "pin": "in", "at": [-30, 0], "length": 10, "direction": "right" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "detector" }
+            ]
+        },
+        {
+            "id": "diplexer",
+            "name": "Diplexer",
+            "category": "RF/Filters",
+            "description": "Complementary Butterworth low-pass / high-pass diplexer, matched at com",
+            "referencePrefix": "DPX",
+            "pins": [
+                { "name": "com" },
+                { "name": "low" },
+                { "name": "high" }
+            ],
+            "parameters": [
+                { "name": "crossover", "label": "Crossover frequency (-3 dB)", "unit": "Hz", "default": "1GHz", "shown": true },
+                { "name": "order", "label": "Order", "unit": "", "default": "3" },
+                { "name": "il", "label": "Insertion loss", "unit": "dB", "default": "0.3" },
+                { "name": "z0", "label": "Port impedance", "unit": "ohm", "default": "50" }
+            ],
+            "symbol": {
+                "graphics": [
+                    { "type": "rect", "from": [-20, -20], "to": [20, 20], "fill": "none" },
+                    { "type": "line", "points": [[-20, 0], [-10, 0], [-10, -10], [20, -10]] },
+                    { "type": "line", "points": [[-10, 0], [-10, 10], [20, 10]] },
+                    { "type": "text", "at": [6, -15], "text": "LP", "size": 6, "anchor": "center" },
+                    { "type": "text", "at": [6, 15], "text": "HP", "size": 6, "anchor": "center" }
+                ],
+                "pins": [
+                    { "pin": "com", "at": [-30, 0], "length": 10, "direction": "right" },
+                    { "pin": "low", "at": [30, -10], "length": 10, "direction": "left" },
+                    { "pin": "high", "at": [30, 10], "length": 10, "direction": "left" }
+                ],
+                "referenceAt": [0, -30],
+                "valueAt": [0, 30]
+            },
+            "models": [
+                { "kind": "rf-behavioural", "block": "diplexer" }
             ]
         }
     ]

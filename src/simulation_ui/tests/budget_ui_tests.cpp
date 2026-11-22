@@ -694,3 +694,62 @@ TEST_CASE("budget analyses auto-run after edits and sit next to linear ones")
     CHECK(view.currentAnalysisId() == linearId);
     CHECK(budgetAnalyses(r.sheet->simulation()).isEmpty());
 }
+
+TEST_CASE("phase noise, a blocker and a DAC add their rows, traces and dialog fields")
+{
+    Receiver r;
+    const QString dac = r.place("rf-system:dac", {0, 0}, {{QStringLiteral("freq"), QStringLiteral("100MHz")}});
+    const QString mixer = r.place("rf-system:mixer", {200, 0}, {{QStringLiteral("product"), QStringLiteral("sum")}});
+    const QString pll = r.place("rf-system:pll", {200, 200}, {{QStringLiteral("freq"), QStringLiteral("2GHz")}});
+    const QString bpf = r.place("rf-system:filter", {400, 0},
+                                {{QStringLiteral("fc"), QStringLiteral("2.1GHz")}, {QStringLiteral("bw"), QStringLiteral("100MHz")}});
+    const QString det = r.place("rf-system:detector", {600, 0});
+    r.wire(dac, "out", mixer, "rf");
+    r.wire(pll, "out", mixer, "lo");
+    r.wire(mixer, "if", bpf, "in");
+    r.wire(bpf, "out", det, "in");
+
+    BudgetDialog dialog(r.project, r.document);
+    CHECK(dialog.startCandidates() == QStringList{QStringLiteral("DAC1")});
+    CHECK(dialog.isValid());
+    dialog.blockerPowerEdit()->setText(QStringLiteral("-20"));
+    CHECK_FALSE(dialog.isValid()); // the offset is required with a power
+    dialog.blockerOffsetEdit()->setText(QStringLiteral("1MHz"));
+    dialog.phaseNoiseStartEdit()->setText(QStringLiteral("1kHz"));
+    dialog.phaseNoiseStopEdit()->setText(QStringLiteral("500Hz"));
+    CHECK_FALSE(dialog.isValid()); // stop below start
+    dialog.phaseNoiseStopEdit()->setText(QStringLiteral("400kHz"));
+    CHECK(dialog.isValid());
+    const QString id = dialog.store();
+    REQUIRE_FALSE(id.isEmpty());
+    const BudgetAnalysisSetup setup = budgetAnalyses(r.sheet->simulation()).first();
+    CHECK(setup.blockerOffset == QStringLiteral("1MHz"));
+    CHECK(setup.phaseNoiseStop == QStringLiteral("400kHz"));
+    BudgetDialog again(r.project, r.document, id);
+    CHECK(again.blockerPowerEdit()->text() == QStringLiteral("-20"));
+
+    auto run = std::make_shared<BudgetRun>(runBudgetAnalysis(*r.project, *r.document, setup));
+    INFO(run->errors.join(QLatin1Char('\n')).toStdString());
+    REQUIRE(run->ok());
+    sim::BudgetView view;
+    view.setRun(run);
+    const sim::BudgetTableModel &model = *view.tableModel();
+    using Row = sim::BudgetTableModel::Row;
+    for (const Row row : {Row::ThermalSnr, Row::LoPhaseNoise, Row::PhaseNoiseLevel, Row::BlockerLevel, Row::ReciprocalMixing,
+                          Row::DacImageFrequency, Row::DacImage, Row::DetectorMargin, Row::DetectorHeadroom})
+        CHECK(model.rowOf(row) >= 0);
+    CHECK(model.rowOf(Row::AdcHeadroom) < 0);
+    const BudgetStage &stage = run->budget.stages.front();
+    CHECK(same(cell(model, Row::LoPhaseNoise, 1), stage.loPhaseNoiseDbc));
+    CHECK(same(cell(model, Row::ReciprocalMixing, 1), stage.reciprocalMixingDbm));
+    CHECK(same(cell(model, Row::DacImageFrequency, 0), 900e6)); // fs 1 GHz - 100 MHz
+    CHECK(same(cell(model, Row::DetectorMargin, 2), run->budget.detectorMarginDb));
+    CHECK(std::isnan(cell(model, Row::LoPhaseNoise, 2))); // only the mixer has an LO
+    CHECK(view.summary().contains(QStringLiteral("SNR limits")));
+    CHECK(view.summary().contains(QStringLiteral("DAC")));
+    CHECK(view.levelTrace(sim::BudgetView::LevelTrace::TotalNoise) >= 0);
+    // The export carries the new rows.
+    const QString csv = view.tableText(QLatin1Char(','));
+    CHECK(csv.contains(QStringLiteral("Reciprocal mixing level [dBm]")));
+    CHECK(csv.contains(QStringLiteral("DAC image frequency [Hz]")));
+}

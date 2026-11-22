@@ -1,4 +1,4 @@
-﻿#include <catch2/catch_session.hpp>
+#include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/Document.h"
@@ -60,7 +60,7 @@ TEST_CASE("the browser lists the built-in components by library and category")
     LibraryBrowser browser(&libraries.manager);
 
     const QStringList keys = browser.componentKeys();
-    REQUIRE(keys.size() == 125);
+    REQUIRE(keys.size() == 154);
     for (const QString &key : keys) {
         const DefinitionPtr definition = libraries.manager.find(key);
         REQUIRE(definition);
@@ -107,7 +107,7 @@ TEST_CASE("the browser search filters on name, id, category, description and par
     CHECK(browser.visibleComponentKeys().isEmpty());
 
     browser.setFilterText(QString());
-    CHECK(browser.visibleComponentKeys().size() == 125);
+    CHECK(browser.visibleComponentKeys().size() == 154);
 }
 
 TEST_CASE("the browser places components by double-click, Enter and drag")
@@ -158,7 +158,7 @@ TEST_CASE("the browser offers the project's schematics as sheets")
 
     LibraryBrowser browser(&libraries.manager);
     browser.setProject(project.get());
-    CHECK(browser.componentKeys().size() == 125);
+    CHECK(browser.componentKeys().size() == 154);
 
     Document *amp = project->createDocument(DocumentType::RfSchematic, QStringLiteral("amp"), &error);
     REQUIRE(amp);
@@ -170,7 +170,7 @@ TEST_CASE("the browser offers the project's schematics as sheets")
     QStringList keys = browser.componentKeys();
     CHECK(keys.contains(QStringLiteral("sheet:bias")));
     CHECK(!keys.contains(QStringLiteral("sheet:patch"))); // not a schematic
-    CHECK(keys.size() == 127);
+    CHECK(keys.size() == 156);
 
     // Sheets are placeable like components.
     REQUIRE(browser.selectComponent(QStringLiteral("sheet:amp")));
@@ -186,7 +186,7 @@ TEST_CASE("the browser offers the project's schematics as sheets")
 
     // Closing the project removes the sheets.
     project.reset();
-    CHECK(browser.componentKeys().size() == 125);
+    CHECK(browser.componentKeys().size() == 154);
 }
 
 TEST_CASE("the symbol editor creates a component through the API and the mouse")

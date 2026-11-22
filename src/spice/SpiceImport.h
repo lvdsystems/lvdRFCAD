@@ -79,7 +79,13 @@ std::optional<double> parseSpiceNumber(const QString &text);
 // A deck for an imported netlist's circuit (the "netlist" key of a
 // document's simulation object), so analyses can be built and resolved as for
 // a schematic: nodes map to themselves, elements to themselves.
-SpiceDeck deckFromNetlist(const QString &circuit, const QString &title);
+// Relative .include and .lib paths are resolved against projectDirectory.
+SpiceDeck deckFromNetlist(const QString &circuit, const QString &title, const QString &projectDirectory = {});
+
+// Rewrites the file names of .include, .inc and .lib cards: relative ones
+// become absolute against `directory`, or (relative = true) absolute ones
+// inside `directory` become relative to it, so a project can move.
+QString rewriteIncludePaths(const QString &circuit, const QString &directory, bool relative);
 
 // Reads a netlist file into a new SPICE document of the project (name:
 // the file's base name when empty): an empty drawing, the circuit in the

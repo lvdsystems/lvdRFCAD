@@ -7,6 +7,7 @@
 #include "core/Session.h"
 #include "plot/PlotWidget.h"
 #include "rfdata/NetworkMath.h"
+#include "rfdata/NetworkOps.h"
 #include "rfdata/Touchstone.h"
 #include "rfsim/Analysis.h"
 #include "rfsim/Measurement.h"
@@ -30,6 +31,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QToolButton>
 #include <QTreeWidget>
 
 #include <cmath>
@@ -543,6 +545,77 @@ TEST_CASE("stability circles appear on a Smith chart when K < 1")
     CHECK(pane.stabilityCircleCount() == 2);
     pane.setStabilityCirclesEnabled(false);
     CHECK(pane.stabilityCircleCount() == 0);
+}
+
+TEST_CASE("gain and noise circles on a Smith chart, with adjustable levels")
+{
+    // An unconditionally stable amplifier with noise data at 1 and 2 GHz.
+    auto result = std::make_shared<LinearResult>();
+    result->portNumbers = {1, 2};
+    result->network.frequencies = {1e9, 2e9};
+    result->network.z0 = {50, 50};
+    CMatrix s(2, 2);
+    s << std::polar(0.6, -2.6), std::polar(0.05, 0.4), std::polar(3.2, 1.4), std::polar(0.45, -0.8);
+    REQUIRE(rf::stabilityK(s) > 1);
+    rf::NoiseParameters noise;
+    noise.fminDb = 0.9;
+    noise.gammaOpt = std::polar(0.55, 1.2);
+    noise.rn = 9;
+    for (int i = 0; i < 2; ++i) {
+        result->network.s.push_back(s);
+        result->network.noiseCorrelation.push_back(rf::correlationFromNoiseParameters(s, noise, 50));
+    }
+    sim::PlotDefinition definition;
+    definition.id = QStringLiteral("p1");
+    definition.kind = QStringLiteral("smith");
+    definition.traces = {QStringLiteral("S11")};
+    sim::PlotPane pane(definition);
+    pane.setResult(result);
+    CHECK(pane.designCircleCount() == 0);
+    CHECK(pane.gainCircleLevels() == QList<double>{1.0, 2.0, 3.0});
+    CHECK(pane.noiseCircleLevels() == QList<double>{0.25, 0.5, 1.0, 2.0});
+
+    // GA (source) and GP (load) circle per level, labelled with the gain.
+    pane.setGainCirclesEnabled(true);
+    REQUIRE(pane.designCircleCount() == 6);
+    const double mag = rf::maximumAvailableGainDb(s);
+    const QString first = pane.designCircleNames().first();
+    INFO(first.toStdString());
+    CHECK(first.startsWith(QStringLiteral("GA = %1 dB (MAG - 1.00), source plane").arg(QString::number(mag - 1, 'f', 2))));
+    CHECK(pane.designCircleNames().at(1).startsWith(QStringLiteral("GP = ")));
+    CHECK(pane.designCircleNames().at(1).contains(QStringLiteral("load plane")));
+
+    // Noise circles added: NFmin + 0.25 ... + 2 dB.
+    pane.setNoiseCirclesEnabled(true);
+    REQUIRE(pane.designCircleCount() == 10);
+    CHECK(pane.designCircleNames().at(6).startsWith(QStringLiteral("NF = 1.15 dB (NFmin + 0.25)")));
+
+    // New levels replace the old ones.
+    const auto levels = sim::PlotPane::parseLevels(QStringLiteral("0.5; 4"));
+    REQUIRE(levels);
+    pane.setGainCircleLevels(*levels);
+    CHECK(pane.designCircleCount() == 2 * 2 + 4);
+    CHECK_FALSE(sim::PlotPane::parseLevels(QStringLiteral("1, x")));
+    CHECK_FALSE(sim::PlotPane::parseLevels(QStringLiteral("-1")));
+    CHECK_FALSE(sim::PlotPane::parseLevels(QString()));
+
+    pane.setNoiseCirclesEnabled(false);
+    CHECK(pane.designCircleCount() == 4);
+
+    // Without noise data the noise circles are skipped; on a rectangular plot nothing is drawn.
+    auto noiseless = std::make_shared<LinearResult>(*result);
+    noiseless->network.noiseCorrelation.clear();
+    pane.setNoiseCirclesEnabled(true);
+    pane.setResult(noiseless);
+    CHECK(pane.designCircleCount() == 4);
+    sim::PlotDefinition rectangular = definition;
+    rectangular.kind = QStringLiteral("rectangular");
+    pane.setDefinition(rectangular);
+    CHECK(pane.designCircleCount() == 0);
+    // The buttons follow the plot kind.
+    auto *gainButton = pane.findChild<QToolButton *>(QStringLiteral("gainCircles"));
+    REQUIRE(gainButton);
+    CHECK(gainButton->isHidden());
 }
 
 TEST_CASE("results export as Touchstone and CSV")

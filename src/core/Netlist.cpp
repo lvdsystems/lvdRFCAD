@@ -4,6 +4,7 @@
 #include "core/Expression.h"
 #include "core/Project.h"
 #include "core/Schematic.h"
+#include "core/Substrates.h"
 
 #include <QHash>
 #include <QSet>
@@ -199,12 +200,111 @@ public:
             flat.parameterValues = numbers;
             for (const QString &pin : definition->pins)
                 flat.pinNets.insert(pin, netOfPin(component->id, pin));
+            if (isSubstrateDefinition(*definition)) {
+                resolveMaterial(flat);
+                m_netlist.substrates.append(flat);
+                continue;
+            }
             m_netlist.components.append(flat);
+        }
+    }
+
+    // A catalog material replaces the part's own er and tand.
+    void resolveMaterial(FlatComponent &substrate)
+    {
+        const QString material = substrate.parameterText.value(QStringLiteral("material")).trimmed();
+        if (material.isEmpty() || material == SubstrateCatalog::customId())
+            return;
+        const SubstrateCatalog &catalog = SubstrateCatalog::builtIn();
+        const SubstrateMaterial *entry = catalog.material(material);
+        if (!entry) {
+            const QString reason = catalog.materials.isEmpty() && !SubstrateCatalog::builtInError().isEmpty()
+                                       ? SubstrateCatalog::builtInError()
+                                       : QStringLiteral("not in the substrate catalog");
+            m_netlist.errors.append(QStringLiteral("%1: material \"%2\": %3").arg(substrate.path, material, reason));
+            return;
+        }
+        substrate.parameterValues.insert(QStringLiteral("er"), entry->er);
+        substrate.parameterValues.insert(QStringLiteral("tand"), entry->tand);
+        substrate.parameterText.insert(QStringLiteral("er"), QString::number(entry->er, 'g', 12));
+        substrate.parameterText.insert(QStringLiteral("tand"), QString::number(entry->tand, 'g', 12));
+    }
+
+    // The substrate named by a component: in its own sheet instance, then
+    // in the enclosing ones up to the top level.
+    void applySubstrates()
+    {
+        for (FlatComponent &component : m_netlist.components) {
+            if (!component.definition->parameter(QStringLiteral("substrate")))
+                continue;
+            const QString name = component.parameterText.value(QStringLiteral("substrate")).trimmed();
+            if (name.isEmpty())
+                continue;
+            QString scope = component.instancePath;
+            const FlatComponent *found = nullptr;
+            int matches = 0;
+            while (true) {
+                for (const FlatComponent &substrate : std::as_const(m_netlist.substrates)) {
+                    if (substrate.instancePath == scope && substrate.path.mid(scope.size()) == name) {
+                        found = &substrate;
+                        ++matches;
+                    }
+                }
+                if (matches > 0 || scope.isEmpty())
+                    break;
+                // "X1/X2/" -> "X1/" -> ""
+                scope.chop(1);
+                const qsizetype slash = scope.lastIndexOf(QLatin1Char('/'));
+                scope = slash < 0 ? QString() : scope.left(slash + 1);
+            }
+            if (matches == 0) {
+                m_netlist.errors.append(QStringLiteral("%1: substrate \"%2\" not found (looked in this sheet and the sheets "
+                                                       "above it; place a Substrate part with that reference)")
+                                            .arg(component.path, name));
+                continue;
+            }
+            if (matches > 1) {
+                m_netlist.errors.append(QStringLiteral("%1: substrate \"%2\" is ambiguous: %3 Substrate parts have that "
+                                                       "reference in sheet %4")
+                                            .arg(component.path, name)
+                                            .arg(matches)
+                                            .arg(scope.isEmpty() ? m_netlist.topDocument : scope));
+                continue;
+            }
+            const auto take = [&](const QString &key, double value) {
+                if (!component.definition->parameter(key))
+                    return;
+                component.parameterValues.insert(key, value);
+                component.parameterText.insert(key, QString::number(value, 'g', 12));
+            };
+            bool complete = true;
+            for (const char *key : {"h", "t", "er", "tand", "sigma", "rough"}) {
+                const QString k = QString::fromLatin1(key);
+                const auto it = found->parameterValues.constFind(k);
+                if (it == found->parameterValues.cend()) {
+                    complete = false;
+                    continue;
+                }
+                take(k, *it);
+            }
+            if (!complete) {
+                m_netlist.errors.append(QStringLiteral("%1: substrate %2 has parameters without a value")
+                                            .arg(component.path, found->path));
+                continue;
+            }
+            // Stripline: the ground-plane spacing b, 2 h + t unless the substrate sets it.
+            const double b = found->parameterValues.value(QStringLiteral("b"), 0.0);
+            take(QStringLiteral("b"), b > 0 ? b
+                                            : 2.0 * found->parameterValues.value(QStringLiteral("h"))
+                                                  + found->parameterValues.value(QStringLiteral("t")));
         }
     }
 
     void finish()
     {
+        applySubstrates();
+        std::sort(m_netlist.substrates.begin(), m_netlist.substrates.end(),
+                  [](const FlatComponent &a, const FlatComponent &b) { return a.path < b.path; });
         QSet<QString> nets;
         for (FlatComponent &component : m_netlist.components) {
             for (auto it = component.pinNets.begin(); it != component.pinNets.end(); ++it) {

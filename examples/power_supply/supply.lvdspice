@@ -226,7 +226,7 @@
         "definitions": {
             "basic:capacitor": {
                 "category": "Passive",
-                "description": "Capacitor with optional finite Q (q = 0 is ideal)",
+                "description": "Capacitor with optional finite Q (q = 0 is ideal) and series parasitics esr, esl",
                 "id": "capacitor",
                 "models": [
                     {
@@ -235,6 +235,7 @@
                     },
                     {
                         "kind": "spice",
+                        "parasitics": "capacitor",
                         "template": "C{ref} {pin:p} {pin:n} {c}"
                     }
                 ],
@@ -257,6 +258,18 @@
                         "label": "Frequency at which Q applies",
                         "name": "freq",
                         "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Equivalent series resistance (0 = ideal)",
+                        "name": "esr",
+                        "unit": "ohm"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Equivalent series inductance (0 = ideal)",
+                        "name": "esl",
+                        "unit": "H"
                     }
                 ],
                 "pins": [
@@ -430,7 +443,7 @@
             },
             "basic:resistor": {
                 "category": "Passive",
-                "description": "Ideal resistor (ANSI symbol)",
+                "description": "Resistor; optional parasitics: series inductance esl, parallel capacitance cp (0 = ideal)",
                 "id": "resistor",
                 "models": [
                     {
@@ -439,6 +452,7 @@
                     },
                     {
                         "kind": "spice",
+                        "parasitics": "resistor",
                         "template": "R{ref} {pin:p} {pin:n} {r}"
                     }
                 ],
@@ -450,6 +464,18 @@
                         "name": "r",
                         "shown": true,
                         "unit": "ohm"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Series inductance (0 = ideal)",
+                        "name": "esl",
+                        "unit": "H"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Parallel capacitance (0 = ideal)",
+                        "name": "cp",
+                        "unit": "F"
                     }
                 ],
                 "pins": [

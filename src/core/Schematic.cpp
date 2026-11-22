@@ -13,6 +13,7 @@ namespace {
 
 const QString VariablesId = QStringLiteral("$variables");
 const QString SimulationId = QStringLiteral("$simulation");
+const QString TitleBlockId = QStringLiteral("$titleBlock");
 
 QJsonArray pointJson(QPoint point)
 {
@@ -275,6 +276,7 @@ std::unique_ptr<Schematic> Schematic::fromJson(const QJsonObject &content, QStri
     }
     schematic->m_variables = readVariables(content.value(QStringLiteral("variables")).toArray());
     schematic->m_simulation = content.value(QStringLiteral("simulation")).toObject();
+    schematic->m_titleBlock = content.value(QStringLiteral("titleBlock")).toObject();
 
     const QJsonObject definitions = content.value(QStringLiteral("definitions")).toObject();
     for (auto it = definitions.begin(); it != definitions.end(); ++it) {
@@ -299,6 +301,8 @@ QJsonObject Schematic::toJson() const
     content.insert(QStringLiteral("variables"), variablesToJson(m_variables));
     if (!m_simulation.isEmpty())
         content.insert(QStringLiteral("simulation"), m_simulation);
+    if (!m_titleBlock.isEmpty())
+        content.insert(QStringLiteral("titleBlock"), m_titleBlock);
 
     QJsonArray components, wires, junctions, labels, texts;
     for (const QString &id : sortedIds(m_components.keys()))
@@ -418,6 +422,8 @@ Schematic::Snapshot Schematic::snapshot(const QString &id) const
         return QJsonObject{{QStringLiteral("variables"), variablesToJson(m_variables)}};
     if (id == SimulationId)
         return QJsonObject{{QStringLiteral("simulation"), m_simulation}};
+    if (id == TitleBlockId)
+        return QJsonObject{{QStringLiteral("titleBlock"), m_titleBlock}};
     switch (kindOf(id)) {
     case ItemKind::Component:
         if (const auto it = m_components.constFind(id); it != m_components.cend())
@@ -455,6 +461,11 @@ void Schematic::apply(const QString &id, const Snapshot &state)
     if (id == SimulationId) {
         m_simulation = state ? state->value(QStringLiteral("simulation")).toObject() : QJsonObject();
         Q_EMIT simulationChanged();
+        return;
+    }
+    if (id == TitleBlockId) {
+        m_titleBlock = state ? state->value(QStringLiteral("titleBlock")).toObject() : QJsonObject();
+        Q_EMIT titleBlockChanged();
         return;
     }
     const bool existed = contains(id);
@@ -687,6 +698,21 @@ void Schematic::setSimulation(const QJsonObject &simulation)
     touch(SimulationId);
     m_simulation = simulation;
     Q_EMIT simulationChanged();
+}
+
+void Schematic::setTitleBlock(const QJsonObject &titleBlock)
+{
+    // Empty fields are not stored.
+    QJsonObject cleaned;
+    for (auto it = titleBlock.begin(); it != titleBlock.end(); ++it)
+        if (!it.value().toString().trimmed().isEmpty())
+            cleaned.insert(it.key(), it.value().toString().trimmed());
+    if (cleaned == m_titleBlock)
+        return;
+    Edit edit(this, tr("Edit title block"));
+    touch(TitleBlockId);
+    m_titleBlock = cleaned;
+    Q_EMIT titleBlockChanged();
 }
 
 void Schematic::moveItems(const QStringList &ids, QPoint delta, const QHash<QString, QList<QPoint>> &pinPositions,

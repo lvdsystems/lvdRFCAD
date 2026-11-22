@@ -37,6 +37,9 @@ public:
 
     bool isClean() const { return m_index == m_cleanIndex; }
     void setClean();
+    // The current state differs from the saved one and no undo or redo leads
+    // back to it (after restoring an autosaved copy).
+    void setCleanUnreachable();
     void clear(); // also marks the empty stack clean
 
 Q_SIGNALS:

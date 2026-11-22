@@ -22,6 +22,14 @@
       "name": "windows",
       "configurePreset": "windows",
       "configuration": "RelWithDebInfo",
+      "output": { "outputOnFailure": true },
+      "filter": { "exclude": { "label": "long" } }
+    },
+    {
+      "name": "windows-all",
+      "displayName": "All tests, including the long full-wave template runs",
+      "configurePreset": "windows",
+      "configuration": "RelWithDebInfo",
       "output": { "outputOnFailure": true }
     }
   ]

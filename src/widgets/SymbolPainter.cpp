@@ -149,7 +149,9 @@ void SymbolPainter::paintText(QPainter &painter, QPointF at, const QString &text
 
     // Draw at a fixed point size and scale, so text size follows the drawing units.
     const QFont font = m_style.font(10);
-    const QFontMetricsF metrics(font);
+    // Metrics of the device painted on: a printer or PDF writer has another
+    // resolution than the screen, and the point-size font scales with it.
+    const QFontMetricsF metrics = painter.device() ? QFontMetricsF(font, painter.device()) : QFontMetricsF(font);
     const double scale = size / metrics.height() * 1.25;
     painter.scale(scale, scale);
     painter.setFont(font);

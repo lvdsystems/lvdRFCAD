@@ -57,6 +57,46 @@ double stabilityMu(const CMatrix &s);      // load-side mu
 double stabilityMuPrime(const CMatrix &s); // source-side mu'
 double maximumAvailableGainDb(const CMatrix &s); // MAG when K > 1, MSG otherwise
 
+// Two-port gains and design circles (G. Gonzalez, "Microwave Transistor
+// Amplifiers", 2nd ed., 1997, chapters 2-4; D. M. Pozar, "Microwave
+// Engineering", 4th ed., chapter 12). Reflection coefficients refer to the
+// two-port's own reference impedance.
+// A circle in the reflection-coefficient plane; valid = false when it does
+// not exist (a degenerate stability circle that is a straight line, a gain
+// above the maximum, a noise figure below NFmin).
+struct SmithCircle {
+    Complex centre;
+    double radius = 0;
+    bool valid = false;
+};
+// Stability circles: the source (load) reflections for which the output
+// (input) reflection has magnitude 1.
+SmithCircle sourceStabilityCircle(const CMatrix &s);
+SmithCircle loadStabilityCircle(const CMatrix &s);
+// Available gain GA for a source reflection gammaS, and operating power gain
+// GP for a load reflection gammaL (linear, not dB).
+double availableGain(const CMatrix &s, Complex gammaS);
+double operatingPowerGain(const CMatrix &s, Complex gammaL);
+// Constant-GA circle in the source plane and constant-GP circle in the load
+// plane, gain in dB.
+SmithCircle availableGainCircle(const CMatrix &s, double gainDb);
+SmithCircle operatingPowerGainCircle(const CMatrix &s, double gainDb);
+// Constant noise-figure circle in the source plane, from the two-port's
+// noise parameters (gammaOpt and Rn referred to z0), noise figure in dB.
+SmithCircle noiseFigureCircle(const NoiseParameters &noise, double nfDb, double z0);
+// Maximum unilateral transducer gain |S21|^2 / ((1 - |S11|^2)(1 - |S22|^2))
+// in dB (S12 set to zero); +inf when |S11| or |S22| >= 1.
+double maximumUnilateralGainDb(const CMatrix &s);
+// Mason's unilateral power gain U in dB, invariant under lossless reciprocal
+// embedding; +inf for a unilateral two-port with gain.
+double masonUnilateralGainDb(const CMatrix &s);
+// Simultaneous conjugate match (source, load) reflections giving MAG; only
+// for an unconditionally stable two-port (K > 1, |Delta| < 1).
+struct ConjugateMatch {
+    Complex gammaS, gammaL;
+};
+std::optional<ConjugateMatch> simultaneousConjugateMatch(const CMatrix &s);
+
 // Group delay of S(row, col) in seconds, -d(phase)/d(omega) by central
 // differences of the unwrapped phase (one-sided at the ends).
 std::vector<double> groupDelay(const NetworkData &network, int row, int col);

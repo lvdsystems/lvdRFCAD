@@ -467,3 +467,48 @@ TEST_CASE("every part of the SPICE libraries netlists and parses in ngspice")
     }
     CHECK(parts >= 80);
 }
+
+TEST_CASE("parasitics of R, L and C become extra SPICE elements")
+{
+    Bench bench;
+    const QString c1 = bench.place(QStringLiteral("basic:capacitor_0402"), {0, 0});
+    const QString l1 = bench.place(QStringLiteral("basic:inductor"), {200, 0},
+                                   {{QStringLiteral("l"), QStringLiteral("10nH")}, {QStringLiteral("cp"), QStringLiteral("0.2pF")}});
+    const QString r1 = bench.place(QStringLiteral("basic:resistor"), {400, 0},
+                                   {{QStringLiteral("r"), QStringLiteral("50")}, {QStringLiteral("esl"), QStringLiteral("1nH")}});
+    const QString r2 = bench.place(QStringLiteral("basic:resistor"), {600, 0}, {{QStringLiteral("r"), QStringLiteral("50")}});
+    for (const QString &id : {c1, l1, r1, r2}) {
+        bench.label(id, "p", "a");
+        bench.ground(id, "n");
+    }
+    const SpiceDeck deck = buildSpiceDeck(*bench.project, *bench.document);
+    INFO(deck.text.toStdString());
+    REQUIRE(deck.ok());
+    // C 10 pF in series with esr 0.15 ohm and esl 0.5 nH, through internal nodes.
+    CHECK(deck.text.contains(QStringLiteral("CC1 c1_int2 0 1e-11")));
+    CHECK(deck.text.contains(QStringLiteral("RC1_esr a c1_int1 0.15")));
+    CHECK(deck.text.contains(QStringLiteral("LC1_esl c1_int1 c1_int2 5e-10")));
+    // L with only cp: no series resistance, the capacitance across it.
+    CHECK(deck.text.contains(QStringLiteral("LL1 a 0 1e-08")));
+    CHECK(deck.text.contains(QStringLiteral("CL1_cp a 0 2e-13")));
+    CHECK(deck.text.contains(QStringLiteral("RR1 a r1_int1 50")));
+    CHECK(deck.text.contains(QStringLiteral("LR1_esl r1_int1 0 1e-09")));
+    // Without parasitics the template is used unchanged.
+    CHECK(deck.text.contains(QStringLiteral("RR2 a 0 50")));
+    REQUIRE(deck.element(QStringLiteral("C1")));
+    CHECK(deck.element(QStringLiteral("C1"))->name == QLatin1String("cc1"));
+    CHECK(deck.element(QStringLiteral("C1"))->elementNames.size() == 3);
+
+    // A finite Q is the same series resistance as in the RF model: w l / q at freq.
+    Bench q;
+    const QString l2 = q.place(QStringLiteral("basic:inductor"), {0, 0},
+                               {{QStringLiteral("l"), QStringLiteral("10nH")}, {QStringLiteral("q"), QStringLiteral("20")},
+                                {QStringLiteral("freq"), QStringLiteral("500MHz")}});
+    q.label(l2, "p", "a");
+    q.ground(l2, "n");
+    const SpiceDeck withQ = buildSpiceDeck(*q.project, *q.document);
+    INFO(withQ.text.toStdString());
+    REQUIRE(withQ.ok());
+    CHECK(withQ.text.contains(QStringLiteral("LL1 a l1_int1 1e-08")));
+    CHECK(withQ.text.contains(QStringLiteral("RL1_q l1_int1 0 %1").arg(formatSpiceNumber(2 * std::numbers::pi * 500e6 * 10e-9 / 20))));
+}

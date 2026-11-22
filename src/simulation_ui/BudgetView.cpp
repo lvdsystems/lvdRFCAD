@@ -374,11 +374,37 @@ void BudgetView::showSummary()
     const QString chain = m_run->chain.end.isEmpty() ? b.start : QStringLiteral("%1 → %2").arg(b.start, m_run->chain.end);
     const QString mode = b.mismatch ? tr("actual S-parameters (mismatch between stages included)")
                                     : tr("ideal matched cascade (mismatch ignored)");
-    m_summary->setText(tr("<b>%1</b> · %2 at %3 · bandwidth %4 · mismatch: <b>%5</b><br>"
-                          "Output: %6, gain %7 dB, NF %8 dB, SNR %9 dB")
-                           .arg(chain.toHtmlEscaped(), dbm(b.inputPowerDbm), hertz(b.inputFrequency), hertz(b.bandwidth),
-                                mode, hertz(out.outputFrequency), QString::number(out.cumulativeGainDb, 'f', 2),
-                                QString::number(out.cumulativeNfDb, 'f', 2), QString::number(out.snrDb, 'f', 1)));
+    QString text = tr("<b>%1</b> · %2 at %3 · bandwidth %4 · mismatch: <b>%5</b><br>"
+                      "Output: %6, gain %7 dB, NF %8 dB, SNR %9 dB")
+                       .arg(chain.toHtmlEscaped(), dbm(b.inputPowerDbm), hertz(b.inputFrequency), hertz(b.bandwidth),
+                            mode, hertz(out.outputFrequency), QString::number(out.cumulativeGainDb, 'f', 2),
+                            QString::number(out.cumulativeNfDb, 'f', 2), QString::number(out.snrDb, 'f', 1));
+    const auto db = [](double value) {
+        return std::isfinite(value) ? QString::number(value, 'f', 1) : QString(QChar(0x221E));
+    };
+    if (b.hasPhaseNoise || b.hasBlocker) {
+        QStringList parts{tr("thermal %1 dB").arg(db(out.thermalSnrDb))};
+        if (b.hasPhaseNoise)
+            parts << tr("LO phase noise %1 dB (integrated %2 to %3)")
+                         .arg(db(out.phaseNoiseSnrDb), hertz(b.phaseNoiseStart), hertz(b.phaseNoiseStop));
+        if (b.hasBlocker)
+            parts << tr("reciprocal mixing %1 dB (blocker %2 dBm at +%3)")
+                         .arg(db(out.reciprocalMixingSnrDb))
+                         .arg(b.blockerPowerDbm, 0, 'g', 4)
+                         .arg(hertz(b.blockerOffset));
+        text += QStringLiteral("<br>") + tr("SNR limits: %1").arg(parts.join(QStringLiteral(", ")));
+    }
+    if (b.hasDac)
+        text += QStringLiteral("<br>")
+                + tr("DAC: sinc roll-off %1 dB, noise density %2 dBm/Hz%3, first image at %4: %5 dBm at the output")
+                      .arg(QString::number(b.dacSincDb, 'f', 2), QString::number(b.dacNsdDbmHz, 'f', 1),
+                           b.dacNsdFromQuantisation ? tr(" (quantisation)") : QString(), hertz(b.dacImageFrequency),
+                           db(out.dacImageDbm));
+    if (b.hasDetector)
+        text += QStringLiteral("<br>")
+                + tr("Detector: %1 dB above its sensitivity of %2 dBm, %3 dB below the top of its range")
+                      .arg(db(b.detectorMarginDb), QString::number(b.detectorSensitivityDbm, 'g', 4), db(b.detectorHeadroomDb));
+    m_summary->setText(text);
 }
 
 int BudgetView::levelTrace(LevelTrace trace) const
@@ -406,10 +432,11 @@ void BudgetView::showLevels()
     }
     const rf::BudgetResult &b = m_run->budget;
     const size_t n = b.stages.size();
-    std::vector<double> x, signal, noise, op1db, gain, nf;
+    std::vector<double> x, signal, noise, op1db, gain, nf, totalNoise;
     x.push_back(0);
     signal.push_back(b.inputPowerDbm);
     noise.push_back(b.inputNoiseDbm);
+    totalNoise.push_back(b.inputNoiseDbm);
     op1db.push_back(NAN);
     gain.push_back(0);
     nf.push_back(0);
@@ -418,6 +445,7 @@ void BudgetView::showLevels()
         x.push_back(static_cast<double>(i + 1));
         signal.push_back(finiteOrNan(s.signalDbm));
         noise.push_back(finiteOrNan(s.noiseDbm));
+        totalNoise.push_back(finiteOrNan(s.totalNoiseDbm));
         op1db.push_back(finiteOrNan(s.op1dbCumulativeDbm));
         gain.push_back(finiteOrNan(s.cumulativeGainDb));
         nf.push_back(finiteOrNan(s.cumulativeNfDb));
@@ -435,6 +463,9 @@ void BudgetView::showLevels()
     add(LevelTrace::Signal, tr("Signal"), QStringLiteral("dBm"), signal, Qt::SolidLine, PlotYAxis::Left);
     add(LevelTrace::Noise, tr("Noise in %1").arg(hertz(b.bandwidth)), QStringLiteral("dBm"), noise, Qt::SolidLine,
         PlotYAxis::Left);
+    if (b.hasPhaseNoise || b.hasBlocker)
+        add(LevelTrace::TotalNoise, tr("Total noise (with phase noise, reciprocal mixing)"), QStringLiteral("dBm"), totalNoise,
+            Qt::DashLine, PlotYAxis::Left);
     if (anyFinite(op1db))
         add(LevelTrace::Op1db, tr("Cumulative OP1dB"), QStringLiteral("dBm"), op1db, Qt::DashLine, PlotYAxis::Left);
     add(LevelTrace::Gain, tr("Cumulative gain"), QStringLiteral("dB"), gain, Qt::DotLine, PlotYAxis::Right);
@@ -483,7 +514,8 @@ void BudgetView::showSweep()
     if (!hasSweep())
         return;
     const std::vector<double> &x = m_run->sweepFrequencies;
-    std::vector<double> gain, nf, iip3;
+    std::vector<double> gain, nf, iip3, snr;
+    const bool showSnr = m_run->budget.hasPhaseNoise || m_run->budget.hasBlocker;
     for (const rf::BudgetResult &point : m_run->sweep) {
         const rf::BudgetStage *stage = nullptr;
         if (!point.stages.empty()) {
@@ -493,6 +525,7 @@ void BudgetView::showSweep()
         gain.push_back(stage ? finiteOrNan(stage->cumulativeGainDb) : NAN);
         nf.push_back(stage ? finiteOrNan(stage->cumulativeNfDb) : NAN);
         iip3.push_back(stage ? finiteOrNan(stage->iip3Dbm) : NAN);
+        snr.push_back(stage ? finiteOrNan(stage->snrDb) : NAN);
     }
     const QString where = m_sweepStage < 0 ? tr("chain output") : m_sweepStageCombo->currentText();
     m_sweepPlot->setTitle(tr("Swept budget at the %1").arg(where));
@@ -509,6 +542,8 @@ void BudgetView::showSweep()
     add(SweepTrace::Nf, tr("Cumulative NF"), QStringLiteral("dB"), nf, Qt::DashLine, PlotYAxis::Right);
     if (anyFinite(iip3))
         add(SweepTrace::Iip3, tr("IIP3"), QStringLiteral("dBm"), iip3, Qt::DotLine, PlotYAxis::Left);
+    if (showSnr && anyFinite(snr))
+        add(SweepTrace::Snr, tr("SNR (total)"), QStringLiteral("dB"), snr, Qt::DashDotLine, PlotYAxis::Right);
     m_sweepPlot->autoscale();
     const double wanted = m_run->budget.inputFrequency;
     if (std::isfinite(wanted) && wanted >= x.front() && wanted <= x.back())
@@ -636,8 +671,10 @@ void BudgetView::showPlan()
             m_plan->setItem(row, c, item);
         }
     };
+    const rf::BudgetResult &budget = m_run->budget;
     addRow({tr("0"), chain.start, chain.startKind, QString(), hertz(chain.inputFrequency), tr("start"), QString(), QString(),
-            dbm(chain.inputPowerDbm)});
+            dbm(chain.inputPowerDbm)},
+           budget.hasDac ? tr("First DAC image at %1").arg(hertz(budget.dacImageFrequency)) : QString());
     for (size_t i = 0; i < chain.stages.size(); ++i) {
         const rf::ChainStage &s = chain.stages[i];
         QString conversion;
@@ -650,13 +687,19 @@ void BudgetView::showPlan()
                              .arg(s.upConversion ? tr("up-conversion") : tr("down-conversion"),
                                   s.sumProduct ? tr("f_in + f_LO") : tr("|f_in − f_LO|"));
             tip = tr("The LO level is the LO block's power plus the gain of the LO path.");
+            if (s.loMultiplication > 1)
+                tip += QLatin1Char(' ') + tr("The LO is multiplied by %1 on its way (phase noise + %2 dB).")
+                                              .arg(s.loMultiplication)
+                                              .arg(20.0 * std::log10(s.loMultiplication), 0, 'f', 1);
             break;
         case rf::ChainStage::Translation::Multiplier:
             conversion = tr("× %1").arg(s.factor);
             break;
         }
         addRow({QString::number(i + 1), s.path, s.kind.isEmpty() ? s.name : s.kind, hertz(s.inputFrequency),
-                hertz(s.outputFrequency), conversion, s.loSource, hertz(s.loFrequency), dbm(s.loPowerDbm)},
+                hertz(s.outputFrequency), conversion,
+                s.loMultiplication > 1 ? QStringLiteral("%1 (×%2)").arg(s.loSource).arg(s.loMultiplication) : s.loSource,
+                hertz(s.loFrequency), dbm(s.loPowerDbm)},
                tip);
     }
     if (!chain.end.isEmpty())

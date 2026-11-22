@@ -24,7 +24,8 @@ class Project;
 
 // Creates or edits an RF budget analysis of a schematic (RF-6 to RF-9):
 // start component, explicit signal path, frequency and power overrides,
-// bandwidth, mismatch mode, an optional swept budget and the spur analysis.
+// bandwidth, mismatch mode, the phase-noise integration range and an
+// optional blocker, an optional swept budget and the spur analysis.
 // Expressions show their evaluated value; the traced chain is previewed.
 // OK is disabled while a value is invalid (an incomplete circuit is not a
 // reason: the run reports it). Accepting stores the analysis with
@@ -79,6 +80,10 @@ public:
     QLineEdit *sweepPointsEdit() const { return m_sweepPoints; }
     QGroupBox *spurGroup() const { return m_spurGroup; }
     QLineEdit *spurOrderEdit() const { return m_spurOrder; }
+    QLineEdit *phaseNoiseStartEdit() const { return m_phaseNoiseStart; }
+    QLineEdit *phaseNoiseStopEdit() const { return m_phaseNoiseStop; }
+    QLineEdit *blockerOffsetEdit() const { return m_blockerOffset; }
+    QLineEdit *blockerPowerEdit() const { return m_blockerPower; }
     QLabel *frequencyValue() const { return m_frequencyValue; }
     QLabel *powerValue() const { return m_powerValue; }
     QLabel *bandwidthValue() const { return m_bandwidthValue; }
@@ -139,6 +144,14 @@ private:
     QGroupBox *m_spurGroup;
     QLineEdit *m_spurOrder;
     QLabel *m_spurOrderValue;
+    QLineEdit *m_phaseNoiseStart;
+    QLineEdit *m_phaseNoiseStop;
+    QLineEdit *m_blockerOffset;
+    QLineEdit *m_blockerPower;
+    QLabel *m_phaseNoiseStartValue;
+    QLabel *m_phaseNoiseStopValue;
+    QLabel *m_blockerOffsetValue;
+    QLabel *m_blockerPowerValue;
     QLabel *m_variablesLabel;
     QPushButton *m_ok;
 };

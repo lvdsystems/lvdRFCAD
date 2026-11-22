@@ -1,6 +1,7 @@
 #include "rfsim/SignalChain.h"
 
 #include "rfdata/NetworkMath.h"
+#include "rfsim/BlockModels.h"
 
 #include <QHash>
 #include <QMap>
@@ -34,16 +35,42 @@ QString kindOf(const FlatComponent &component)
 
 bool isEndKind(const QString &kind)
 {
-    static const QStringList ends = {QStringLiteral("termination"), QStringLiteral("adc"), QStringLiteral("port"),
-                                     QStringLiteral("antenna")};
+    static const QStringList ends = {QStringLiteral("termination"), QStringLiteral("adc"), QStringLiteral("detector"),
+                                     QStringLiteral("port"), QStringLiteral("antenna")};
     return ends.contains(kind);
 }
 
 bool isOnePortKind(const QString &kind)
 {
-    static const QStringList oneport = {QStringLiteral("stub_open"), QStringLiteral("stub_short"),
-                                        QStringLiteral("source"), QStringLiteral("lo")};
+    static const QStringList oneport = {QStringLiteral("stub_open"), QStringLiteral("stub_short"), QStringLiteral("source"),
+                                        QStringLiteral("lo"),        QStringLiteral("vco"),        QStringLiteral("pll"),
+                                        QStringLiteral("dac")};
     return oneport.contains(kind);
+}
+
+// Blocks that can drive a mixer's lo pin.
+bool isOscillatorKind(const QString &kind)
+{
+    return kind == QLatin1String("lo") || kind == QLatin1String("vco") || kind == QLatin1String("pll")
+           || kind == QLatin1String("source");
+}
+
+// Pins that never carry the traced signal: a mixer's LO input, a bias tee's DC feed.
+bool isAuxiliaryPin(const QString &kind, const QString &pin)
+{
+    return (kind == QLatin1String("mixer") && pin == QLatin1String("lo"))
+           || (kind == QLatin1String("bias_tee") && pin == QLatin1String("dc"));
+}
+
+int switchThrows(const QString &kind)
+{
+    if (kind == QLatin1String("switch_spdt"))
+        return 2;
+    if (kind == QLatin1String("switch_sp3t"))
+        return 3;
+    if (kind == QLatin1String("switch_sp4t"))
+        return 4;
+    return 0;
 }
 
 // Blocks with a preferred direction; entering at their output is suspicious.
@@ -94,14 +121,59 @@ QList<int> exitPins(const FlatComponent &component, const QString &kind, int ent
             return {index("iso"), index("in")};
         return {index("cpl"), index("out")};
     }
-    if (kind == QLatin1String("switch_spdt")) {
-        const QString state = component.parameterText.value(QStringLiteral("state"));
-        if (in == QLatin1String("com"))
-            return state == QLatin1String("t2") ? QList<int>{index("t2"), index("t1")} : QList<int>{index("t1"), index("t2")};
-        return {index("com")};
+    if (const int throws = switchThrows(kind); throws > 0) {
+        if (in != QLatin1String("com"))
+            return {index("com")};
+        // The selected throw first, then the others in order.
+        QString state = component.parameterText.value(QStringLiteral("state"));
+        // `select`, a throw number from an expression, overrides the state (see ElementModels).
+        if (const long number = std::lround(component.parameterValues.value(QStringLiteral("select"), 0.0));
+            number >= 1 && number <= throws)
+            state = QStringLiteral("t%1").arg(number);
+        QList<int> result;
+        for (int k = 1; k <= throws; ++k) {
+            const int pin = pinIndex(component, QStringLiteral("t%1").arg(k));
+            if (QStringLiteral("t%1").arg(k) == state)
+                result.prepend(pin);
+            else
+                result.append(pin);
+        }
+        return result;
     }
     if (kind == QLatin1String("circulator")) {
         return {static_cast<int>((entry + 1) % 3)};
+    }
+    if (kind == QLatin1String("bias_tee")) {
+        if (in == QLatin1String("rf_in"))
+            return {index("rf_out")};
+        if (in == QLatin1String("rf_out"))
+            return {index("rf_in")};
+        return {};
+    }
+    if (kind == QLatin1String("balun")) {
+        if (in == QLatin1String("unbal"))
+            return {index("bal_p"), index("bal_n")};
+        return {index("unbal")};
+    }
+    if (kind == QLatin1String("hybrid_90")) {
+        if (in == QLatin1String("in"))
+            return {index("out0"), index("out90")};
+        if (in == QLatin1String("out0"))
+            return {index("in"), index("iso")};
+        if (in == QLatin1String("out90"))
+            return {index("iso"), index("in")};
+        return {index("out90"), index("out0")};
+    }
+    if (kind == QLatin1String("hybrid_180")) {
+        if (in == QLatin1String("sum") || in == QLatin1String("diff"))
+            return {index("p1"), index("p2")};
+        return {index("sum"), index("diff")};
+    }
+    if (kind == QLatin1String("diplexer")) {
+        // From com the walk picks the band of the signal's frequency.
+        if (in == QLatin1String("com"))
+            return {index("low"), index("high")};
+        return {index("com")};
     }
     if (pins.size() == 2)
         return {1 - entry};
@@ -116,6 +188,9 @@ struct Attachment {
     int component;
     int pin;
 };
+
+double translate(const ChainStage &stage, double f);
+void selectProduct(ChainStage &stage);
 
 class Tracer
 {
@@ -154,7 +229,7 @@ public:
         int port1 = -1, antenna = -1;
         QList<int> sources;
         for (int c = 0; c < m_kinds.size(); ++c) {
-            if (m_kinds.at(c) == QLatin1String("source"))
+            if (m_kinds.at(c) == QLatin1String("source") || m_kinds.at(c) == QLatin1String("dac"))
                 sources.append(c);
             else if (m_kinds.at(c) == QLatin1String("port") && parameter(component(c), "num") == 1)
                 port1 = c;
@@ -170,7 +245,7 @@ public:
             return port1;
         if (antenna >= 0)
             return antenna;
-        m_chain.errors.append(QStringLiteral("no start for the signal chain: place a source, port 1 or an antenna"));
+        m_chain.errors.append(QStringLiteral("no start for the signal chain: place a source, a DAC, port 1 or an antenna"));
         return -1;
     }
 
@@ -200,7 +275,7 @@ public:
                                                                "ignores it").arg(c.path));
                     continue;
                 }
-                if (k == QLatin1String("mixer") && c.definition->pins.value(a.pin) == QLatin1String("lo"))
+                if (isAuxiliaryPin(k, c.definition->pins.value(a.pin)))
                     continue;
                 candidates.append(a);
             }
@@ -256,13 +331,26 @@ public:
                 return;
             }
             int exit = exits.first();
+            const bool chosenByFrequency = k == QLatin1String("diplexer") && exits.size() > 1;
+            if (chosenByFrequency && wantedExit.isEmpty()) {
+                // The band of the signal here: the frequency plan of the stages so far.
+                double f = m_chain.inputFrequency;
+                for (ChainStage &stage : m_chain.stages) {
+                    selectProduct(stage);
+                    f = translate(stage, f);
+                }
+                const double crossover = parameter(c, "crossover");
+                if (std::isfinite(f) && std::isfinite(crossover) && f >= crossover)
+                    exit = exits.at(1);
+            }
             if (!wantedExit.isEmpty()) {
                 exit = pinIndex(c, wantedExit);
-                if (exit < 0 || exit == next.pin) {
+                if (exit < 0 || exit == next.pin || isAuxiliaryPin(k, wantedExit)) {
                     m_chain.errors.append(QStringLiteral("%1 has no exit pin %2").arg(c.path, wantedExit));
                     return;
                 }
-            } else if (exits.size() > 1 && k != QLatin1String("switch_spdt") && k != QLatin1String("coupler")) {
+            } else if (exits.size() > 1 && switchThrows(k) == 0 && k != QLatin1String("coupler")
+                       && k != QLatin1String("balun") && !chosenByFrequency) {
                 m_chain.warnings.append(QStringLiteral("%1: the path continues at pin %2 (give \"%1.<pin>\" to choose)")
                                             .arg(c.path, c.definition->pins.value(exit)));
             }
@@ -307,11 +395,12 @@ public:
                 if (visited.contains(a.component))
                     continue;
                 const QString k = kind(a.component);
-                if (k == QLatin1String("lo") || k == QLatin1String("source")) {
+                if (isOscillatorKind(k)) {
                     const FlatComponent &lo = component(a.component);
                     stage.loSource = lo.path;
                     stage.loFrequency = parameter(lo, "freq") * factor;
                     stage.loPowerDbm = parameter(lo, "power") + gainDb;
+                    stage.loMultiplication = factor;
                     return;
                 }
                 if (component(a.component).definition->pins.size() == 2 && !isEndKind(k) && !isOnePortKind(k)
@@ -330,7 +419,8 @@ public:
             } else if (k == QLatin1String("amplifier")) {
                 gainDb += parameter(c, "gain", 0);
             } else if (k == QLatin1String("attenuator") || k == QLatin1String("filter") || k == QLatin1String("isolator")
-                       || k == QLatin1String("phase_shifter") || k == QLatin1String("cable")) {
+                       || k == QLatin1String("phase_shifter") || k == QLatin1String("cable")
+                       || k == QLatin1String("limiter") || k == QLatin1String("dc_block")) {
                 gainDb -= parameter(c, "il", 0); // passband loss; good enough for the LO drive level
             }
             visited.insert(found);
@@ -344,6 +434,24 @@ private:
     QStringList m_kinds;
     QHash<QString, QList<Attachment>> m_nets;
 };
+
+// The wanted product of a mixer stage entered at f: explicit, or by wiring
+// direction ("auto", and files made before the parameter existed).
+void selectProduct(ChainStage &stage)
+{
+    if (stage.translation != ChainStage::Translation::Mixer || !std::isfinite(stage.loFrequency))
+        return;
+    const QString side = stage.component->parameterText.value(QStringLiteral("side"));
+    const QString product = stage.component->parameterText.value(QStringLiteral("product"));
+    if (product == QLatin1String("sum"))
+        stage.sumProduct = true;
+    else if (product == QLatin1String("difference"))
+        stage.sumProduct = false;
+    else if (stage.upConversion)
+        stage.sumProduct = side != QLatin1String("high");
+    else
+        stage.sumProduct = false;
+}
 
 // Translated frequency for a stage; the same rule for the wanted signal and for spurs.
 double translate(const ChainStage &stage, double f)
@@ -399,15 +507,39 @@ SignalChain traceChain(const Netlist &netlist, const ChainOptions &options)
     const FlatComponent &startComponent = tracer.component(start);
     chain.start = startComponent.path;
     chain.startKind = tracer.kind(start);
-    if (chain.startKind != QLatin1String("source") && chain.startKind != QLatin1String("port")
-        && chain.startKind != QLatin1String("antenna"))
-        chain.warnings.append(QStringLiteral("%1 is not a source, port or antenna").arg(chain.start));
+    if (chain.startKind != QLatin1String("source") && chain.startKind != QLatin1String("dac")
+        && chain.startKind != QLatin1String("port") && chain.startKind != QLatin1String("antenna"))
+        chain.warnings.append(QStringLiteral("%1 is not a source, DAC, port or antenna").arg(chain.start));
 
     chain.inputFrequency = std::isfinite(options.frequency) ? options.frequency : parameter(startComponent, "freq");
     chain.inputPowerDbm = std::isfinite(options.powerDbm) ? options.powerDbm : parameter(startComponent, "power");
+    chain.powerOverridden = std::isfinite(options.powerDbm);
     chain.sourceZ0 = parameter(startComponent, "z0", SolverZ0);
     if (chain.startKind == QLatin1String("antenna"))
         chain.sourceTemperature = parameter(startComponent, "temp", T0);
+    if (chain.startKind == QLatin1String("dac")) {
+        // Signal: full scale - backoff + the NRZ sinc roll-off; noise: the DAC's density as kT.
+        DacStart dac;
+        dac.sampleRate = parameter(startComponent, "fs");
+        dac.bits = parameter(startComponent, "bits", 0);
+        dac.fullScaleDbm = parameter(startComponent, "full_scale", 0);
+        dac.backoffDb = parameter(startComponent, "backoff", 0);
+        dac.nsdDbmHz = parameter(startComponent, "nsd", 0);
+        if (!(dac.sampleRate > 0)) {
+            chain.errors.append(QStringLiteral("%1: the sample rate fs must be positive").arg(chain.start));
+        } else {
+            chain.dac = dac;
+            if (std::isfinite(chain.inputFrequency)) {
+                const DacFigures figures = dacFigures(chain.inputFrequency, dac.sampleRate, dac.bits, dac.fullScaleDbm,
+                                                      dac.backoffDb, dac.nsdDbmHz);
+                if (!chain.powerOverridden)
+                    chain.inputPowerDbm = figures.signalDbm;
+                chain.sourceTemperature = figures.noiseTemperature;
+                if (chain.inputFrequency > dac.sampleRate / 2)
+                    chain.warnings.append(QStringLiteral("%1: the output frequency is above fs/2 (an image zone)").arg(chain.start));
+            }
+        }
+    }
     if (!std::isfinite(chain.inputFrequency))
         chain.errors.append(QStringLiteral("set the input frequency: %1 has none").arg(chain.start));
     if (!std::isfinite(chain.inputPowerDbm)) {
@@ -425,18 +557,7 @@ SignalChain traceChain(const Netlist &netlist, const ChainOptions &options)
         stage.inputFrequency = f;
         if (stage.translation == ChainStage::Translation::Mixer && std::isfinite(stage.loFrequency)) {
             const QString side = stage.component->parameterText.value(QStringLiteral("side"));
-            // The wanted product: explicit, or by wiring direction ("auto", and files
-            // made before the parameter existed).
-            const QString product = stage.component->parameterText.value(QStringLiteral("product"));
-            if (product == QLatin1String("sum")) {
-                stage.sumProduct = true;
-            } else if (product == QLatin1String("difference")) {
-                stage.sumProduct = false;
-            } else if (stage.upConversion) {
-                stage.sumProduct = side != QLatin1String("high");
-            } else {
-                stage.sumProduct = false;
-            }
+            selectProduct(stage);
             if (!stage.upConversion && !stage.sumProduct) {
                 const bool lowSide = stage.loFrequency < f;
                 if ((side == QLatin1String("low")) != lowSide)
@@ -465,6 +586,9 @@ struct ChainEvaluator::Impl {
         CMatrix noise;
     };
     QHash<QPair<int, double>, Cached> cache;
+    // LO phase noise per mixer stage; an empty profile when the LO has none.
+    QHash<int, PhaseNoiseProfile> phaseNoise;
+    QHash<int, QString> phaseNoiseErrors;
 };
 
 ChainEvaluator::ChainEvaluator(const SignalChain &chain, const QString &projectDirectory, TouchstoneCache *touchstones)
@@ -476,6 +600,34 @@ ChainEvaluator::ChainEvaluator(const SignalChain &chain, const QString &projectD
 }
 
 ChainEvaluator::~ChainEvaluator() = default;
+
+QString ChainEvaluator::projectDirectory() const
+{
+    return d->context.projectDirectory;
+}
+
+const PhaseNoiseProfile *ChainEvaluator::loPhaseNoise(int stage, QString *error)
+{
+    if (stage < 0 || stage >= static_cast<int>(m_chain.stages.size()))
+        return nullptr;
+    if (!d->phaseNoise.contains(stage)) {
+        const ChainStage &st = m_chain.stages[static_cast<size_t>(stage)];
+        PhaseNoiseProfile profile;
+        QString message;
+        if (st.translation == ChainStage::Translation::Mixer && !st.loSource.isEmpty()) {
+            if (const FlatComponent *lo = m_chain.netlist.component(st.loSource)) {
+                if (const auto found = oscillatorPhaseNoise(*lo, d->context.projectDirectory, &message))
+                    profile = found->shifted(20.0 * std::log10(std::max(1, st.loMultiplication)));
+            }
+        }
+        d->phaseNoise.insert(stage, profile);
+        d->phaseNoiseErrors.insert(stage, message);
+    }
+    if (error && !d->phaseNoiseErrors.value(stage).isEmpty())
+        *error = d->phaseNoiseErrors.value(stage);
+    const auto it = d->phaseNoise.constFind(stage);
+    return it->empty() ? nullptr : &*it;
+}
 
 double ChainEvaluator::outputFrequency(int stage, double inputFrequency) const
 {
@@ -508,6 +660,34 @@ std::optional<CMatrix> ChainEvaluator::stageS(int stage, double inputFrequency, 
     if (st.translation == ChainStage::Translation::Mixer) {
         conversionTwoPort(parameter(c, "gain", 0), -parameter(c, "rf_if_isolation", 200), parameter(c, "nf", 0), cached.s,
                           cached.noise);
+        // Return losses of the pins the signal enters and leaves (0: matched).
+        const double rf = returnLossToGamma(parameter(c, "rl_rf", 0)), ifPin = returnLossToGamma(parameter(c, "rl_if", 0));
+        cached.s = withPortReflections(cached.s, st.upConversion ? std::vector<double>{ifPin, rf} : std::vector<double>{rf, ifPin},
+                                       1.0, false);
+    } else if (st.kind == QLatin1String("balun")) {
+        // The two-port between the unbalanced pin and the balanced pair: the
+        // power of both balanced pins (a differential load sees their sum).
+        QStringList warnings;
+        QString buildError;
+        const auto element = buildElement(c, {inputFrequency}, d->context, &warnings, &buildError);
+        if (!element) {
+            if (error)
+                *error = buildError;
+            return std::nullopt;
+        }
+        const CMatrix &full = element->s.front();
+        const int unbal = 0;
+        const int balanced = st.inputPin == unbal ? st.outputPin : st.inputPin;
+        const int other = balanced == 1 ? 2 : 1;
+        const double magnitude = std::sqrt(std::norm(full(balanced, unbal)) + std::norm(full(other, unbal)));
+        const Complex phase = std::abs(full(balanced, unbal)) > 0 ? full(balanced, unbal) / std::abs(full(balanced, unbal))
+                                                                  : Complex(1, 0);
+        const Complex t = magnitude * phase;
+        const int in = st.inputPin, out = st.outputPin;
+        cached.s.resize(2, 2);
+        cached.s << full(in, in), t, t, full(out, out);
+        cached.s = limitToPassive(cached.s);
+        cached.noise = passiveNoise(cached.s, T0);
     } else if (st.translation == ChainStage::Translation::Multiplier) {
         const double gain = parameter(c, "gain", 0);
         conversionTwoPort(gain, -200, gain < 0 ? -gain : 0.0, cached.s, cached.noise);

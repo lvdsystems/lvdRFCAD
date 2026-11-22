@@ -298,7 +298,7 @@
             },
             "basic:resistor": {
                 "category": "Passive",
-                "description": "Ideal resistor (ANSI symbol)",
+                "description": "Resistor; optional parasitics: series inductance esl, parallel capacitance cp (0 = ideal)",
                 "id": "resistor",
                 "models": [
                     {
@@ -307,6 +307,7 @@
                     },
                     {
                         "kind": "spice",
+                        "parasitics": "resistor",
                         "template": "R{ref} {pin:p} {pin:n} {r}"
                     }
                 ],
@@ -318,6 +319,18 @@
                         "name": "r",
                         "shown": true,
                         "unit": "ohm"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Series inductance (0 = ideal)",
+                        "name": "esl",
+                        "unit": "H"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Parallel capacitance (0 = ideal)",
+                        "name": "cp",
+                        "unit": "F"
                     }
                 ],
                 "pins": [

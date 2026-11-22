@@ -273,6 +273,36 @@
                         "unit": "dB"
                     },
                     {
+                        "default": "0",
+                        "label": "Gain slope around freq",
+                        "name": "gain_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Noise figure slope around freq",
+                        "name": "nf_slope",
+                        "unit": "dB/GHz"
+                    },
+                    {
+                        "default": "1GHz",
+                        "label": "Reference frequency of the slopes",
+                        "name": "freq",
+                        "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Input return loss (0 = ideal match)",
+                        "name": "rl_in",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Output return loss (0 = ideal match)",
+                        "name": "rl_out",
+                        "unit": "dB"
+                    },
+                    {
                         "default": "50",
                         "label": "Port impedance",
                         "name": "z0",
@@ -622,7 +652,7 @@
             },
             "rf-system:lo": {
                 "category": "RF/Sources",
-                "description": "Local oscillator with optional phase noise",
+                "description": "Local oscillator; its phase-noise file feeds the budget's phase-noise and reciprocal-mixing figures",
                 "id": "lo",
                 "models": [
                     {
@@ -649,7 +679,7 @@
                     {
                         "default": "",
                         "file": true,
-                        "label": "Phase noise file",
+                        "label": "Phase noise file (offset Hz, L dBc/Hz)",
                         "name": "phase_noise"
                     },
                     {
@@ -787,6 +817,24 @@
                         "file": true,
                         "label": "Spur table file",
                         "name": "spur_table"
+                    },
+                    {
+                        "default": "0",
+                        "label": "RF return loss (0 = ideal match)",
+                        "name": "rl_rf",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "LO return loss (0 = ideal match)",
+                        "name": "rl_lo",
+                        "unit": "dB"
+                    },
+                    {
+                        "default": "0",
+                        "label": "IF return loss (0 = ideal match)",
+                        "name": "rl_if",
+                        "unit": "dB"
                     },
                     {
                         "default": "50",

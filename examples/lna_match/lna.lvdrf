@@ -88,7 +88,7 @@
         "definitions": {
             "basic:capacitor": {
                 "category": "Passive",
-                "description": "Capacitor with optional finite Q (q = 0 is ideal)",
+                "description": "Capacitor with optional finite Q (q = 0 is ideal) and series parasitics esr, esl",
                 "id": "capacitor",
                 "models": [
                     {
@@ -97,6 +97,7 @@
                     },
                     {
                         "kind": "spice",
+                        "parasitics": "capacitor",
                         "template": "C{ref} {pin:p} {pin:n} {c}"
                     }
                 ],
@@ -119,6 +120,18 @@
                         "label": "Frequency at which Q applies",
                         "name": "freq",
                         "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Equivalent series resistance (0 = ideal)",
+                        "name": "esr",
+                        "unit": "ohm"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Equivalent series inductance (0 = ideal)",
+                        "name": "esl",
+                        "unit": "H"
                     }
                 ],
                 "pins": [
@@ -292,7 +305,7 @@
             },
             "basic:inductor": {
                 "category": "Passive",
-                "description": "Inductor with optional finite Q (q = 0 is ideal)",
+                "description": "Inductor with optional finite Q (q = 0 is ideal) and parallel capacitance cp (self-resonance)",
                 "id": "inductor",
                 "models": [
                     {
@@ -301,6 +314,7 @@
                     },
                     {
                         "kind": "spice",
+                        "parasitics": "inductor",
                         "template": "L{ref} {pin:p} {pin:n} {l}"
                     }
                 ],
@@ -323,6 +337,12 @@
                         "label": "Frequency at which Q applies",
                         "name": "freq",
                         "unit": "Hz"
+                    },
+                    {
+                        "default": "0",
+                        "label": "Parallel capacitance (0 = ideal)",
+                        "name": "cp",
+                        "unit": "F"
                     }
                 ],
                 "pins": [

@@ -8,6 +8,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QTemporaryDir>
@@ -212,4 +213,51 @@ TEST_CASE("an imported netlist gives its analyses and runs like the original")
     CHECK(withControl.analyses.first().kind == AnalysisKind::Fourier);
     CHECK(withControl.analyses.first().list(QStringLiteral("signals")) == QStringList{QStringLiteral("v(a)")});
     CHECK_FALSE(withControl.warnings.isEmpty());
+}
+
+TEST_CASE("an imported netlist stores include paths relative to its project and still runs after a move")
+{
+    QTemporaryDir dir;
+    QString error;
+    const QString folder = dir.filePath(QStringLiteral("p"));
+    {
+        Session session;
+        Project *project = session.newProject(folder, QStringLiteral("p"), &error);
+        REQUIRE(project);
+        QDir(folder).mkpath(QStringLiteral("models"));
+        QFile model(folder + QStringLiteral("/models/r.inc"));
+        REQUIRE(model.open(QIODevice::WriteOnly | QIODevice::Text));
+        model.write("R2 out 0 1k\n");
+        model.close();
+        QFile netlist(folder + QStringLiteral("/divider.cir"));
+        REQUIRE(netlist.open(QIODevice::WriteOnly | QIODevice::Text));
+        netlist.write("divider\nV1 in 0 DC 2\nR1 in out 1k\n.include models/r.inc\n.op\n.end\n");
+        netlist.close();
+        Document *document = importNetlistDocument(*project, folder + QStringLiteral("/divider.cir"), QString(), &error);
+        REQUIRE(document);
+        const QJsonObject simulation = document->schematic()->simulation();
+        CHECK(simulation.value(QStringLiteral("netlistSource")).toString() == QLatin1String("divider.cir"));
+        CHECK(simulation.value(QStringLiteral("netlist")).toString().contains(QLatin1String(".include \"models/r.inc\"")));
+        REQUIRE(project->saveAll(&error));
+        session.closeProject();
+    }
+    // Move the project and run it there.
+    const QString moved = dir.filePath(QStringLiteral("moved"));
+    REQUIRE(QDir().rename(folder, moved));
+    Session session;
+    Project *project = session.openProject(moved + QStringLiteral("/p.lvdproj"), &error);
+    INFO(error.toStdString());
+    REQUIRE(project);
+    Document *document = project->document(QStringLiteral("divider"));
+    REQUIRE(document);
+    const QJsonObject simulation = document->schematic()->simulation();
+    const SpiceSimulation op = runSpiceAnalysis(*project, *document, spiceAnalyses(simulation).at(0), engine());
+    INFO(op.netlist.toStdString());
+    INFO(op.errors.join(QLatin1Char('\n')).toStdString());
+    REQUIRE(op.ok());
+    CHECK(op.netlist.contains(QDir::fromNativeSeparators(moved)));
+
+    // Absolute paths outside the project stay absolute; relative ones resolve.
+    CHECK(rewriteIncludePaths(QStringLiteral(".lib \"C:/models/x.lib\" tt"), moved, true) == QLatin1String(".lib \"C:/models/x.lib\" tt"));
+    CHECK(rewriteIncludePaths(QStringLiteral(".lib fast"), moved, false) == QLatin1String(".lib fast"));
 }

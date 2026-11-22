@@ -20,7 +20,7 @@
       "id": "cos15",
       "name": "Generic array element cos^1.5",
       "kind": "element",
-      "description": "Typical embedded element pattern of a well-matched planar array element (about 5.4 dBi, scan loss cos^1.5).",
+      "description": "Typical embedded element pattern of a well-matched planar array element (about 7.0 dBi, scan loss cos^1.5).",
       "data": {
         "model": "cosn",
         "polarisation": "x",
@@ -75,10 +75,9 @@
       "id": "monopole-quarter-wave",
       "name": "Quarter-wave monopole",
       "kind": "element",
-      "description": "Vertical monopole on an infinite ground plane, 5.16 dBi at the horizon.",
+      "description": "Vertical monopole on an infinite ground plane, vertically polarised (E-theta), 5.16 dBi at the horizon.",
       "data": {
         "model": "monopole",
-        "polarisation": "x",
         "frequency": 1000000000.0,
         "efficiency": 0,
         "length": 0
